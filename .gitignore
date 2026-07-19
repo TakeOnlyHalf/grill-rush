@@ -46,3 +46,6 @@ coverage/
 .gh-pages-cache/
 
 claude.md
+
+*storybook.log
+storybook-static

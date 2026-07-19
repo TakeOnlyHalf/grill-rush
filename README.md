@@ -7,6 +7,7 @@
 - React 18 + Vite
 - HTML/CSS + Canvas (미니게임)
 - Howler.js (효과음·BGM)
+- Storybook 10 (디자인 시스템 / 컴포넌트 카탈로그)
 - GitHub Pages (`gh-pages`)
 
 ## 게임 흐름 (베이스)
@@ -24,6 +25,19 @@ npm install
 npm run dev
 ```
 
+## Storybook (디자인 통일)
+
+```bash
+npm run storybook
+```
+
+- **Design System** — 컬러/타이포 토큰, `Button`, `Panel`
+- **Game** — HUD, LocationPicker 등 실제 게임 컴포넌트
+- 공통 스타일: `src/styles/game.css` (preview에서 전역 로드)
+- 토큰 소스: `src/ui/tokens.js` ↔ CSS `:root` 변수 동기화
+
+새 UI는 `src/ui/` 공통 컴포넌트를 우선 사용하고, 스토리를 함께 추가하세요.
+
 ## 스크립트
 
 | 명령 | 설명 |
@@ -31,6 +45,8 @@ npm run dev
 | `npm run dev` | 개발 서버 |
 | `npm run build` | 프로덕션 빌드 |
 | `npm run preview` | 빌드 미리보기 |
+| `npm run storybook` | Storybook (포트 6006) |
+| `npm run build-storybook` | Storybook 정적 빌드 |
 | `npm run deploy` | GitHub Pages 배포 |
 
 ## 소스 구조
