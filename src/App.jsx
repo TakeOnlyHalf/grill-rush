@@ -1,10 +1,43 @@
-function App() {
-  return (
-    <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Grill Rush</h1>
-      <p>푸드트럭 타이쿤 — 프로젝트 셋업 완료</p>
-    </main>
-  )
+import { GameProvider, useGameState } from './state/GameContext.jsx'
+import TitlePhase from './phases/TitlePhase.jsx'
+import PrepPhase from './phases/PrepPhase.jsx'
+import OpenPhase from './phases/OpenPhase.jsx'
+import SettlePhase from './phases/SettlePhase.jsx'
+import NightPhase from './phases/NightPhase.jsx'
+import EndingPhase from './phases/EndingPhase.jsx'
+import './styles/game.css'
+
+/**
+ * 페이즈 라우팅
+ * title → prep → open → settle → night → (next day prep…) → ending
+ */
+function PhaseRouter() {
+  const { phase } = useGameState()
+
+  switch (phase) {
+    case 'title':
+      return <TitlePhase />
+    case 'prep':
+      return <PrepPhase />
+    case 'open':
+      return <OpenPhase />
+    case 'settle':
+      return <SettlePhase />
+    case 'night':
+      return <NightPhase />
+    case 'ending':
+      return <EndingPhase />
+    default:
+      return <TitlePhase />
+  }
 }
 
-export default App
+export default function App() {
+  return (
+    <GameProvider>
+      <div className="app-shell">
+        <PhaseRouter />
+      </div>
+    </GameProvider>
+  )
+}

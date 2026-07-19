@@ -1,0 +1,37 @@
+[
+  {
+    "id": "grill_expand",
+    "name": "주방 확장",
+    "description": "동시 조리 가능 +1",
+    "cost": 150000,
+    "effect": { "grillSlots": 1 }
+  },
+  {
+    "id": "heat_boost",
+    "name": "화력 강화",
+    "description": "조리 시간 -20%",
+    "cost": 50000,
+    "effect": { "cookTimeFactor": 0.8 }
+  },
+  {
+    "id": "signboard",
+    "name": "간판 교체",
+    "description": "방문 확률 +10%",
+    "cost": 30000,
+    "effect": { "visitBonus": 0.1 }
+  },
+  {
+    "id": "timer_alarm",
+    "name": "타이머 알람",
+    "description": "게이지 90% 경고음",
+    "cost": 40000,
+    "effect": { "dangerAlarm": true }
+  },
+  {
+    "id": "auto_assist",
+    "name": "조리 보조",
+    "description": "가장 오래된 재료 자동 꺼내기",
+    "cost": 120000,
+    "effect": { "autoRemoveOldest": true }
+  }
+]

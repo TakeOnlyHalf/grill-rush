@@ -1,0 +1,72 @@
+[
+  {
+    "id": "office",
+    "name": "오피스 거리",
+    "icon": "🏢",
+    "description": "점심 집중, 빠른 회전",
+    "peakHours": "11:00~13:00",
+    "customers": ["office"],
+    "baseTraffic": 80,
+    "peakMultiplier": 2.0,
+    "rentCost": 15000,
+    "competition": 2,
+    "unlockedByDefault": true,
+    "unlockDay": 1
+  },
+  {
+    "id": "campus",
+    "name": "대학가",
+    "icon": "🎓",
+    "description": "저녁 유동인구 높음",
+    "peakHours": "17:00~21:00",
+    "customers": ["student"],
+    "baseTraffic": 90,
+    "peakMultiplier": 1.8,
+    "rentCost": 10000,
+    "competition": 3,
+    "unlockedByDefault": true,
+    "unlockDay": 1
+  },
+  {
+    "id": "park",
+    "name": "공원 앞",
+    "icon": "🌳",
+    "description": "주말에 가족 단위 폭증",
+    "peakHours": "토·일 종일",
+    "customers": ["family"],
+    "baseTraffic": 70,
+    "peakMultiplier": 2.5,
+    "rentCost": 12000,
+    "competition": 1,
+    "unlockedByDefault": false,
+    "unlockDay": 3
+  },
+  {
+    "id": "night_market",
+    "name": "야시장 입구",
+    "icon": "🌙",
+    "description": "야간 영업, 높은 매출",
+    "peakHours": "20:00~24:00",
+    "customers": ["tourist", "local"],
+    "baseTraffic": 100,
+    "peakMultiplier": 2.2,
+    "rentCost": 25000,
+    "competition": 4,
+    "unlockedByDefault": false,
+    "unlockDay": 5
+  },
+  {
+    "id": "festival",
+    "name": "축제 광장",
+    "icon": "🎪",
+    "description": "이벤트로만 등장",
+    "peakHours": "이벤트 기간",
+    "customers": ["mixed"],
+    "baseTraffic": 120,
+    "peakMultiplier": 3.0,
+    "rentCost": 30000,
+    "competition": 5,
+    "unlockedByDefault": false,
+    "unlockDay": 99
+  }
+]

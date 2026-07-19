@@ -1,0 +1,42 @@
+[
+  {
+    "id": "office",
+    "name": "직장인",
+    "icon": "👔",
+    "patience": 25,
+    "tipChance": 0.15,
+    "priceSensitivity": 0.8
+  },
+  {
+    "id": "student",
+    "name": "학생",
+    "icon": "🎒",
+    "patience": 20,
+    "tipChance": 0.08,
+    "priceSensitivity": 1.2
+  },
+  {
+    "id": "family",
+    "name": "가족",
+    "icon": "👨‍👩‍👧",
+    "patience": 30,
+    "tipChance": 0.12,
+    "priceSensitivity": 0.9
+  },
+  {
+    "id": "tourist",
+    "name": "관광객",
+    "icon": "📷",
+    "patience": 22,
+    "tipChance": 0.2,
+    "priceSensitivity": 0.6
+  },
+  {
+    "id": "foodie",
+    "name": "미식가",
+    "icon": "🧑‍🍳",
+    "patience": 18,
+    "tipChance": 0.25,
+    "priceSensitivity": 0.7
+  }
+]
