@@ -1,21 +1,18 @@
-import { colors, radius, typography } from '../ui/tokens'
+import { colors, dayColors, radius, typography } from '../ui/tokens'
+import type { ColorToken } from '../ui/tokens'
 
-export default {
-  title: 'Design System/Tokens',
-  parameters: {
-    docs: {
-      description: {
-        component:
-          'Grill Rush 디자인 토큰. CSS 변수는 `src/styles/game.css`의 `:root`와 맞춥니다.',
-      },
-    },
-  },
-}
-
-export const Colors = {
-  render: () => (
+function ColorGrid({
+  title,
+  palette,
+  light,
+}: {
+  title: string
+  palette: Record<string, ColorToken>
+  light?: boolean
+}) {
+  return (
     <div style={{ display: 'grid', gap: '0.75rem' }}>
-      <h2 style={{ margin: 0 }}>Colors</h2>
+      <h2 style={{ margin: 0 }}>{title}</h2>
       <div
         style={{
           display: 'grid',
@@ -23,25 +20,82 @@ export const Colors = {
           gap: '0.75rem',
         }}
       >
-        {Object.entries(colors).map(([name, token]) => (
+        {Object.entries(palette).map(([name, token]) => (
           <div
             key={name}
             style={{
-              border: '1px solid var(--border)',
+              border: light
+                ? '1px solid var(--day-panel-edge)'
+                : '1px solid var(--border)',
               borderRadius: 'var(--radius)',
               overflow: 'hidden',
-              background: 'var(--bg-panel)',
+              background: light ? 'var(--day-frost)' : 'var(--bg-panel)',
+              color: light ? 'var(--day-ink)' : 'var(--text)',
             }}
           >
-            <div style={{ height: 64, background: token.value }} />
+            <div
+              style={{
+                height: 64,
+                background: token.value,
+                borderBottom: light
+                  ? '1px solid rgba(91, 176, 176, 0.25)'
+                  : undefined,
+              }}
+            />
             <div style={{ padding: '0.5rem 0.65rem', fontSize: 13 }}>
               <strong>{name}</strong>
-              <div style={{ color: 'var(--muted)' }}>{token.value}</div>
-              <div style={{ color: 'var(--muted)', fontSize: 12 }}>{token.usage}</div>
+              <div
+                style={{
+                  color: light ? 'var(--day-muted)' : 'var(--muted)',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {token.value}
+              </div>
+              <div
+                style={{
+                  color: light ? 'var(--day-muted)' : 'var(--muted)',
+                  fontSize: 12,
+                }}
+              >
+                {token.usage}
+              </div>
             </div>
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+export default {
+  title: 'Design System/Tokens',
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Grill Rush 디자인 토큰. 기본(그릴)과 낮(Day/Story) 팔레트를 분리합니다. CSS는 `game.css` `:root`와 동기화.',
+      },
+    },
+  },
+}
+
+export const Colors = {
+  name: 'Colors (Default)',
+  render: () => <ColorGrid title="Default — Grill / Title" palette={colors} />,
+}
+
+export const DayColors = {
+  name: 'Colors (Day)',
+  render: () => (
+    <div
+      style={{
+        padding: '1rem',
+        borderRadius: 'var(--radius)',
+        background: 'linear-gradient(180deg, var(--day-sky), var(--day-sky-soft))',
+      }}
+    >
+      <ColorGrid title="Day — Story / day_street" palette={dayColors} light />
     </div>
   ),
 }

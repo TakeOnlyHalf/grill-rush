@@ -4,13 +4,13 @@ export type TitleMenuButtonVariant = 'wood' | 'chalk'
 
 export interface TitleMenuButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children?: ReactNode
-  /** wood: 나무 이정표 / chalk: 칠판·양피지 보조 */
+  /** wood: 나무 이정표 / chalk: 밝은 양피지 배너(보조) */
   variant?: TitleMenuButtonVariant
 }
 
 /**
  * 타이틀 화면용 메뉴 버튼
- * title.png의 나무 간판·칠판 톤에 맞춘 스토리북 UI
+ * title_day.png 나무 이정표·양피지 배너 톤
  */
 export default function TitleMenuButton({
   children,

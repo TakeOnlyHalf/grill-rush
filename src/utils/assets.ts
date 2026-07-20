@@ -8,3 +8,6 @@ export function publicUrl(path: string): string {
 
 /** 오프닝/주간 거리 배경 */
 export const DAY_STREET_BG = publicUrl('images/day_street.png')
+
+/** 타이틀 화면 아트 (주간) */
+export const TITLE_DAY_ART = publicUrl('images/title_day.png')

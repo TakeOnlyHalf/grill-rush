@@ -16,6 +16,22 @@
   --cream: #f4e6c8;
   --lantern: #e8a54b;
   --chalk: #1e2420;
+
+  /* Day palette — Story / day_street */
+  --day-sky: #78c1f3;
+  --day-sky-soft: #c5dde8;
+  --day-ocean: #4a90c8;
+  --day-seafoam: #5bb0b0;
+  --day-seafoam-deep: #4a9e9e;
+  --day-ink: #2c3a4a;
+  --day-muted: rgba(44, 58, 74, 0.55);
+  --day-panel: rgba(255, 255, 255, 0.82);
+  --day-panel-edge: rgba(91, 176, 176, 0.55);
+  --day-frost: #f9f9f9;
+  --day-cobble: #d1d5db;
+  --day-leaf: #3d8b5a;
+  --day-roof: #c45c3e;
+
   --font: 'Segoe UI', 'Malgun Gothic', sans-serif;
   --font-title-menu: 'Gowun Batang', 'Malgun Gothic', serif;
   --radius: 10px;
@@ -164,7 +180,7 @@ body {
   font-size: 0.8rem;
 }
 
-/* Title — full-bleed artwork hero */
+/* Title — full-bleed daytime artwork */
 .phase-title {
   min-height: 100vh;
   gap: 0;
@@ -240,7 +256,7 @@ body {
   animation: title-cta-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
 }
 
-/* Title menu — wooden sign / chalk board (matches title.png) */
+/* Title menu — daytime wooden signposts (title_day.png) */
 .title-menu-btn {
   --title-btn-lift: 0px;
   position: relative;
@@ -248,17 +264,17 @@ body {
   width: 100%;
   min-height: 3rem;
   margin: 0;
-  padding: 0.7rem 1.35rem 0.78rem;
+  padding: 0.72rem 1.4rem 0.8rem;
   border: none;
   cursor: pointer;
   font-family: var(--font-title-menu);
-  font-size: 1.12rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   line-height: 1.2;
-  color: var(--cream);
+  color: #fff8ec;
   text-align: center;
-  border-radius: 3px 14px 4px 11px;
+  border-radius: 4px 10px 5px 9px;
   transform: translateY(var(--title-btn-lift));
   transition:
     transform 160ms ease,
@@ -272,34 +288,34 @@ body {
   border-radius: inherit;
   pointer-events: none;
   box-shadow:
-    inset 0 1px 0 rgba(255, 230, 180, 0.22),
-    inset 0 -3px 6px rgba(0, 0, 0, 0.45);
+    inset 0 1px 0 rgba(255, 245, 220, 0.35),
+    inset 0 -2px 5px rgba(60, 35, 15, 0.28);
 }
 
 .title-menu-btn__label {
   position: relative;
   z-index: 1;
   text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.55),
-    0 0 12px rgba(232, 165, 75, 0.18);
+    0 1px 0 rgba(50, 30, 12, 0.45),
+    0 0 10px rgba(255, 220, 140, 0.2);
 }
 
 .title-menu-btn--wood {
   background:
-    linear-gradient(105deg, rgba(255, 220, 160, 0.14), transparent 42%),
-    linear-gradient(180deg, rgba(90, 58, 32, 0.55), rgba(20, 12, 8, 0.35)),
+    linear-gradient(105deg, rgba(255, 240, 200, 0.28), transparent 45%),
+    linear-gradient(180deg, rgba(160, 110, 60, 0.35), rgba(70, 42, 20, 0.25)),
     repeating-linear-gradient(
-      93deg,
-      #3d2818 0 3px,
-      #2c1b10 3px 5px,
-      #4a3220 5px 8px,
-      #24160e 8px 11px
+      92deg,
+      #9a6a3c 0 3px,
+      #7d5330 3px 5px,
+      #b07a48 5px 8px,
+      #6a4528 8px 11px
     );
   box-shadow:
-    0 1px 0 rgba(255, 220, 170, 0.12),
-    0 4px 0 #1a1008,
-    0 10px 22px rgba(0, 0, 0, 0.42),
-    0 0 0 1px rgba(90, 60, 30, 0.65);
+    0 1px 0 rgba(255, 240, 210, 0.4),
+    0 3px 0 #5d3a1a,
+    0 10px 22px rgba(60, 40, 20, 0.28),
+    0 0 0 1px rgba(93, 58, 26, 0.55);
 }
 
 .title-menu-btn--wood::before,
@@ -307,14 +323,14 @@ body {
   content: '';
   position: absolute;
   top: 50%;
-  width: 0.42rem;
-  height: 0.42rem;
+  width: 0.4rem;
+  height: 0.4rem;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 35% 30%, #6a4a2e, #2a1a10 70%);
+    radial-gradient(circle at 35% 30%, #d4b08a, #6b4424 70%);
   box-shadow:
-    inset 0 1px 1px rgba(255, 220, 180, 0.25),
-    0 1px 2px rgba(0, 0, 0, 0.5);
+    inset 0 1px 1px rgba(255, 240, 210, 0.45),
+    0 1px 2px rgba(40, 25, 10, 0.4);
   transform: translateY(-50%);
   z-index: 2;
 }
@@ -327,66 +343,65 @@ body {
   right: 0.55rem;
 }
 
+/* 보조: 양피지·탄 배너 (옵션) */
 .title-menu-btn--chalk {
-  color: #f7f1e2;
-  letter-spacing: 0.16em;
-  border-radius: 8px 6px 10px 7px;
+  color: #5d3a1a;
+  letter-spacing: 0.14em;
+  border-radius: 999px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 50%),
-    repeating-linear-gradient(
-      0deg,
-      #232a26 0 2px,
-      #1a211d 2px 4px
-    );
+    linear-gradient(180deg, #fff8e8, #e8d4b0);
   box-shadow:
-    inset 0 0 0 1px rgba(244, 230, 200, 0.28),
-    inset 0 0 0 3px rgba(30, 36, 32, 0.9),
-    0 6px 18px rgba(0, 0, 0, 0.35);
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 3px 0 #c4a574,
+    0 8px 18px rgba(80, 55, 30, 0.22),
+    0 0 0 1px rgba(180, 140, 90, 0.55);
+}
+
+.title-menu-btn--chalk .title-menu-btn__edge {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 .title-menu-btn--chalk .title-menu-btn__label {
-  text-shadow:
-    0 0 1px rgba(255, 255, 255, 0.35),
-    0 1px 0 rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .title-menu-btn:hover:not(:disabled) {
   --title-btn-lift: -2px;
-  filter: brightness(1.08);
+  filter: brightness(1.06);
 }
 
 .title-menu-btn--wood:hover:not(:disabled) {
   box-shadow:
-    0 1px 0 rgba(255, 220, 170, 0.2),
-    0 5px 0 #1a1008,
-    0 14px 28px rgba(0, 0, 0, 0.45),
-    0 0 18px rgba(232, 165, 75, 0.22);
+    0 1px 0 rgba(255, 240, 210, 0.55),
+    0 4px 0 #5d3a1a,
+    0 12px 26px rgba(60, 40, 20, 0.3),
+    0 0 20px rgba(255, 210, 120, 0.45);
 }
 
 .title-menu-btn--chalk:hover:not(:disabled) {
   box-shadow:
-    inset 0 0 0 1px rgba(244, 230, 200, 0.45),
-    inset 0 0 0 3px rgba(30, 36, 32, 0.9),
-    0 8px 22px rgba(0, 0, 0, 0.4),
-    0 0 14px rgba(232, 165, 75, 0.15);
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 4px 0 #c4a574,
+    0 10px 22px rgba(80, 55, 30, 0.25),
+    0 0 16px rgba(255, 220, 140, 0.35);
 }
 
 .title-menu-btn:active:not(:disabled) {
   --title-btn-lift: 1px;
-  filter: brightness(0.96);
+  filter: brightness(0.97);
 }
 
 .title-menu-btn:disabled {
   cursor: not-allowed;
-  filter: grayscale(0.45) brightness(0.72);
-  opacity: 0.72;
+  filter: grayscale(0.35) brightness(0.88);
+  opacity: 0.7;
   box-shadow:
-    0 2px 0 #1a1008,
-    0 6px 14px rgba(0, 0, 0, 0.3);
+    0 2px 0 #5d3a1a,
+    0 6px 14px rgba(60, 40, 20, 0.2);
 }
 
 .title-menu-btn:focus-visible {
-  outline: 2px solid var(--lantern);
+  outline: 2px solid #5fb7d4;
   outline-offset: 3px;
 }
 
@@ -747,14 +762,14 @@ body {
   margin: 0.35rem 0;
 }
 
-/* ── Visual Novel (day_street 톤: 밝은 해변 마을) ── */
+/* ── Story (day_street 톤) — dayColors 토큰 사용 ── */
 .phase-story {
-  --vn-ink: #2c3a4a;
-  --vn-panel: rgba(255, 255, 255, 0.82);
-  --vn-panel-edge: rgba(91, 176, 176, 0.55);
-  --vn-accent: #5bb0b0;
-  --vn-accent-2: #78c1f3;
-  --vn-muted: rgba(44, 58, 74, 0.55);
+  --vn-ink: var(--day-ink);
+  --vn-panel: var(--day-panel);
+  --vn-panel-edge: var(--day-panel-edge);
+  --vn-accent: var(--day-seafoam);
+  --vn-accent-2: var(--day-sky);
+  --vn-muted: var(--day-muted);
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
@@ -770,7 +785,7 @@ body {
   min-height: 100dvh;
   overflow: hidden;
   cursor: pointer;
-  background: #78c1f3;
+  background: var(--day-sky);
 }
 
 .vn-stage__bg {
@@ -785,8 +800,8 @@ body {
 
 .vn-stage__bg--empty {
   background:
-    radial-gradient(ellipse 80% 50% at 70% 30%, #a8d8f8 0%, transparent 55%),
-    linear-gradient(180deg, #78c1f3 0%, #9fd0e8 45%, #c5dde8 100%);
+    radial-gradient(ellipse 80% 50% at 70% 30%, var(--day-sky-soft) 0%, transparent 55%),
+    linear-gradient(180deg, var(--day-sky) 0%, var(--day-sky-soft) 45%, #e8f2f6 100%);
 }
 
 /* 하단 가독성용 소프트 베일 */
@@ -917,7 +932,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.06em;
   color: #fff;
-  background: linear-gradient(135deg, var(--vn-accent), #4a9e9e);
+  background: linear-gradient(135deg, var(--vn-accent), var(--day-seafoam-deep));
   border: none;
   border-radius: 999px;
   box-shadow: 0 4px 14px rgba(91, 176, 176, 0.4);
