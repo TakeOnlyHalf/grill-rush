@@ -182,9 +182,7 @@ body {
   object-fit: contain;
   object-position: center center;
   transform-origin: center center;
-  animation:
-    title-art-in 1.35s ease-out both,
-    title-art-drift 20s ease-in-out 1.2s infinite alternate;
+  animation: title-art-in 1.35s ease-out both;
 }
 
 @keyframes title-art-in {
@@ -194,16 +192,7 @@ body {
   }
   to {
     opacity: 1;
-    transform: scale(0.94);
-  }
-}
-
-@keyframes title-art-drift {
-  from {
-    transform: scale(0.94);
-  }
-  to {
-    transform: scale(0.97);
+    transform: scale(1);
   }
 }
 
@@ -295,7 +284,7 @@ body {
   }
 
   .title-art {
-    transform: scale(0.94);
+    transform: none;
   }
 }
 
