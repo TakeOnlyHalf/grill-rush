@@ -3,7 +3,7 @@ import DialogueBox from '../ui/visualNovel/DialogueBox'
 import { DAY_STREET_BG } from '../utils/assets'
 
 const meta = {
-  title: 'Design System/Visual Novel/DialogueBox',
+  title: 'Design System/Story/DialogueBox',
   component: DialogueBox,
   tags: ['autodocs'],
   parameters: {
@@ -11,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          '비주얼 노벨 하단 자막창. day_street 톤 — 프로스티 화이트 + 시폼 틸 악센트.',
+          '스토리 하단 자막창. day_street 톤 — 프로스티 화이트 + 시폼 틸 악센트.',
       },
     },
   },

@@ -7,7 +7,7 @@ import { INTRO_STORY } from '../data/introStory'
 import { DAY_STREET_BG } from '../utils/assets'
 
 const meta = {
-  title: 'Design System/Visual Novel/Stage',
+  title: 'Design System/Story/Stage',
   component: VisualNovelStage,
   tags: ['autodocs'],
   parameters: {
@@ -15,7 +15,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'day_street 배경 + 좌·우 캐릭터 슬롯 + 하단 자막. 클릭/Space로 진행.',
+          '스토리 스테이지 — day_street 배경 + 좌·우 캐릭터 슬롯 + 하단 자막. 클릭/Space로 진행.',
       },
     },
   },
