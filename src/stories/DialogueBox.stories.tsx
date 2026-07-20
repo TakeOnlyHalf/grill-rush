@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import DialogueBox from '../ui/visualNovel/DialogueBox'
+import { DAY_STREET_BG } from '../utils/assets'
 
 const meta = {
   title: 'Design System/Visual Novel/DialogueBox',
@@ -7,11 +8,10 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
-    backgrounds: { default: 'light' },
     docs: {
       description: {
         component:
-          '비주얼 노벨 하단 자막창. 화자 네임플레이트 + 타이핑 텍스트. 캐릭터 이미지는 별도 슬롯에 연결합니다.',
+          '비주얼 노벨 하단 자막창. day_street 톤 — 프로스티 화이트 + 시폼 틸 악센트.',
       },
     },
   },
@@ -20,16 +20,41 @@ const meta = {
       <div
         className="phase-story"
         style={{
+          position: 'relative',
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-end',
           padding: '1.5rem',
-          background:
-            'linear-gradient(180deg, #9bb6e8 0%, #7a9ad4 50%, #5f7fc2 100%)',
+          overflow: 'hidden',
         }}
       >
-        <Story />
+        <img
+          src={DAY_STREET_BG}
+          alt=""
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 0,
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 'auto 0 0',
+            height: '42%',
+            background:
+              'linear-gradient(180deg, transparent, rgba(240,248,252,0.55))',
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        />
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <Story />
+        </div>
       </div>
     ),
   ],

@@ -4,6 +4,7 @@ import VisualNovelStage, {
   type VisualNovelStageProps,
 } from '../ui/visualNovel/VisualNovelStage'
 import { INTRO_STORY } from '../data/introStory'
+import { DAY_STREET_BG } from '../utils/assets'
 
 const meta = {
   title: 'Design System/Visual Novel/Stage',
@@ -14,9 +15,13 @@ const meta = {
     docs: {
       description: {
         component:
-          '좌·우 캐릭터 슬롯(이미지 자리) + 하단 자막. 클릭/Space로 타이핑 스킵·다음 대사.',
+          'day_street 배경 + 좌·우 캐릭터 슬롯 + 하단 자막. 클릭/Space로 진행.',
       },
     },
+  },
+  args: {
+    backgroundSrc: DAY_STREET_BG,
+    lines: INTRO_STORY,
   },
 } satisfies Meta<typeof VisualNovelStage>
 
@@ -28,30 +33,34 @@ function StageDemo(props: VisualNovelStageProps) {
   if (done) {
     return (
       <div
+        className="phase-story"
         style={{
           minHeight: '100vh',
           display: 'grid',
           placeItems: 'center',
-          color: '#1a2744',
-          background: 'linear-gradient(180deg, #9bb6e8, #5f7fc2)',
+          color: 'var(--vn-ink)',
+          background:
+            'linear-gradient(180deg, #78c1f3 0%, #c5dde8 100%)',
         }}
       >
         스토리 종료 (게임에서는 준비 페이즈로 이동)
       </div>
     )
   }
-  return <VisualNovelStage {...props} onComplete={() => setDone(true)} />
+  return (
+    <div className="phase-story">
+      <VisualNovelStage {...props} onComplete={() => setDone(true)} />
+    </div>
+  )
 }
 
-export const EmptyPlaceholders: Story = {
-  args: {
-    lines: INTRO_STORY,
-  },
+export const WithDayStreet: Story = {
   render: (args) => <StageDemo {...args} />,
 }
 
 export const SingleLine: Story = {
   args: {
+    backgroundSrc: DAY_STREET_BG,
     lines: [
       {
         id: 'demo',
