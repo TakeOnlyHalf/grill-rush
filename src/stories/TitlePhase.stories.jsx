@@ -1,5 +1,5 @@
 import TitlePhase from '../phases/TitlePhase.jsx'
-import { withGame } from './decorators.jsx'
+import { GameDecorator } from './decorators.jsx'
 
 export default {
   title: 'Game/Phases/Title',
@@ -7,7 +7,15 @@ export default {
   parameters: {
     layout: 'fullscreen',
   },
-  decorators: [withGame()],
+  decorators: [
+    (Story) => (
+      <GameDecorator>
+        <div className="app-shell app-shell--bleed">
+          <Story />
+        </div>
+      </GameDecorator>
+    ),
+  ],
 }
 
 export const Default = {}

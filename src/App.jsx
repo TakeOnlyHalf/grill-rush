@@ -32,12 +32,21 @@ function PhaseRouter() {
   }
 }
 
+function AppShell() {
+  const { phase } = useGameState()
+  const bleed = phase === 'title'
+
+  return (
+    <div className={bleed ? 'app-shell app-shell--bleed' : 'app-shell'}>
+      <PhaseRouter />
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <GameProvider>
-      <div className="app-shell">
-        <PhaseRouter />
-      </div>
+      <AppShell />
     </GameProvider>
   )
 }

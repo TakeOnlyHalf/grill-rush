@@ -1,38 +1,35 @@
 import { useGame } from '../state/GameContext.jsx'
 import { ActionTypes } from '../state/actions.js'
-import { getWeatherEmoji, getWeatherLabel } from '../utils/weather.js'
+import Button from '../ui/Button.jsx'
+
+const TITLE_ART = `${import.meta.env.BASE_URL}images/title.png`
 
 /**
- * 타이틀 화면
+ * 타이틀 화면 — public/images/title.png 풀블리드 히어로
  * TODO: 세이브/로드, 설정, 튜토리얼 진입
  */
 export default function TitlePhase() {
   const { dispatch } = useGame()
 
   return (
-    <section className="phase phase-title">
-      <div className="title-hero">
-        <p className="title-eyebrow">Food Truck Tycoon</p>
-        <h1 className="title-brand">Grill Rush</h1>
-        <p className="title-tagline">
-          도시 곳곳을 누비며 최고의 푸드트럭을 만들어라
-        </p>
+    <section className="phase phase-title" aria-label="타이틀">
+      <div className="title-stage">
+        <img
+          className="title-art"
+          src={TITLE_ART}
+          alt=""
+          decoding="async"
+        />
+        <h1 className="visually-hidden">Grill Rush — Food Truck Tycoon</h1>
         <div className="title-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
+          <Button
+            className="title-start"
             onClick={() => dispatch({ type: ActionTypes.START_GAME })}
           >
             게임 시작
-          </button>
+          </Button>
         </div>
-        <p className="phase-hint">
-          흐름: 타이틀 → 준비 → 영업 → 정산 → 성장 → (반복) → 엔딩
-        </p>
       </div>
-      <p className="weather-sample" aria-hidden>
-        {getWeatherEmoji('sunny')} {getWeatherLabel('sunny')}
-      </p>
     </section>
   )
 }
