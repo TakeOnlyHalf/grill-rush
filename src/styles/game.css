@@ -214,31 +214,112 @@ body {
 }
 
 .title-actions {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  bottom: clamp(9rem, 26vh, 16rem);
   z-index: 1;
   display: flex;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 0 1.25rem clamp(1.75rem, 7vh, 3.5rem);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+  width: min(16.5rem, calc(100% - 2.5rem));
+  transform: translateX(-50%);
   animation: title-cta-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
 }
 
-.title-start {
-  min-width: 11rem;
-  padding: 0.85rem 2rem;
-  font-size: 1.05rem;
+.title-menu-btn {
+  width: 100%;
+  min-height: 2.85rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.02rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   border-radius: var(--radius);
+}
+
+.title-menu-btn--primary {
   box-shadow:
     0 0 0 1px rgba(255, 220, 160, 0.22),
     0 10px 28px rgba(0, 0, 0, 0.4);
+}
+
+.title-menu-btn--primary:not(:disabled) {
   animation: title-cta-glow 2.6s ease-in-out 1.4s infinite;
 }
 
-.title-start:hover:not(:disabled) {
+.title-menu-btn:hover:not(:disabled) {
   filter: brightness(1.1);
   transform: translateY(-1px);
+}
+
+.title-menu-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
+
+/* Options modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(8, 5, 8, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.modal-panel {
+  width: min(22rem, 100%);
+  padding: 1.25rem 1.35rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.modal-panel h2 {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+}
+
+.options-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.options-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #221a15;
+  cursor: pointer;
+}
+
+.options-toggle input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+}
+
+.options-hint {
+  margin: 0.85rem 0 0;
+  font-size: 0.8rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.1rem;
 }
 
 @keyframes title-veil-in {
@@ -253,11 +334,11 @@ body {
 @keyframes title-cta-in {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateX(-50%) translateY(18px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0);
   }
 }
 
@@ -279,7 +360,7 @@ body {
   .title-art,
   .title-stage::after,
   .title-actions,
-  .title-start {
+  .title-menu-btn--primary:not(:disabled) {
     animation: none;
   }
 

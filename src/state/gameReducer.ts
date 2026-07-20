@@ -23,6 +23,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case ActionTypes.LOAD_GAME:
+      return action.payload
+
     case ActionTypes.SET_LOCATION: {
       if (state.phase !== 'prep') return state
       if (!state.unlockedLocations.includes(action.payload)) return state

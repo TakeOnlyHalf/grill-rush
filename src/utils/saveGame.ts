@@ -1,0 +1,85 @@
+import type { GameState, Phase } from '../types/game'
+
+const SAVE_KEY = 'grill-rush:save:v1'
+
+const PHASES: Phase[] = ['title', 'prep', 'open', 'settle', 'night', 'ending']
+
+export function hasSave(): boolean {
+  try {
+    return Boolean(localStorage.getItem(SAVE_KEY))
+  } catch {
+    return false
+  }
+}
+
+export function clearSave(): void {
+  try {
+    localStorage.removeItem(SAVE_KEY)
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+export function saveGame(state: GameState): void {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state))
+  } catch {
+    // ignore
+  }
+}
+
+/** 세이브가 있으면 파싱·보정 후 반환, 없으면 null */
+export function loadGame(): GameState | null {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<GameState>
+    if (!isValidSave(parsed)) {
+      clearSave()
+      return null
+    }
+    return sanitizeLoaded(parsed)
+  } catch {
+    clearSave()
+    return null
+  }
+}
+
+function isValidSave(value: Partial<GameState>): value is GameState {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof value.day === 'number' &&
+    typeof value.cash === 'number' &&
+    typeof value.phase === 'string' &&
+    PHASES.includes(value.phase as Phase) &&
+    Array.isArray(value.activeMenus) &&
+    Array.isArray(value.history)
+  )
+}
+
+/** 영업 중 세이브는 준비 페이즈로 되돌려 안전하게 재개 */
+function sanitizeLoaded(state: GameState): GameState {
+  if (state.phase === 'open') {
+    return {
+      ...state,
+      phase: 'prep',
+      time: 0,
+      customers: [],
+      orders: [],
+    }
+  }
+  if (state.phase === 'title' || state.phase === 'ending') {
+    return {
+      ...state,
+      phase: 'prep',
+      endingId: null,
+    }
+  }
+  return state
+}
+
+/** 자동 저장 대상 페이즈 */
+export function shouldAutosave(phase: Phase): boolean {
+  return phase === 'prep' || phase === 'settle' || phase === 'night'
+}

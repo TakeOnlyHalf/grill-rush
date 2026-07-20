@@ -4,6 +4,7 @@ export type { Phase }
 
 export const ActionTypes = {
   START_GAME: 'START_GAME',
+  LOAD_GAME: 'LOAD_GAME',
   SET_LOCATION: 'SET_LOCATION',
   TOGGLE_MENU: 'TOGGLE_MENU',
   SET_MENU_PRICE: 'SET_MENU_PRICE',
