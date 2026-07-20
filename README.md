@@ -38,6 +38,24 @@ npm install
 npm run dev
 ```
 
+## GitHub Pages
+
+배포 URL: https://TakeOnlyHalf.github.io/grill-rush/
+
+`main`에 push하면 GitHub Actions가 자동으로 빌드·배포합니다.
+
+1. 저장소 **Settings → Pages → Build and deployment → Source**를 **GitHub Actions**로 설정
+2. `main`에 머지/푸시 (또는 Actions에서 `Deploy to GitHub Pages` 수동 실행)
+
+로컬에서 배포 결과만 확인하려면:
+
+```bash
+npm run build
+npm run preview
+```
+
+`preview`는 빌드된 `/grill-rush/` base로 서빙됩니다.
+
 ## Storybook (디자인 통일)
 
 ```bash
@@ -60,7 +78,7 @@ npm run storybook
 | `npm run preview` | 빌드 미리보기 |
 | `npm run storybook` | Storybook (포트 6006) |
 | `npm run build-storybook` | Storybook 정적 빌드 |
-| `npm run deploy` | GitHub Pages 배포 |
+| `npm run deploy` | GitHub Pages 수동 배포 (`gh-pages`, 보통 Actions 사용) |
 
 ## 소스 구조
 
