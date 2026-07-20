@@ -1,0 +1,22 @@
+/** 게임 UI 토큰과 맞춘 Pixi 팔레트 */
+export const PIXI_COLORS = {
+  skyTop: 0x3a4a5a,
+  skyBottom: 0x2a211c,
+  ground: 0x3d3228,
+  groundLine: 0x4a3b30,
+  truckBody: 0xe85d04,
+  truckCabin: 0xf48c06,
+  truckWindow: 0x87ceeb,
+  truckWheel: 0x1a1410,
+  crowd: 0xf3e8d8,
+  accent: 0xe85d04,
+  accent2: 0xf48c06,
+  ok: 0x2a9d8f,
+  danger: 0xc1121f,
+  track: 0x444444,
+  zoneGood: 0x2a9d8f,
+  zonePerfect: 0xf48c06,
+  cursor: 0xf3e8d8,
+  text: 0xf3e8d8,
+  muted: 0xa89078,
+}

@@ -296,15 +296,18 @@ body {
   font-size: 0.85rem;
 }
 
-.street-view .street-scene {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 1.6rem;
-  padding: 0.75rem 0.5rem;
+.street-view .street-pixi {
   margin-bottom: 0.35rem;
-  background: linear-gradient(180deg, #3a4a5a, #2a211c);
-  border-radius: 8px;
+}
+
+.street-view .street-pixi canvas,
+.minigame-card--pixi canvas {
+  vertical-align: top;
+}
+
+.minigame-card--pixi {
+  padding: 0.35rem;
+  overflow: hidden;
 }
 
 .patience-bar {

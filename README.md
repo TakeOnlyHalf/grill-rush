@@ -4,11 +4,24 @@
 
 ## 기술 스택
 
-- React 18 + Vite
-- HTML/CSS + Canvas (미니게임)
+- React 18 + Vite — UI·페이즈 라우팅·게임 상태
+- **PixiJS 8** — 거리 뷰·미니게임·스프라이트/연출 등 게임플레이 렌더
 - Howler.js (효과음·BGM)
 - Storybook 10 (디자인 시스템 / 컴포넌트 카탈로그)
 - GitHub Pages (`gh-pages`)
+
+## 렌더 역할 분담
+
+전반적인 게임 비주얼·인터랙션은 **PixiJS**로 구성합니다.
+
+| 레이어 | 담당 | 위치 |
+| --- | --- | --- |
+| React | 페이즈 화면, HUD, 상점/메뉴 UI, `GameContext` 상태 | `src/phases/`, `src/components/`, `src/state/` |
+| PixiJS | 거리 씬, 조리 미니게임, 애니메이션·판정 연출 | `src/pixi/` |
+
+- 공통 마운트: `src/pixi/PixiStage.jsx` (`Application` 생명주기)
+- 씬 팩토리: `src/pixi/scenes/*` (`createStreetScene`, `createTimingBarScene` …)
+- 새 연출/미니게임은 HTML Canvas를 직접 쓰지 말고 Pixi 씬으로 추가하세요.
 
 ## 게임 흐름 (베이스)
 
@@ -51,4 +64,4 @@ npm run storybook
 
 ## 소스 구조
 
-자세한 기획은 `claude.md`를 참고하세요. 핵심 진입점은 `src/App.jsx`, 상태는 `src/state/` 입니다.
+핵심 진입점은 `src/App.jsx`, 상태는 `src/state/`, Pixi 게임 레이어는 `src/pixi/` 입니다.

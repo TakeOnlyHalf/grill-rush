@@ -10,7 +10,7 @@ export default function CookingMinigame() {
   return (
     <div className="panel cooking-area">
       <h3>조리 미니게임</h3>
-      <p className="muted">MVP: TimingBar · 확장: Sequence / RapidTap</p>
+      <p className="muted">MVP: TimingBar (PixiJS) · 확장: Sequence / RapidTap</p>
       <div className="minigame-slots">
         <TimingBar />
         <SequenceMatch />
