@@ -13,6 +13,11 @@ export const colors = {
   ok: { value: '#2a9d8f', css: 'var(--ok)', usage: '성공 / Perfect' },
   border: { value: '#4a3b30', css: 'var(--border)', usage: '테두리' },
   danger: { value: '#c1121f', css: 'var(--danger)', usage: '위험 / 태움' },
+  woodDeep: { value: '#2a1a10', css: 'var(--wood-deep)', usage: '타이틀 나무 간판' },
+  woodMid: { value: '#4a3220', css: 'var(--wood-mid)', usage: '나무 결 하이라이트' },
+  cream: { value: '#f4e6c8', css: 'var(--cream)', usage: '간판·로고 크림 글씨' },
+  lantern: { value: '#e8a54b', css: 'var(--lantern)', usage: '랜턴 앰버 글로우' },
+  chalk: { value: '#1e2420', css: 'var(--chalk)', usage: '칠판 배경' },
 }
 
 export const radius = {
@@ -23,5 +28,9 @@ export const typography = {
   font: {
     value: "'Segoe UI', 'Malgun Gothic', sans-serif",
     css: 'var(--font)',
+  },
+  titleMenu: {
+    value: "'Gowun Batang', 'Malgun Gothic', serif",
+    css: 'var(--font-title-menu)',
   },
 }

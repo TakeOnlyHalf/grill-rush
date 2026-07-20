@@ -81,6 +81,7 @@ export interface GameState {
 
 export type GameAction =
   | { type: 'START_GAME' }
+  | { type: 'LOAD_GAME'; payload: GameState }
   | { type: 'SET_LOCATION'; payload: LocationId }
   | { type: 'TOGGLE_MENU'; payload: MenuId }
   | { type: 'SET_MENU_PRICE'; payload: { menuId: MenuId; price: number } }
