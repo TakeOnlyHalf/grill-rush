@@ -44,7 +44,7 @@ jobs:
         run: |
           test -f dist/index.html
           grep -q '/grill-rush/assets/' dist/index.html
-          ! grep -q '/src/main.jsx' dist/index.html
+          ! grep -q '/src/main.' dist/index.html
           ls -la dist
 
       - name: Upload Pages artifact

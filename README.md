@@ -4,7 +4,7 @@
 
 ## 기술 스택
 
-- React 18 + Vite — UI·페이즈 라우팅·게임 상태
+- React 18 + Vite + **TypeScript** — UI·페이즈 라우팅·게임 상태
 - **PixiJS 8** — 거리 뷰·미니게임·스프라이트/연출 등 게임플레이 렌더
 - Howler.js (효과음·BGM)
 - Storybook 10 (디자인 시스템 / 컴포넌트 카탈로그)
@@ -19,8 +19,9 @@
 | React | 페이즈 화면, HUD, 상점/메뉴 UI, `GameContext` 상태 | `src/phases/`, `src/components/`, `src/state/` |
 | PixiJS | 거리 씬, 조리 미니게임, 애니메이션·판정 연출 | `src/pixi/` |
 
-- 공통 마운트: `src/pixi/PixiStage.jsx` (`Application` 생명주기)
-- 씬 팩토리: `src/pixi/scenes/*` (`createStreetScene`, `createTimingBarScene` …)
+- 공통 마운트: `src/pixi/PixiStage.tsx`
+- 씬 팩토리: `src/pixi/scenes/*`
+- 공유 타입: `src/types/game.ts`
 - 새 연출/미니게임은 HTML Canvas를 직접 쓰지 말고 Pixi 씬으로 추가하세요.
 
 ## 게임 흐름 (베이스)
@@ -65,7 +66,7 @@ npm run storybook
 - **Design System** — 컬러/타이포 토큰, `Button`, `Panel`
 - **Game** — HUD, LocationPicker 등 실제 게임 컴포넌트
 - 공통 스타일: `src/styles/game.css` (preview에서 전역 로드)
-- 토큰 소스: `src/ui/tokens.js` ↔ CSS `:root` 변수 동기화
+- 토큰 소스: `src/ui/tokens.ts` ↔ CSS `:root` 변수 동기화
 
 새 UI는 `src/ui/` 공통 컴포넌트를 우선 사용하고, 스토리를 함께 추가하세요.
 
@@ -74,7 +75,8 @@ npm run storybook
 | 명령 | 설명 |
 | --- | --- |
 | `npm run dev` | 개발 서버 |
-| `npm run build` | 프로덕션 빌드 |
+| `npm run typecheck` | TypeScript 검사 |
+| `npm run build` | `tsc` + 프로덕션 빌드 |
 | `npm run preview` | 빌드 미리보기 |
 | `npm run storybook` | Storybook (포트 6006) |
 | `npm run build-storybook` | Storybook 정적 빌드 |
@@ -82,4 +84,4 @@ npm run storybook
 
 ## 소스 구조
 
-핵심 진입점은 `src/App.jsx`, 상태는 `src/state/`, Pixi 게임 레이어는 `src/pixi/` 입니다.
+핵심 진입점은 `src/App.tsx`, 상태는 `src/state/`, Pixi 게임 레이어는 `src/pixi/` 입니다.
