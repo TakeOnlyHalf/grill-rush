@@ -2,7 +2,10 @@ import { useGame } from '../state/GameContext.jsx'
 import { ActionTypes } from '../state/actions.js'
 import Button from '../ui/Button.jsx'
 
-const TITLE_ART = `${import.meta.env.BASE_URL}images/title.png`
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`
+const TITLE_ART = `${base}images/title.png`
 
 /**
  * 타이틀 화면 — public/images/title.png 풀블리드 히어로

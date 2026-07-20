@@ -9,12 +9,15 @@ import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
+// Project site: https://TakeOnlyHalf.github.io/grill-rush/
+// configure-pages may set VITE_BASE to `/grill-rush` (no trailing slash)
+const rawBase = process.env.VITE_BASE || '/grill-rush/'
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`
+
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   plugins: [react()],
-  // Project site: https://TakeOnlyHalf.github.io/grill-rush/
-  // CI may override via VITE_BASE from actions/configure-pages
-  base: process.env.VITE_BASE || '/grill-rush/',
+  base,
   test: {
     projects: [{
       extends: true,
