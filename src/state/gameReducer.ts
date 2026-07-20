@@ -18,8 +18,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const weather = rollWeather()
       return {
         ...createInitialState(),
-        phase: 'prep',
+        phase: 'story',
         weather,
+      }
+    }
+
+    case ActionTypes.FINISH_STORY: {
+      if (state.phase !== 'story') return state
+      return {
+        ...state,
+        phase: 'prep',
       }
     }
 

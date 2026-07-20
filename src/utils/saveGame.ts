@@ -2,7 +2,7 @@ import type { GameState, Phase } from '../types/game'
 
 const SAVE_KEY = 'grill-rush:save:v1'
 
-const PHASES: Phase[] = ['title', 'prep', 'open', 'settle', 'night', 'ending']
+const PHASES: Phase[] = ['title', 'story', 'prep', 'open', 'settle', 'night', 'ending']
 
 export function hasSave(): boolean {
   try {
@@ -69,7 +69,7 @@ function sanitizeLoaded(state: GameState): GameState {
       orders: [],
     }
   }
-  if (state.phase === 'title' || state.phase === 'ending') {
+  if (state.phase === 'title' || state.phase === 'ending' || state.phase === 'story') {
     return {
       ...state,
       phase: 'prep',
