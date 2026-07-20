@@ -1,5 +1,5 @@
-import LocationPicker from './LocationPicker.jsx'
-import { withGame } from '../stories/decorators.jsx'
+import LocationPicker from '../components/LocationPicker.jsx'
+import { withGame } from './decorators.jsx'
 
 export default {
   title: 'Game/LocationPicker',

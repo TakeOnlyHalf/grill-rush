@@ -1,5 +1,5 @@
-import UpgradeShop from './UpgradeShop.jsx'
-import { withGame } from '../stories/decorators.jsx'
+import UpgradeShop from '../components/UpgradeShop.jsx'
+import { withGame } from './decorators.jsx'
 
 export default {
   title: 'Game/UpgradeShop',
