@@ -50,9 +50,20 @@ export const Typography = {
   render: () => (
     <div style={{ display: 'grid', gap: '1rem' }}>
       <h2 style={{ margin: 0 }}>Typography</h2>
-      <p style={{ margin: 0, color: 'var(--muted)' }}>font: {typography.font.value}</p>
-      <p className="title-brand" style={{ margin: 0, fontSize: '2.5rem' }}>
-        Grill Rush
+      <p style={{ margin: 0, color: 'var(--muted)' }}>UI: {typography.font.value}</p>
+      <p style={{ margin: 0, color: 'var(--muted)' }}>
+        Title menu: {typography.titleMenu.value}
+      </p>
+      <p
+        style={{
+          margin: 0,
+          fontFamily: 'var(--font-title-menu)',
+          fontSize: '1.5rem',
+          color: 'var(--cream)',
+          letterSpacing: '0.12em',
+        }}
+      >
+        이어서 하기 · 처음부터 · 옵션
       </p>
       <h2 style={{ margin: 0 }}>준비 페이즈</h2>
       <p style={{ margin: 0 }}>본문 텍스트 — 손님을 요리로 사로잡아라.</p>

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useGame, startNewGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
-import Button from '../ui/Button'
+import TitleMenuButton from '../ui/TitleMenuButton'
 import OptionsModal from '../components/OptionsModal'
 import { hasSave, loadGame } from '../utils/saveGame'
 
@@ -41,28 +41,15 @@ export default function TitlePhase() {
       <div className="title-stage">
         <img className="title-art" src={TITLE_ART} alt="" decoding="async" />
         <h1 className="visually-hidden">Grill Rush — Food Truck Tycoon</h1>
-        <div className="title-actions">
-          <Button
-            className="title-menu-btn title-menu-btn--primary"
-            disabled={!canContinue}
-            onClick={handleContinue}
-          >
+        <nav className="title-actions" aria-label="타이틀 메뉴">
+          <TitleMenuButton disabled={!canContinue} onClick={handleContinue}>
             이어서 하기
-          </Button>
-          <Button
-            className="title-menu-btn title-menu-btn--primary"
-            onClick={handleNewGame}
-          >
-            처음부터
-          </Button>
-          <Button
-            className="title-menu-btn"
-            variant="secondary"
-            onClick={() => setOptionsOpen(true)}
-          >
+          </TitleMenuButton>
+          <TitleMenuButton onClick={handleNewGame}>처음부터</TitleMenuButton>
+          <TitleMenuButton variant="chalk" onClick={() => setOptionsOpen(true)}>
             옵션
-          </Button>
-        </div>
+          </TitleMenuButton>
+        </nav>
       </div>
       <OptionsModal open={optionsOpen} onClose={() => setOptionsOpen(false)} />
     </section>

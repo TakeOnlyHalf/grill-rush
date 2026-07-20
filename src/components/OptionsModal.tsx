@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import Button from '../ui/Button'
+import TitleMenuButton from '../ui/TitleMenuButton'
 import { loadSettings, saveSettings, type GameSettings } from '../utils/settings'
 
 interface OptionsModalProps {
@@ -65,11 +65,11 @@ export default function OptionsModal({ open, onClose }: OptionsModalProps) {
             </label>
           </li>
         </ul>
-        <p className="muted options-hint">사운드 엔진 연동 전 — 설정만 저장됩니다.</p>
+        <p className="options-hint">사운드 엔진 연동 전 — 설정만 저장됩니다.</p>
         <div className="modal-actions">
-          <Button variant="primary" onClick={onClose}>
+          <TitleMenuButton variant="chalk" onClick={onClose}>
             닫기
-          </Button>
+          </TitleMenuButton>
         </div>
       </div>
     </div>
