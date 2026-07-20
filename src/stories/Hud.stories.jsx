@@ -1,5 +1,5 @@
-import Hud from './Hud.jsx'
-import { withGame } from '../stories/decorators.jsx'
+import Hud from '../components/Hud.jsx'
+import { withGame } from './decorators.jsx'
 
 export default {
   title: 'Game/Hud',

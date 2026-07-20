@@ -1,5 +1,5 @@
-import TitlePhase from './TitlePhase.jsx'
-import { withGame } from '../stories/decorators.jsx'
+import TitlePhase from '../phases/TitlePhase.jsx'
+import { withGame } from './decorators.jsx'
 
 export default {
   title: 'Game/Phases/Title',
