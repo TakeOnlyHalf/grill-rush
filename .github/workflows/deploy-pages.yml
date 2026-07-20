@@ -21,10 +21,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install
@@ -32,6 +36,16 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Ensure Vite production base matches the project Pages path
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}
+
+      - name: Verify build output
+        run: |
+          test -f dist/index.html
+          grep -q '/grill-rush/assets/' dist/index.html
+          ! grep -q '/src/main.jsx' dist/index.html
+          ls -la dist
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

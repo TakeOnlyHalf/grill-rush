@@ -10,11 +10,11 @@ import { playwright } from '@vitest/browser-playwright';
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   plugins: [react()],
-  // Project Pages: https://TakeOnlyHalf.github.io/grill-rush/
-  // production (build/preview) uses repo subpath; dev keeps '/'
-  base: mode === 'production' ? '/grill-rush/' : '/',
+  // Project site: https://TakeOnlyHalf.github.io/grill-rush/
+  // CI may override via VITE_BASE from actions/configure-pages
+  base: process.env.VITE_BASE || '/grill-rush/',
   test: {
     projects: [{
       extends: true,
@@ -37,4 +37,4 @@ export default defineConfig(({ mode }) => ({
       }
     }]
   }
-}));
+});
