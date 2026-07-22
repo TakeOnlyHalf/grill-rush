@@ -29,8 +29,8 @@ export const colors: Record<string, ColorToken> = {
 }
 
 /**
- * 낮(Day) 팔레트 — Story / day_street 톤
- * Design System/Story 와 `.phase-story`에서 사용
+ * Default(Day) 팔레트 — Story / Prep / day_street 톤
+ * Design System/Story·Prep 와 `.phase-story`, `.phase-prep`에서 사용
  */
 export const dayColors: Record<string, ColorToken> = {
   sky: { value: '#78c1f3', css: 'var(--day-sky)', usage: '하늘·스테이지 폴백' },

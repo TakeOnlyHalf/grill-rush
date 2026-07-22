@@ -526,7 +526,59 @@ body {
   }
 }
 
-/* Prep */
+/* Prep — Colors (Default) / day 팔레트 */
+body:has(.phase-prep) {
+  color: var(--day-ink);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.55) 0%, transparent 50%),
+    linear-gradient(180deg, var(--day-sky) 0%, var(--day-sky-soft) 48%, #e8f2f6 100%);
+}
+
+.phase-prep {
+  --bg: var(--day-frost);
+  --bg-panel: var(--day-panel);
+  --bg-panel-2: rgba(255, 255, 255, 0.92);
+  --text: var(--day-ink);
+  --muted: var(--day-muted);
+  --accent: var(--day-seafoam);
+  --accent-2: var(--day-seafoam-deep);
+  --ok: var(--day-leaf);
+  --border: var(--day-panel-edge);
+  --danger: var(--day-roof);
+  color: var(--text);
+}
+
+.phase-prep .panel {
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(44, 58, 74, 0.08);
+}
+
+.phase-prep .hud {
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(44, 58, 74, 0.06);
+}
+
+.phase-prep .picker-item {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.phase-prep .picker-item.selected {
+  background: rgba(91, 176, 176, 0.16);
+}
+
+.phase-prep .price-field input {
+  background: var(--day-frost);
+}
+
+.phase-prep .btn {
+  color: #fff;
+}
+
+.phase-prep .btn-secondary {
+  color: var(--day-ink);
+  background: rgba(255, 255, 255, 0.55);
+}
+
 .prep-grid {
   display: grid;
   grid-template-columns: 1fr 1.1fr 1.2fr;

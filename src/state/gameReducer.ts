@@ -1,4 +1,4 @@
-﻿import locations from '../data/locations.json'
+import locations from '../data/locations.json'
 import {
   ActionTypes,
   DAILY_TRUCK_COST,
@@ -18,7 +18,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const weather = rollWeather()
       return {
         ...createInitialState(),
-        phase: 'story',
+        phase: 'prep',
         weather,
       }
     }
