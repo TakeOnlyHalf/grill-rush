@@ -40,7 +40,7 @@ function StageDemo(props: VisualNovelStageProps) {
           placeItems: 'center',
           color: 'var(--vn-ink)',
           background:
-            'linear-gradient(180deg, #78c1f3 0%, #c5dde8 100%)',
+            'linear-gradient(180deg, var(--day-sky) 0%, var(--day-sky-soft) 100%)',
         }}
       >
         스토리 종료 (게임에서는 준비 페이즈로 이동)

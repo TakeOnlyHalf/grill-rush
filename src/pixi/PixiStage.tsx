@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Application } from 'pixi.js'
+import { colors } from '../ui/tokens'
 
 /**
  * init() 완료 전에 destroy하면 ResizePlugin이 _cancelResize 미할당 상태로 크래시한다.
@@ -29,7 +30,7 @@ export default function PixiStage({
   className,
   width = 640,
   height = 180,
-  background = '#2a211c',
+  background = colors.bgPanel2.value,
   setup,
 }: PixiStageProps): ReactNode {
   const hostRef = useRef<HTMLDivElement | null>(null)

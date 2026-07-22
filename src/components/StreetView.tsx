@@ -34,7 +34,6 @@ export default function StreetView() {
       <PixiStage
         className="street-pixi"
         height={160}
-        background="#2a211c"
         setup={setup}
       />
       <p className="todo-note">

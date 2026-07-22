@@ -1,4 +1,4 @@
-import { colors, dayColors, radius, typography } from '../ui/tokens'
+import { colors, dayColors, cookColors, radius, shadow, typography } from '../ui/tokens'
 import type { ColorToken } from '../ui/tokens'
 
 function ColorGrid({
@@ -24,42 +24,25 @@ function ColorGrid({
           <div
             key={name}
             style={{
-              border: light
-                ? '1px solid var(--day-panel-edge)'
-                : '1px solid var(--border)',
+              border: '1px solid var(--border)',
               borderRadius: 'var(--radius)',
               overflow: 'hidden',
               background: light ? 'var(--day-frost)' : 'var(--bg-panel)',
-              color: light ? 'var(--day-ink)' : 'var(--text)',
+              color: 'var(--text)',
+              boxShadow: 'var(--shadow-sm)',
             }}
           >
             <div
               style={{
                 height: 64,
                 background: token.value,
-                borderBottom: light
-                  ? '1px solid rgba(91, 176, 176, 0.25)'
-                  : undefined,
+                borderBottom: '1px solid var(--border)',
               }}
             />
             <div style={{ padding: '0.5rem 0.65rem', fontSize: 13 }}>
               <strong>{name}</strong>
-              <div
-                style={{
-                  color: light ? 'var(--day-muted)' : 'var(--muted)',
-                  wordBreak: 'break-all',
-                }}
-              >
-                {token.value}
-              </div>
-              <div
-                style={{
-                  color: light ? 'var(--day-muted)' : 'var(--muted)',
-                  fontSize: 12,
-                }}
-              >
-                {token.usage}
-              </div>
+              <div style={{ color: 'var(--muted)', wordBreak: 'break-all' }}>{token.value}</div>
+              <div style={{ color: 'var(--muted)', fontSize: 12 }}>{token.usage}</div>
             </div>
           </div>
         ))}
@@ -74,7 +57,7 @@ export default {
     docs: {
       description: {
         component:
-          'Grill Rush 디자인 토큰. Default(낮/Story)와 Night(그릴/타이틀) 팔레트를 분리합니다. CSS는 `game.css` `:root`와 동기화.',
+          'Grill Rush Cozy Pastel 토큰. Default는 전역 게임 UI, Story는 VN/거리용. CSS `:root`와 동기화됩니다.',
       },
     },
   },
@@ -83,6 +66,13 @@ export default {
 export const DefaultColors = {
   name: 'Colors (Default)',
   render: () => (
+    <ColorGrid title="Default — Cozy Pastel (전역 UI)" palette={colors} />
+  ),
+}
+
+export const StoryColors = {
+  name: 'Colors (Story)',
+  render: () => (
     <div
       style={{
         padding: '1rem',
@@ -90,14 +80,14 @@ export const DefaultColors = {
         background: 'linear-gradient(180deg, var(--day-sky), var(--day-sky-soft))',
       }}
     >
-      <ColorGrid title="Default — Story / day_street" palette={dayColors} light />
+      <ColorGrid title="Story — Outdoor / day_street" palette={dayColors} light />
     </div>
   ),
 }
 
-export const NightColors = {
-  name: 'Colors (Night)',
-  render: () => <ColorGrid title="Night — Grill / Title" palette={colors} />,
+export const CookColors = {
+  name: 'Colors (Cook)',
+  render: () => <ColorGrid title="Cook states — 조리 상태" palette={cookColors} />,
 }
 
 export const Typography = {
@@ -113,7 +103,7 @@ export const Typography = {
           margin: 0,
           fontFamily: 'var(--font-title-menu)',
           fontSize: '1.5rem',
-          color: 'var(--cream)',
+          color: 'var(--text)',
           letterSpacing: '0.12em',
         }}
       >
@@ -130,19 +120,46 @@ export const Typography = {
 
 export const Radius = {
   render: () => (
-    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-      <div
-        style={{
-          width: 80,
-          height: 80,
-          background: 'var(--accent)',
-          borderRadius: radius.default.value,
-        }}
-      />
-      <div>
-        <strong>default</strong>
-        <div style={{ color: 'var(--muted)' }}>{radius.default.value}</div>
-      </div>
+    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+      {Object.entries(radius).map(([name, token]) => (
+        <div key={name} style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              background: 'var(--accent)',
+              borderRadius: token.value,
+              boxShadow: 'var(--shadow-sm)',
+            }}
+          />
+          <strong>{name}</strong>
+          <div style={{ color: 'var(--muted)' }}>{token.value}</div>
+        </div>
+      ))}
+    </div>
+  ),
+}
+
+export const Shadow = {
+  render: () => (
+    <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
+      {Object.entries(shadow).map(([name, token]) => (
+        <div
+          key={name}
+          style={{
+            width: 120,
+            height: 80,
+            borderRadius: 'var(--radius)',
+            background: 'var(--bg-panel)',
+            boxShadow: token.value,
+            display: 'grid',
+            placeItems: 'center',
+            border: '1px solid var(--border)',
+          }}
+        >
+          {name}
+        </div>
+      ))}
     </div>
   ),
 }

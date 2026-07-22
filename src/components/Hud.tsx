@@ -15,7 +15,7 @@ export default function Hud({ variant = 'default' }: HudProps) {
       <span>
         Day {state.day}/{state.maxDays}
       </span>
-      <span>₩{state.cash.toLocaleString('ko-KR')}</span>
+      <span className="hud-cash">₩{state.cash.toLocaleString('ko-KR')}</span>
       <span>명성 {state.fame}</span>
       <span>
         {getWeatherEmoji(state.weather)} {getWeatherLabel(state.weather)}
