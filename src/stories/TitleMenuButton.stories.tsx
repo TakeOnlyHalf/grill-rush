@@ -11,11 +11,19 @@ const meta = {
     docs: {
       description: {
         component:
-          'title_day 톤 — 밝은 나무 이정표(`wood`)와 양피지 배너(`chalk`).',
+          '타이틀 메뉴 버튼 — 종이/천 질감, 따뜻한 갈색 외곽선, primary/secondary/tertiary 계층.',
       },
     },
   },
   argTypes: {
+    tone: {
+      control: 'select',
+      options: ['primary', 'secondary', 'tertiary'],
+    },
+    icon: {
+      control: 'select',
+      options: ['none', 'continue', 'new', 'options'],
+    },
     variant: {
       control: 'select',
       options: ['wood', 'chalk'],
@@ -24,12 +32,14 @@ const meta = {
   },
   args: {
     children: '이어서 하기',
-    variant: 'wood',
+    tone: 'primary',
+    icon: 'continue',
     disabled: false,
   },
   decorators: [
     (Story) => (
       <div className="title-stage title-stage--story">
+        <img className="title-art-bleed" src={TITLE_DAY_ART} alt="" aria-hidden />
         <img className="title-art" src={TITLE_DAY_ART} alt="" />
         <div className="title-actions">
           <Story />
@@ -42,11 +52,20 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Wood: Story = {}
+export const Primary: Story = {}
 
-export const Chalk: Story = {
+export const Secondary: Story = {
   args: {
-    variant: 'chalk',
+    tone: 'secondary',
+    icon: 'new',
+    children: '처음부터',
+  },
+}
+
+export const Tertiary: Story = {
+  args: {
+    tone: 'tertiary',
+    icon: 'options',
     children: '옵션',
   },
 }
@@ -61,15 +80,21 @@ export const Disabled: Story = {
 export const TitleMenu: Story = {
   render: () => (
     <>
-      <TitleMenuButton disabled>이어서 하기</TitleMenuButton>
-      <TitleMenuButton>처음부터</TitleMenuButton>
-      <TitleMenuButton variant="chalk">옵션</TitleMenuButton>
+      <TitleMenuButton tone="primary" icon="continue">
+        이어서 하기
+      </TitleMenuButton>
+      <TitleMenuButton tone="secondary" icon="new">
+        처음부터
+      </TitleMenuButton>
+      <TitleMenuButton tone="tertiary" icon="options">
+        옵션
+      </TitleMenuButton>
     </>
   ),
   parameters: {
     docs: {
       description: {
-        story: '타이틀 화면에 배치되는 실제 메뉴 구성',
+        story: '저장 데이터가 있을 때의 타이틀 메뉴 계층',
       },
     },
   },
