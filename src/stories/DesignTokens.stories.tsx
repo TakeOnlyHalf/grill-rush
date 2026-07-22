@@ -74,19 +74,14 @@ export default {
     docs: {
       description: {
         component:
-          'Grill Rush 디자인 토큰. 기본(그릴)과 낮(Day/Story) 팔레트를 분리합니다. CSS는 `game.css` `:root`와 동기화.',
+          'Grill Rush 디자인 토큰. Default(낮/Story)와 Night(그릴/타이틀) 팔레트를 분리합니다. CSS는 `game.css` `:root`와 동기화.',
       },
     },
   },
 }
 
-export const Colors = {
+export const DefaultColors = {
   name: 'Colors (Default)',
-  render: () => <ColorGrid title="Default — Grill / Title" palette={colors} />,
-}
-
-export const DayColors = {
-  name: 'Colors (Day)',
   render: () => (
     <div
       style={{
@@ -95,9 +90,14 @@ export const DayColors = {
         background: 'linear-gradient(180deg, var(--day-sky), var(--day-sky-soft))',
       }}
     >
-      <ColorGrid title="Day — Story / day_street" palette={dayColors} light />
+      <ColorGrid title="Default — Story / day_street" palette={dayColors} light />
     </div>
   ),
+}
+
+export const NightColors = {
+  name: 'Colors (Night)',
+  render: () => <ColorGrid title="Night — Grill / Title" palette={colors} />,
 }
 
 export const Typography = {
