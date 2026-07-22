@@ -582,14 +582,14 @@ export function createPrepCityScene(
   const districtLabels: Text[] = []
 
   function layoutToScreen() {
-    // 콘텐츠 비율 유지(contain). CSS로 버퍼를 늘리지 않고 렌더러 해상도로 맞춤 → 라벨 선명
+    // 콘텐츠 비율 유지(contain). 좌우 중앙 · 하단 정렬
     const s = Math.min(
       app.screen.width / DESIGN_W,
       app.screen.height / DESIGN_H,
     )
     root.scale.set(s)
-    root.x = 0
-    root.y = (app.screen.height - DESIGN_H * s) / 2
+    root.x = (app.screen.width - DESIGN_W * s) / 2
+    root.y = app.screen.height - DESIGN_H * s
     const res = Math.max(2, (window.devicePixelRatio || 1) * s)
     for (const t of districtLabels) {
       t.resolution = res
