@@ -51,8 +51,7 @@ export default function CityMap() {
   return (
     <PixiStage
       className="prep-city-bg"
-      width={1280}
-      height={720}
+      fillParent
       background="#4890d0"
       setup={setup}
     />

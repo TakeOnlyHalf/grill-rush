@@ -308,6 +308,13 @@ interface DistrictDef {
 
 const GROUND_Y = 530
 
+/** 좌측 스테이징(빈 공간) — 트럭이 처음 대기하는 구역 */
+export const STAGE_LEFT = 280
+/** 구역 콘텐츠 폭 (기존 맵 스케일 유지) */
+export const CONTENT_W = 1280
+export const DESIGN_W = STAGE_LEFT + CONTENT_W
+export const DESIGN_H = 720
+
 const DISTRICTS: DistrictDef[] = [
   {
     id: 'park',
@@ -563,14 +570,33 @@ export function createPrepCityScene(
   initial: PrepCityState,
   onSelect: (id: string) => void,
 ): PrepCityHandle {
-  const W = app.screen.width
-  const H = app.screen.height
+  const W = DESIGN_W
+  const H = DESIGN_H
+  const textRes = Math.min(window.devicePixelRatio || 1, 2) * 2
 
   const root = new Container()
   app.stage.addChild(root)
 
   const state = { ...initial }
   let elapsed = 0
+  const districtLabels: Text[] = []
+
+  function layoutToScreen() {
+    // 콘텐츠 비율 유지(contain). CSS로 버퍼를 늘리지 않고 렌더러 해상도로 맞춤 → 라벨 선명
+    const s = Math.min(
+      app.screen.width / DESIGN_W,
+      app.screen.height / DESIGN_H,
+    )
+    root.scale.set(s)
+    root.x = 0
+    root.y = (app.screen.height - DESIGN_H * s) / 2
+    const res = Math.max(2, (window.devicePixelRatio || 1) * s)
+    for (const t of districtLabels) {
+      t.resolution = res
+    }
+  }
+  const onResize = () => layoutToScreen()
+  app.renderer.on('resize', onResize)
 
   /* ── Sky ─────────────────────────────────────── */
   const skyG = new Graphics()
@@ -580,11 +606,11 @@ export function createPrepCityScene(
   root.addChild(skyG)
 
   const sunG = new Graphics()
-  sunG.circle(W * 0.82, H * 0.32, 50)
+  sunG.circle(STAGE_LEFT + CONTENT_W * 0.82, H * 0.32, 50)
   sunG.fill({ color: 0xfff8e0, alpha: 0.3 })
-  sunG.circle(W * 0.82, H * 0.32, 30)
+  sunG.circle(STAGE_LEFT + CONTENT_W * 0.82, H * 0.32, 30)
   sunG.fill({ color: 0xfff0c0, alpha: 0.4 })
-  sunG.circle(W * 0.82, H * 0.32, 14)
+  sunG.circle(STAGE_LEFT + CONTENT_W * 0.82, H * 0.32, 14)
   sunG.fill({ color: 0xfffff0, alpha: 0.8 })
   root.addChild(sunG)
 
@@ -596,11 +622,12 @@ export function createPrepCityScene(
     speed: number
   }
   const clouds: CloudData[] = [
-    { x: 120, y: H * 0.1, s: 1.4, speed: 6 },
-    { x: 400, y: H * 0.06, s: 1.0, speed: 4 },
-    { x: 700, y: H * 0.14, s: 1.2, speed: 5 },
-    { x: 950, y: H * 0.08, s: 0.9, speed: 7 },
-    { x: 1180, y: H * 0.12, s: 1.1, speed: 3 },
+    { x: 80, y: H * 0.12, s: 1.1, speed: 5 },
+    { x: STAGE_LEFT + 120, y: H * 0.1, s: 1.4, speed: 6 },
+    { x: STAGE_LEFT + 400, y: H * 0.06, s: 1.0, speed: 4 },
+    { x: STAGE_LEFT + 700, y: H * 0.14, s: 1.2, speed: 5 },
+    { x: STAGE_LEFT + 950, y: H * 0.08, s: 0.9, speed: 7 },
+    { x: STAGE_LEFT + 1180, y: H * 0.12, s: 1.1, speed: 3 },
   ]
   const cloudContainer = new Container()
   const cloudG = new Graphics()
@@ -616,11 +643,12 @@ export function createPrepCityScene(
 
   /* ── Mountains ───────────────────────────────── */
   const mtG = new Graphics()
-  drawMountain(mtG, 150, H * 0.42, 300, 60, P.mtFar)
-  drawMountain(mtG, 450, H * 0.42, 250, 45, P.mtAccent)
-  drawMountain(mtG, 700, H * 0.42, 350, 70, P.mtFar)
-  drawMountain(mtG, 1000, H * 0.42, 280, 55, P.mtNear)
-  drawMountain(mtG, 1200, H * 0.42, 200, 40, P.mtAccent)
+  drawMountain(mtG, 100, H * 0.42, 220, 40, P.mtAccent)
+  drawMountain(mtG, STAGE_LEFT + 150, H * 0.42, 300, 60, P.mtFar)
+  drawMountain(mtG, STAGE_LEFT + 450, H * 0.42, 250, 45, P.mtAccent)
+  drawMountain(mtG, STAGE_LEFT + 700, H * 0.42, 350, 70, P.mtFar)
+  drawMountain(mtG, STAGE_LEFT + 1000, H * 0.42, 280, 55, P.mtNear)
+  drawMountain(mtG, STAGE_LEFT + 1200, H * 0.42, 200, 40, P.mtAccent)
   root.addChild(mtG)
 
   /* ── Ground base ─────────────────────────────── */
@@ -640,23 +668,33 @@ export function createPrepCityScene(
 
   root.addChild(groundG)
 
+  /* ── Staging area (left empty bay) ───────────── */
+  const stageG = new Graphics()
+  drawRoundTree(stageG, 55, GROUND_Y, 70, 18)
+  drawPineTree(stageG, 130, GROUND_Y, 55)
+  drawSmallTree(stageG, 200, GROUND_Y)
+  // 주차/대기 표시
+  stageG.roundRect(STAGE_LEFT * 0.5 - 28, GROUND_Y + 14, 56, 28, 4)
+  stageG.stroke({ width: 2, color: P.roadLine, alpha: 0.7 })
+  root.addChild(stageG)
+
   /* ── Far background buildings (atmospheric) ──── */
   const farG = new Graphics()
   const farBuildings = [
-    { x: 60, w: 25, h: 50 },
-    { x: 120, w: 30, h: 70 },
-    { x: 200, w: 20, h: 45 },
-    { x: 340, w: 35, h: 90 },
-    { x: 400, w: 25, h: 65 },
-    { x: 500, w: 30, h: 55 },
-    { x: 580, w: 40, h: 80 },
-    { x: 650, w: 20, h: 60 },
-    { x: 750, w: 35, h: 75 },
-    { x: 840, w: 25, h: 50 },
-    { x: 920, w: 30, h: 85 },
-    { x: 1050, w: 25, h: 55 },
-    { x: 1130, w: 35, h: 70 },
-    { x: 1200, w: 20, h: 45 },
+    { x: STAGE_LEFT + 60, w: 25, h: 50 },
+    { x: STAGE_LEFT + 120, w: 30, h: 70 },
+    { x: STAGE_LEFT + 200, w: 20, h: 45 },
+    { x: STAGE_LEFT + 340, w: 35, h: 90 },
+    { x: STAGE_LEFT + 400, w: 25, h: 65 },
+    { x: STAGE_LEFT + 500, w: 30, h: 55 },
+    { x: STAGE_LEFT + 580, w: 40, h: 80 },
+    { x: STAGE_LEFT + 650, w: 20, h: 60 },
+    { x: STAGE_LEFT + 750, w: 35, h: 75 },
+    { x: STAGE_LEFT + 840, w: 25, h: 50 },
+    { x: STAGE_LEFT + 920, w: 30, h: 85 },
+    { x: STAGE_LEFT + 1050, w: 25, h: 55 },
+    { x: STAGE_LEFT + 1130, w: 35, h: 70 },
+    { x: STAGE_LEFT + 1200, w: 20, h: 45 },
   ]
   for (const b of farBuildings) {
     const by = H * 0.42 + 30
@@ -665,10 +703,21 @@ export function createPrepCityScene(
   }
   root.addChild(farG)
 
-  /* ── Districts ───────────────────────────────── */
+  /* ── Districts (기존 좌표 스케일 유지, 좌측 오프셋) ─ */
+  const cityLayer = new Container()
+  cityLayer.x = STAGE_LEFT
+  root.addChild(cityLayer)
+
   const districtContainers = new Map<string, Container>()
   const districtGlows = new Map<string, Graphics>()
   const districtOverlays = new Map<string, Container>()
+
+  const stagingX = STAGE_LEFT * 0.5
+  function getDistrictCenter(id: string): number {
+    const d = DISTRICTS.find((dd) => dd.id === id)
+    return d ? STAGE_LEFT + (d.left + d.right) / 2 : stagingX
+  }
+  let truckTargetX = stagingX
 
   for (const d of DISTRICTS) {
     const c = new Container()
@@ -681,26 +730,28 @@ export function createPrepCityScene(
     districtGlows.set(d.id, glow)
 
     const labelBg = new Graphics()
-    const labelW = d.name.length * 14 + 20
+    const labelW = d.name.length * 16 + 36
     const labelX = (d.left + d.right) / 2 - labelW / 2
     const labelY = GROUND_Y + 64
-    labelBg.roundRect(labelX, labelY, labelW, 26, 13)
+    labelBg.roundRect(labelX, labelY, labelW, 28, 14)
     labelBg.fill({ color: P.labelBg, alpha: 0.55 })
     c.addChild(labelBg)
 
     const label = new Text({
       text: `${d.icon} ${d.name}`,
+      resolution: textRes,
       style: {
         fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-        fontSize: 13,
+        fontSize: 15,
         fontWeight: 'bold',
         fill: P.labelTxt,
       },
     })
     label.anchor.set(0.5, 0.5)
     label.x = (d.left + d.right) / 2
-    label.y = labelY + 13
+    label.y = labelY + 14
     c.addChild(label)
+    districtLabels.push(label)
 
     const overlay = new Container()
     const oBg = new Graphics()
@@ -710,6 +761,7 @@ export function createPrepCityScene(
 
     const lockTxt = new Text({
       text: `Day ${d.unlockDay} 해금`,
+      resolution: textRes,
       style: {
         fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
         fontSize: 16,
@@ -721,6 +773,7 @@ export function createPrepCityScene(
     lockTxt.x = (d.left + d.right) / 2
     lockTxt.y = GROUND_Y - 80
     overlay.addChild(lockTxt)
+    districtLabels.push(lockTxt)
 
     const lcx = (d.left + d.right) / 2
     const lcy = GROUND_Y - 120
@@ -729,8 +782,7 @@ export function createPrepCityScene(
     lockBody.roundRect(lcx - 10, lcy, 20, 16, 4)
     lockBody.fill(P.labelTxt)
 
-    // 고리는 별도 Graphics — 같은 객체에서 fill 후 stroke 하면
-    // roundRect 끝점이 arc와 이어져 좌상단으로 선이 남는 문제 방지
+    // 고리는 별도 Graphics — fill 후 stroke 경로 이어짐 방지
     const lockShackle = new Graphics()
     lockShackle.arc(lcx, lcy, 9, Math.PI, 0)
     lockShackle.stroke({ width: 3, color: P.labelTxt })
@@ -746,6 +798,7 @@ export function createPrepCityScene(
 
     c.on('pointerdown', () => {
       if (state.unlockedLocations.includes(d.id)) {
+        truckTargetX = getDistrictCenter(d.id)
         onSelect(d.id)
       }
     })
@@ -773,7 +826,7 @@ export function createPrepCityScene(
       }
     })
 
-    root.addChild(c)
+    cityLayer.addChild(c)
     districtContainers.set(d.id, c)
   }
 
@@ -784,12 +837,13 @@ export function createPrepCityScene(
   drawPineTree(scatterG, 500, GROUND_Y, 50)
   drawSmallTree(scatterG, 760, GROUND_Y)
   drawSmallTree(scatterG, 1005, GROUND_Y)
-  root.addChild(scatterG)
+  cityLayer.addChild(scatterG)
 
   /* ── Truck marker ────────────────────────────── */
   const truckContainer = new Container()
   drawTruck(truckContainer, 0, 0)
   truckContainer.y = GROUND_Y + 22
+  truckContainer.x = stagingX
   root.addChild(truckContainer)
 
   /* ── Particles (floating leaves) ─────────────── */
@@ -817,14 +871,6 @@ export function createPrepCityScene(
 
   /* ── State helpers ───────────────────────────── */
 
-  function getDistrictCenter(id: string): number {
-    const d = DISTRICTS.find((dd) => dd.id === id)
-    return d ? (d.left + d.right) / 2 : W / 2
-  }
-
-  let truckTargetX = getDistrictCenter(state.selectedLocation)
-  truckContainer.x = truckTargetX
-
   function refreshStates() {
     for (const d of DISTRICTS) {
       const unlocked = state.unlockedLocations.includes(d.id)
@@ -846,8 +892,9 @@ export function createPrepCityScene(
         )
       }
     }
-    truckTargetX = getDistrictCenter(state.selectedLocation)
   }
+
+  layoutToScreen()
 
   /* ── Ticker ──────────────────────────────────── */
   const onTick = (ticker: Ticker) => {
@@ -899,6 +946,7 @@ export function createPrepCityScene(
       let changed = false
       if (next.selectedLocation !== undefined && next.selectedLocation !== state.selectedLocation) {
         state.selectedLocation = next.selectedLocation
+        truckTargetX = getDistrictCenter(next.selectedLocation)
         changed = true
       }
       if (next.unlockedLocations !== undefined) {
@@ -909,6 +957,7 @@ export function createPrepCityScene(
       if (changed) refreshStates()
     },
     destroy() {
+      app.renderer.off('resize', onResize)
       app.ticker.remove(onTick)
       root.destroy({ children: true })
     },
