@@ -1,5 +1,6 @@
 import { Container, Graphics, Text, type Application, type Ticker } from 'pixi.js'
 import { PIXI_COLORS } from '../colors'
+import { createFoxWorkerSprite, loadFoxWorkerFrames, type FoxWorkerFrames } from '../sprites/foxWorker'
 
 export interface StreetSceneState {
   customerCount?: number
@@ -38,6 +39,14 @@ export function createStreetScene(
   let customerCount = initial.customerCount ?? 0
   let locationLabel = initial.locationLabel ?? ''
   let elapsed = 0
+  let foxFrames: FoxWorkerFrames | null = null
+  let destroyed = false
+
+  loadFoxWorkerFrames().then((frames) => {
+    if (destroyed) return
+    foxFrames = frames
+    rebuildCrowd(app.screen.width, app.screen.height)
+  })
 
   function layout() {
     const w = app.screen.width
@@ -76,17 +85,27 @@ export function createStreetScene(
     crowdLayer.removeChildren()
     const n = Math.min(8, Math.max(0, customerCount))
     const baseY = h * 0.62 - 8
+    const frames = foxFrames
     for (let i = 0; i < n; i += 1) {
-      const person = new Graphics()
-      const shade = i % 2 === 0 ? PIXI_COLORS.crowd : PIXI_COLORS.muted
-      person.circle(0, -18, 7)
-      person.fill(shade)
-      person.roundRect(-6, -10, 12, 22, 3)
-      person.fill(shade)
-      person.x = 28 + i * 36
-      person.y = baseY
-      person.pivot.y = 0
-      crowdLayer.addChild(person)
+      if (frames) {
+        const { sprite } = createFoxWorkerSprite(frames, 'idle')
+        sprite.height = 34
+        sprite.width = 34 * (sprite.texture.width / sprite.texture.height)
+        sprite.x = 28 + i * 36
+        sprite.y = baseY
+        crowdLayer.addChild(sprite)
+      } else {
+        const person = new Graphics()
+        const shade = i % 2 === 0 ? PIXI_COLORS.crowd : PIXI_COLORS.muted
+        person.circle(0, -18, 7)
+        person.fill(shade)
+        person.roundRect(-6, -10, 12, 22, 3)
+        person.fill(shade)
+        person.x = 28 + i * 36
+        person.y = baseY
+        person.pivot.y = 0
+        crowdLayer.addChild(person)
+      }
     }
   }
 
@@ -115,6 +134,7 @@ export function createStreetScene(
   return {
     update,
     destroy() {
+      destroyed = true
       app.ticker.remove(onTick)
       root.destroy({ children: true })
     },

@@ -37,9 +37,7 @@ export default function StreetView() {
         background="#2a211c"
         setup={setup}
       />
-      <p className="todo-note">
-        TODO: 손님 스프라이트 · 날씨 · 트럭 업그레이드 비주얼
-      </p>
+      <p className="todo-note">TODO: 날씨 · 트럭 업그레이드 비주얼</p>
     </div>
   )
 }
