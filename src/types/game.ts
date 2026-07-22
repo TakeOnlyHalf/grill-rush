@@ -1,6 +1,6 @@
 /** 공유 게임 도메인 타입 */
 
-export type Phase = 'title' | 'prep' | 'open' | 'settle' | 'night' | 'ending'
+export type Phase = 'title' | 'story' | 'prep' | 'open' | 'settle' | 'night' | 'ending'
 
 export type WeatherId = 'sunny' | 'cloudy' | 'rain' | 'snow' | 'clear'
 
@@ -81,6 +81,7 @@ export interface GameState {
 
 export type GameAction =
   | { type: 'START_GAME' }
+  | { type: 'FINISH_STORY' }
   | { type: 'LOAD_GAME'; payload: GameState }
   | { type: 'SET_LOCATION'; payload: LocationId }
   | { type: 'TOGGLE_MENU'; payload: MenuId }

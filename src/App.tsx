@@ -1,5 +1,6 @@
 import { GameProvider, useGameState } from './state/GameContext'
 import TitlePhase from './phases/TitlePhase'
+import StoryPhase from './phases/StoryPhase'
 import PrepPhase from './phases/PrepPhase'
 import OpenPhase from './phases/OpenPhase'
 import SettlePhase from './phases/SettlePhase'
@@ -9,7 +10,8 @@ import './styles/game.css'
 
 /**
  * 페이즈 라우팅
- * title → prep → open → settle → night → (next day prep…) → ending
+ * title → prep → open → settle → night → … → ending
+ * (오프닝 스토리는 건너뛰고 본 게임부터 시작)
  */
 function PhaseRouter() {
   const { phase } = useGameState()
@@ -17,6 +19,8 @@ function PhaseRouter() {
   switch (phase) {
     case 'title':
       return <TitlePhase />
+    case 'story':
+      return <StoryPhase />
     case 'prep':
       return <PrepPhase />
     case 'open':
@@ -34,7 +38,7 @@ function PhaseRouter() {
 
 function AppShell() {
   const { phase } = useGameState()
-  const bleed = phase === 'title'
+  const bleed = phase === 'title' || phase === 'story'
 
   return (
     <div className={bleed ? 'app-shell app-shell--bleed' : 'app-shell'}>

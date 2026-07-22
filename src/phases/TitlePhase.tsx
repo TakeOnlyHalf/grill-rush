@@ -4,14 +4,10 @@ import { ActionTypes } from '../state/actions'
 import TitleMenuButton from '../ui/TitleMenuButton'
 import OptionsModal from '../components/OptionsModal'
 import { hasSave, loadGame } from '../utils/saveGame'
-
-const base = import.meta.env.BASE_URL.endsWith('/')
-  ? import.meta.env.BASE_URL
-  : `${import.meta.env.BASE_URL}/`
-const TITLE_ART = `${base}images/title.png`
+import { TITLE_DAY_ART } from '../utils/assets'
 
 /**
- * 타이틀 화면 — public/images/title.png 풀블리드 히어로
+ * 타이틀 화면 — public/images/title_day.png 풀블리드 히어로
  */
 export default function TitlePhase() {
   const { dispatch } = useGame()
@@ -39,7 +35,7 @@ export default function TitlePhase() {
   return (
     <section className="phase phase-title" aria-label="타이틀">
       <div className="title-stage">
-        <img className="title-art" src={TITLE_ART} alt="" decoding="async" />
+        <img className="title-art" src={TITLE_DAY_ART} alt="" decoding="async" />
         <h1 className="visually-hidden">Grill Rush — Food Truck Tycoon</h1>
         <nav className="title-actions" aria-label="타이틀 메뉴">
           <TitleMenuButton disabled={!canContinue} onClick={handleContinue}>

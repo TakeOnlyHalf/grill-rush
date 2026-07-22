@@ -1,10 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import TitleMenuButton from '../ui/TitleMenuButton'
-
-const base = import.meta.env.BASE_URL.endsWith('/')
-  ? import.meta.env.BASE_URL
-  : `${import.meta.env.BASE_URL}/`
-const TITLE_ART = `${base}images/title.png`
+import { TITLE_DAY_ART } from '../utils/assets'
 
 const meta = {
   title: 'Design System/TitleMenuButton',
@@ -15,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          '타이틀 아트(나무 간판·칠판)와 맞춘 메뉴 버튼. `wood`는 메인 CTA, `chalk`는 보조 액션용.',
+          'title_day 톤 — 밝은 나무 이정표(`wood`)와 양피지 배너(`chalk`).',
       },
     },
   },
@@ -34,7 +30,7 @@ const meta = {
   decorators: [
     (Story) => (
       <div className="title-stage title-stage--story">
-        <img className="title-art" src={TITLE_ART} alt="" />
+        <img className="title-art" src={TITLE_DAY_ART} alt="" />
         <div className="title-actions">
           <Story />
         </div>

@@ -1,4 +1,4 @@
-﻿import locations from '../data/locations.json'
+import locations from '../data/locations.json'
 import {
   ActionTypes,
   DAILY_TRUCK_COST,
@@ -20,6 +20,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...createInitialState(),
         phase: 'prep',
         weather,
+      }
+    }
+
+    case ActionTypes.FINISH_STORY: {
+      if (state.phase !== 'story') return state
+      return {
+        ...state,
+        phase: 'prep',
       }
     }
 
