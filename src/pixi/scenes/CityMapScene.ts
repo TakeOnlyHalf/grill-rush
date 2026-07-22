@@ -328,12 +328,17 @@ export function createCityMapScene(
     lockDayLabel.y = zone.cy - 5
     overlay.addChild(lockDayLabel)
 
-    const lockIcon = new Graphics()
-    lockIcon.roundRect(zone.cx - 8, zone.cy + 10, 16, 13, 3)
-    lockIcon.fill(C.lockText)
-    lockIcon.arc(zone.cx, zone.cy + 10, 7, Math.PI, 0)
-    lockIcon.stroke({ width: 2.5, color: C.lockText })
-    overlay.addChild(lockIcon)
+    const lockBody = new Graphics()
+    lockBody.roundRect(zone.cx - 8, zone.cy + 12, 16, 12, 2)
+    lockBody.fill(C.lockText)
+
+    // 고리는 별도 Graphics — 같은 객체에서 fill 후 stroke 하면
+    // roundRect 끝점이 arc와 이어져 좌상단으로 선이 남는 문제 방지
+    const lockShackle = new Graphics()
+    lockShackle.arc(zone.cx, zone.cy + 12, 6, Math.PI, 0)
+    lockShackle.stroke({ width: 2.5, color: C.lockText })
+
+    overlay.addChild(lockBody, lockShackle)
 
     container.addChild(overlay)
     zoneOverlays.set(zone.id, overlay)

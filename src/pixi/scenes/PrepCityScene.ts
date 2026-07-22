@@ -722,14 +722,20 @@ export function createPrepCityScene(
     lockTxt.y = GROUND_Y - 80
     overlay.addChild(lockTxt)
 
-    const lockIcon = new Graphics()
     const lcx = (d.left + d.right) / 2
     const lcy = GROUND_Y - 120
-    lockIcon.roundRect(lcx - 10, lcy, 20, 16, 4)
-    lockIcon.fill(P.labelTxt)
-    lockIcon.arc(lcx, lcy, 9, Math.PI, 0)
-    lockIcon.stroke({ width: 3, color: P.labelTxt })
-    overlay.addChild(lockIcon)
+
+    const lockBody = new Graphics()
+    lockBody.roundRect(lcx - 10, lcy, 20, 16, 4)
+    lockBody.fill(P.labelTxt)
+
+    // 고리는 별도 Graphics — 같은 객체에서 fill 후 stroke 하면
+    // roundRect 끝점이 arc와 이어져 좌상단으로 선이 남는 문제 방지
+    const lockShackle = new Graphics()
+    lockShackle.arc(lcx, lcy, 9, Math.PI, 0)
+    lockShackle.stroke({ width: 3, color: P.labelTxt })
+
+    overlay.addChild(lockBody, lockShackle)
 
     c.addChild(overlay)
     districtOverlays.set(d.id, overlay)
