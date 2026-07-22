@@ -88,7 +88,7 @@ export function createStreetScene(
     const frames = foxFrames
     for (let i = 0; i < n; i += 1) {
       if (frames) {
-        const { sprite } = createFoxWorkerSprite(frames, 'idle')
+        const { sprite } = createFoxWorkerSprite(frames, 'walk')
         sprite.height = 34
         sprite.width = 34 * (sprite.texture.width / sprite.texture.height)
         sprite.x = 28 + i * 36
@@ -123,9 +123,12 @@ export function createStreetScene(
   const onTick = (ticker: Ticker) => {
     elapsed += ticker.deltaMS / 1000
     truck.y = app.screen.height * 0.62 - 48 + Math.sin(elapsed * 2.2) * 1.5
-    crowdLayer.children.forEach((child, i) => {
-      child.y = app.screen.height * 0.62 - 8 + Math.sin(elapsed * 3 + i * 0.7) * 2
-    })
+    // fox 스프라이트는 걷기 프레임 자체로 움직임을 표현하므로, 로딩 전 플레이스홀더에만 흔들림을 준다.
+    if (!foxFrames) {
+      crowdLayer.children.forEach((child, i) => {
+        child.y = app.screen.height * 0.62 - 8 + Math.sin(elapsed * 3 + i * 0.7) * 2
+      })
+    }
   }
 
   layout()

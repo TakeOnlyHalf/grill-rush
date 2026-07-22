@@ -8,7 +8,7 @@ export default function CustomerQueue() {
     <div className="panel">
       <h3>대기열</h3>
       {state.customers.length === 0 ? (
-        <p className="muted">손님이 아직 없습니다. (스폰 로직 연결 필요)</p>
+        <p className="muted">손님이 아직 없습니다.</p>
       ) : (
         <ul className="queue-list">
           {state.customers.map((c) => (

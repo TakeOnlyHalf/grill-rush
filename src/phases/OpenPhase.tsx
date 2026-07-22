@@ -8,7 +8,7 @@ import { ActionTypes, OPEN_DURATION_SEC } from '../state/actions'
 
 /**
  * 영업 페이즈 — 핵심 게임플레이 자리
- * TODO: 손님 스폰, patience, 그릴 게이지, 서빙 연동
+ * TODO: 그릴 게이지, 서빙 연동
  */
 export default function OpenPhase() {
   const { state, dispatch } = useGame()

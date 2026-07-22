@@ -8,7 +8,10 @@ import {
 import { createInitialState } from './initialState'
 import { calcDailyProfit, resolveEnding } from './formulas'
 import { rollWeather } from '../utils/weather'
+import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
 import type { GameAction, GameState } from '../types/game'
+
+const MAX_QUEUE = 8
 
 export type { GameState, GameAction }
 
@@ -112,11 +115,38 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case ActionTypes.TICK_OPEN: {
       if (state.phase !== 'open') return state
-      const nextTime = state.time + (action.payload?.dt ?? 1)
+      const dt = action.payload?.dt ?? 1
+      const nextTime = state.time + dt
       if (nextTime >= OPEN_DURATION_SEC) {
         return endOpenDay(state, nextTime)
       }
-      return { ...state, time: nextTime }
+
+      // patience 소진 → 이탈 처리
+      let dailyLeft = state.dailyLeft
+      const customers = state.customers
+        .map((c) => ({ ...c, patience: c.patience - dt }))
+        .filter((c) => {
+          if (c.patience > 0) return true
+          dailyLeft += 1
+          return false
+        })
+
+      // 스폰 주기마다 새 손님 추가 (최대 대기 인원 제한)
+      const spawnCtx: SpawnContext = {
+        locationId: state.location,
+        weather: state.weather,
+        activeMenus: state.activeMenus,
+        fame: state.fame,
+      }
+      const interval = getSpawnIntervalSec(spawnCtx)
+      const crossedInterval =
+        Math.floor(state.time / interval) !== Math.floor(nextTime / interval)
+      if (crossedInterval && customers.length < MAX_QUEUE) {
+        const spawned = spawnCustomer(spawnCtx)
+        if (spawned) customers.push(spawned)
+      }
+
+      return { ...state, time: nextTime, customers, dailyLeft }
     }
 
     case ActionTypes.END_OPEN: {
