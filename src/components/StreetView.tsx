@@ -9,16 +9,17 @@ import type { StreetSceneHandle } from '../pixi/scenes/StreetScene'
 export default function StreetView() {
   const state = useGameState()
   const loc = getLocationById(state.location)
-  const customerCount = state.customers.length
-  const locationLabel = `${loc?.icon ?? ''} ${loc?.name ?? '—'} · 대기 ${customerCount}명`
+  const customerTypes = state.customers.map((c) => c.type)
+  const locationLabel = `${loc?.icon ?? ''} ${loc?.name ?? '—'} · 대기 ${customerTypes.length}명`
 
   const sceneRef = useRef<StreetSceneHandle | null>(null)
-  const propsRef = useRef({ customerCount, locationLabel })
-  propsRef.current = { customerCount, locationLabel }
+  const propsRef = useRef({ customerTypes, locationLabel })
+  propsRef.current = { customerTypes, locationLabel }
 
+  const customerTypesKey = customerTypes.join(',')
   useEffect(() => {
     sceneRef.current?.update(propsRef.current)
-  }, [customerCount, locationLabel])
+  }, [customerTypesKey, locationLabel])
 
   const setup = useCallback((app: Application) => {
     const scene = createStreetScene(app, propsRef.current)
