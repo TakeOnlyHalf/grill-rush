@@ -713,6 +713,40 @@ body:has(.phase-prep-full) {
   pointer-events: auto;
 }
 
+/* 메뉴·재료 단계에서는 맵 클릭 비활성 */
+.prep--supply .prep-city-bg {
+  pointer-events: none;
+}
+
+/* ── Step indicator ─────────────────────────────── */
+.prep-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1rem 0.35rem;
+}
+
+.prep-step {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(0, 0, 0, 0.28);
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-pill);
+}
+
+.prep-step.is-active {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.prep-step-sep {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.75rem;
+}
+
 /* ── Glass panel mixin ──────────────────────────── */
 .glass-panel {
   background: rgba(255, 247, 238, 0.82);
@@ -843,6 +877,34 @@ body:has(.phase-prep-full) {
   display: flex;
   flex-direction: column;
   animation: prep-panel-in 250ms ease-out;
+}
+
+.prep-supply-panel {
+  position: absolute;
+  top: 5.2rem;
+  right: 0.75rem;
+  bottom: 4.2rem;
+  width: min(400px, calc(100vw - 1.5rem));
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: prep-panel-in 250ms ease-out;
+}
+
+.prep-supply-loc {
+  margin: 0;
+  padding: 0.75rem 1rem 0.5rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(229, 208, 188, 0.45);
+}
+
+.prep-supply-loc span {
+  margin-left: 0.35rem;
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .prep-side-scroll {
@@ -1358,10 +1420,18 @@ body:has(.phase-prep-full) {
     font-size: 0.85rem;
   }
 
-  .prep-side-panel {
+  .prep-side-panel,
+  .prep-supply-panel {
     width: 100vw;
     right: 0;
+    left: 0;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .prep-supply-panel {
+    top: auto;
+    bottom: 4.2rem;
+    max-height: min(55vh, 420px);
   }
 
   .vn-slot {
