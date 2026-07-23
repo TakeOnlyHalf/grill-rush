@@ -15,17 +15,19 @@ export default function PrepPhase() {
   const estimated = estimateCustomers(state.location, state.weather, state.fame)
   const canStart = state.activeMenus.length > 0
   const [step, setStep] = useState<PrepStep>('location')
+  const [locationPicked, setLocationPicked] = useState(false)
 
   // 날이 바뀌면 다시 장소 선택부터
   useEffect(() => {
     setStep('location')
+    setLocationPicked(false)
   }, [state.day])
 
   return (
     <section
       className={`phase phase-prep-full${step === 'supply' ? ' prep--supply' : ''}`}
     >
-      <CityMap />
+      <CityMap onLocationPick={() => setLocationPicked(true)} />
 
       <div className="prep-overlay">
         <header className="prep-hud-bar">
@@ -47,7 +49,7 @@ export default function PrepPhase() {
           </span>
         </nav>
 
-        {step === 'location' && loc && (
+        {step === 'location' && locationPicked && loc && (
           <div className="prep-loc-card glass-panel">
             <h3>
               {loc.icon} {loc.name}
@@ -58,6 +60,13 @@ export default function PrepPhase() {
               <span>예상 손님 {estimated}명</span>
               <span>자릿세 {loc.rentCost.toLocaleString('ko-KR')}원</span>
             </div>
+          </div>
+        )}
+
+        {step === 'location' && !locationPicked && (
+          <div className="prep-loc-card glass-panel prep-loc-card--hint">
+            <h3>영업 장소를 선택하세요</h3>
+            <p className="prep-loc-desc">맵에서 구역을 클릭하면 트럭이 이동합니다.</p>
           </div>
         )}
 
@@ -81,7 +90,7 @@ export default function PrepPhase() {
             <button
               type="button"
               className="prep-btn prep-btn--start"
-              disabled={!loc}
+              disabled={!locationPicked}
               onClick={() => setStep('supply')}
             >
               다음: 메뉴 · 재료 →

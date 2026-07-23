@@ -725,6 +725,8 @@ export function createPrepCityScene(
     return d ? STAGE_LEFT + (d.left + d.right) / 2 : stagingX
   }
   let truckTargetX = stagingX
+  // 기본 location(오피스 등)이 있어도, 맵에서 직접 고르기 전엔 선택 연출 없음
+  let locationConfirmed = false
 
   for (const d of DISTRICTS) {
     const c = new Container()
@@ -805,15 +807,17 @@ export function createPrepCityScene(
 
     c.on('pointerdown', () => {
       if (state.unlockedLocations.includes(d.id)) {
+        locationConfirmed = true
+        state.selectedLocation = d.id
         truckTargetX = getDistrictCenter(d.id)
+        refreshStates()
         onSelect(d.id)
       }
     })
     c.on('pointerover', () => {
-      if (
-        state.unlockedLocations.includes(d.id) &&
-        state.selectedLocation !== d.id
-      ) {
+      const isSelected =
+        locationConfirmed && state.selectedLocation === d.id
+      if (state.unlockedLocations.includes(d.id) && !isSelected) {
         const gl = districtGlows.get(d.id)!
         gl.clear()
         drawGlow(
@@ -828,7 +832,9 @@ export function createPrepCityScene(
       }
     })
     c.on('pointerout', () => {
-      if (state.selectedLocation !== d.id) {
+      const isSelected =
+        locationConfirmed && state.selectedLocation === d.id
+      if (!isSelected) {
         districtGlows.get(d.id)!.clear()
       }
     })
@@ -848,7 +854,6 @@ export function createPrepCityScene(
 
   /* ── Truck marker (foodtruck.png) ────────────── */
   const truckContainer = new Container()
-  truckContainer.roundPixels = true
   truckContainer.y = GROUND_Y + 28
   truckContainer.x = Math.round(stagingX)
   root.addChild(truckContainer)
@@ -884,7 +889,8 @@ export function createPrepCityScene(
   function refreshStates() {
     for (const d of DISTRICTS) {
       const unlocked = state.unlockedLocations.includes(d.id)
-      const selected = state.selectedLocation === d.id
+      const selected =
+        locationConfirmed && state.selectedLocation === d.id
 
       districtOverlays.get(d.id)!.visible = !unlocked
 
@@ -917,7 +923,10 @@ export function createPrepCityScene(
     }
     redrawClouds()
 
-    const selGlow = districtGlows.get(state.selectedLocation)
+    const selGlow =
+      locationConfirmed
+        ? districtGlows.get(state.selectedLocation)
+        : undefined
     if (selGlow) {
       selGlow.alpha = 0.7 + Math.sin(elapsed * 2.5) * 0.3
     }
@@ -958,16 +967,24 @@ export function createPrepCityScene(
   return {
     update(next) {
       let changed = false
+      if (next.day !== undefined && next.day !== state.day) {
+        state.day = next.day
+        locationConfirmed = false
+        truckTargetX = stagingX
+        truckContainer.x = Math.round(stagingX)
+        changed = true
+      }
       if (next.selectedLocation !== undefined && next.selectedLocation !== state.selectedLocation) {
         state.selectedLocation = next.selectedLocation
-        truckTargetX = getDistrictCenter(next.selectedLocation)
+        if (locationConfirmed) {
+          truckTargetX = getDistrictCenter(next.selectedLocation)
+        }
         changed = true
       }
       if (next.unlockedLocations !== undefined) {
         state.unlockedLocations = next.unlockedLocations
         changed = true
       }
-      if (next.day !== undefined) state.day = next.day
       if (changed) refreshStates()
     },
     destroy() {
