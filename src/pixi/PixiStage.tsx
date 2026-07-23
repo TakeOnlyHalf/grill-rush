@@ -18,6 +18,11 @@ export interface PixiStageProps {
   width?: number
   height?: number
   background?: string
+  /**
+   * true면 부모 크기에 맞춰 렌더러를 리사이즈한다.
+   * CSS로 고정 버퍼를 늘리지 않아 텍스트·벡터가 흐려지지 않는다.
+   */
+  fillParent?: boolean
   /** 앱 준비 후 씬 생성. 정리 함수를 반환하면 unmount 시 호출된다. */
   setup: PixiSetup
 }
@@ -31,6 +36,7 @@ export default function PixiStage({
   width = 640,
   height = 180,
   background = colors.bgPanel2.value,
+  fillParent = false,
   setup,
 }: PixiStageProps): ReactNode {
   const hostRef = useRef<HTMLDivElement | null>(null)
@@ -50,14 +56,25 @@ export default function PixiStage({
       app = application
 
       try {
-        await application.init({
-          width,
-          height,
-          background,
-          antialias: true,
-          resolution: Math.min(window.devicePixelRatio || 1, 2),
-          autoDensity: true,
-        })
+        const dpr = Math.min(window.devicePixelRatio || 1, 2)
+        if (fillParent) {
+          await application.init({
+            resizeTo: host,
+            background,
+            antialias: true,
+            resolution: dpr,
+            autoDensity: true,
+          })
+        } else {
+          await application.init({
+            width,
+            height,
+            background,
+            antialias: true,
+            resolution: dpr,
+            autoDensity: true,
+          })
+        }
       } catch {
         return
       }
@@ -69,8 +86,13 @@ export default function PixiStage({
 
       host.replaceChildren(application.canvas)
       application.canvas.style.display = 'block'
-      application.canvas.style.width = '100%'
-      application.canvas.style.height = '100%'
+      if (fillParent) {
+        application.canvas.style.width = '100%'
+        application.canvas.style.height = '100%'
+      } else {
+        application.canvas.style.width = '100%'
+        application.canvas.style.height = '100%'
+      }
       application.canvas.style.borderRadius = '8px'
 
       const cleanup = setupRef.current?.(application) ?? null
@@ -90,13 +112,17 @@ export default function PixiStage({
       app = null
       host.replaceChildren()
     }
-  }, [width, height, background])
+  }, [width, height, background, fillParent])
 
   return (
     <div
       ref={hostRef}
       className={className}
-      style={{ width: '100%', height, overflow: 'hidden' }}
+      style={
+        fillParent
+          ? { width: '100%', height: '100%', overflow: 'hidden' }
+          : { width: '100%', height, overflow: 'hidden' }
+      }
     />
   )
 }
