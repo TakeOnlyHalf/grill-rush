@@ -181,7 +181,7 @@ export function createMenuBoardScene(
   world.addChild(countText)
 
   const hint = new Text({
-    text: '쉬운 메뉴 3종부터 해금 · 카드를 눌러 판매 메뉴를 고르세요 · 필요 재료는 다음 마트에서 구매',
+    text: '그릴 메뉴만 취급 · 쉬운 3종부터 해금 · 필요 재료는 다음 마트에서 구매',
     resolution: textRes,
     style: {
       fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
