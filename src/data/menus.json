@@ -1,33 +1,5 @@
 [
   {
-    "id": "classic_burger",
-    "name": "클래식 버거",
-    "icon": "🍔",
-    "category": "양식",
-    "ingredients": ["patty", "bacon", "bun"],
-    "cost": 3000,
-    "basePrice": 7000,
-    "cookTime": 3,
-    "difficulty": 2,
-    "popularity": 70,
-    "unlockedByDefault": true,
-    "unlockCondition": null
-  },
-  {
-    "id": "taco",
-    "name": "타코",
-    "icon": "🌮",
-    "category": "양식",
-    "ingredients": ["beef", "veggie", "tortilla"],
-    "cost": 2500,
-    "basePrice": 6000,
-    "cookTime": 2,
-    "difficulty": 2,
-    "popularity": 65,
-    "unlockedByDefault": true,
-    "unlockCondition": null
-  },
-  {
     "id": "hotdog",
     "name": "핫도그",
     "icon": "🌭",
@@ -56,18 +28,32 @@
     "unlockCondition": null
   },
   {
-    "id": "chicken_bowl",
-    "name": "치킨 덮밥",
-    "icon": "🍗",
-    "category": "한식",
-    "ingredients": ["chicken", "rice", "veggie"],
-    "cost": 3500,
-    "basePrice": 8000,
-    "cookTime": 4,
-    "difficulty": 3,
-    "popularity": 68,
+    "id": "taco",
+    "name": "타코",
+    "icon": "🌮",
+    "category": "양식",
+    "ingredients": ["beef", "veggie", "tortilla"],
+    "cost": 2500,
+    "basePrice": 6000,
+    "cookTime": 2,
+    "difficulty": 2,
+    "popularity": 65,
     "unlockedByDefault": true,
     "unlockCondition": null
+  },
+  {
+    "id": "classic_burger",
+    "name": "클래식 버거",
+    "icon": "🍔",
+    "category": "양식",
+    "ingredients": ["patty", "bacon", "bun"],
+    "cost": 3000,
+    "basePrice": 7000,
+    "cookTime": 3,
+    "difficulty": 2,
+    "popularity": 70,
+    "unlockedByDefault": false,
+    "unlockCondition": "day>=2"
   },
   {
     "id": "crepe",
@@ -80,8 +66,22 @@
     "cookTime": 2,
     "difficulty": 2,
     "popularity": 55,
-    "unlockedByDefault": true,
-    "unlockCondition": null
+    "unlockedByDefault": false,
+    "unlockCondition": "day>=3"
+  },
+  {
+    "id": "chicken_bowl",
+    "name": "치킨 덮밥",
+    "icon": "🍗",
+    "category": "한식",
+    "ingredients": ["chicken", "rice", "veggie"],
+    "cost": 3500,
+    "basePrice": 8000,
+    "cookTime": 4,
+    "difficulty": 3,
+    "popularity": 68,
+    "unlockedByDefault": false,
+    "unlockCondition": "day>=4"
   },
   {
     "id": "lobster_roll",

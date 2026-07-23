@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { Application } from 'pixi.js'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
+import { getRequiredIngredientIds } from '../state/formulas'
 import { PixiStage } from '../pixi'
 import {
   createIngredientMarketScene,
@@ -9,17 +10,24 @@ import {
 } from '../pixi/scenes/IngredientMarketScene'
 import ingredients from '../data/ingredients.json'
 
-/** 재료 매입 — PixiJS 마트 UI */
+/** 재료 매입 — PixiJS 마트 UI (선택 메뉴 재료만 해금) */
 export default function IngredientShop() {
   const { state, dispatch } = useGame()
+  const allowedIds = useMemo(
+    () => getRequiredIngredientIds(state.activeMenus),
+    [state.activeMenus],
+  )
+
   const sceneRef = useRef<IngredientMarketHandle | null>(null)
   const stateRef = useRef({
     cash: state.cash,
     owned: state.ingredients,
+    allowedIds,
   })
   stateRef.current = {
     cash: state.cash,
     owned: state.ingredients,
+    allowedIds,
   }
 
   const dispatchRef = useRef(dispatch)
@@ -29,8 +37,9 @@ export default function IngredientShop() {
     sceneRef.current?.update({
       cash: state.cash,
       owned: state.ingredients,
+      allowedIds,
     })
-  }, [state.cash, state.ingredients])
+  }, [state.cash, state.ingredients, allowedIds])
 
   const setup = useCallback((app: Application) => {
     const scene = createIngredientMarketScene(

@@ -51,6 +51,8 @@ const ITEMS = ingredientsData as IngredientDef[]
 export interface IngredientMarketState {
   cash: number
   owned: Record<string, number>
+  /** 오늘 메뉴에 필요한 재료만 구매 가능 */
+  allowedIds: string[]
 }
 
 export interface IngredientMarketHandle {
@@ -65,6 +67,7 @@ interface SlotView {
   ownedText: Text
   buyBg: Graphics
   buyLabel: Text
+  lockOverlay: Container
   cost: number
   hover: boolean
 }
@@ -97,6 +100,7 @@ export function createIngredientMarketScene(
   const state: IngredientMarketState = {
     cash: initial.cash,
     owned: { ...initial.owned },
+    allowedIds: [...initial.allowedIds],
   }
 
   const root = new Container()
@@ -174,7 +178,7 @@ export function createIngredientMarketScene(
   world.addChild(sign)
 
   const subtitle = new Text({
-    text: '당일 재료만 사용 · 과다 매입은 폐기 손해!',
+    text: '선택한 메뉴의 필요 재료만 구매 가능 · 나머지는 잠김',
     resolution: textRes,
     style: {
       fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
@@ -224,8 +228,12 @@ export function createIngredientMarketScene(
 
   function redrawCard(slot: SlotView) {
     const owned = state.owned[slot.id] ?? 0
-    const canBuy = state.cash >= slot.cost
-    slot.ownedText.text = `보유 ×${owned}`
+    const allowed = state.allowedIds.includes(slot.id)
+    const canBuy = allowed && state.cash >= slot.cost
+    slot.ownedText.text = allowed ? `보유 ×${owned}` : '메뉴 미선택'
+    slot.lockOverlay.visible = !allowed
+    slot.root.cursor = allowed ? 'pointer' : 'not-allowed'
+    slot.root.alpha = allowed ? 1 : 0.92
 
     slot.cardBg.clear()
     drawRoundRect(
@@ -235,14 +243,13 @@ export function createIngredientMarketScene(
       CARD_W,
       CARD_H,
       12,
-      slot.hover ? M.cardHover : M.card,
+      slot.hover && allowed ? M.cardHover : M.card,
     )
     slot.cardBg.roundRect(0, 0, CARD_W, CARD_H, 12)
     slot.cardBg.stroke({
-      width: slot.hover ? 2.5 : 1.5,
-      color: slot.hover ? M.accent2 : M.cardEdge,
+      width: slot.hover && allowed ? 2.5 : 1.5,
+      color: slot.hover && allowed ? M.accent2 : M.cardEdge,
     })
-    // top accent strip
     slot.cardBg.roundRect(0, 0, CARD_W, 8, 12)
     slot.cardBg.fill(M.woodLight)
     slot.cardBg.rect(0, 4, CARD_W, 6)
@@ -262,8 +269,11 @@ export function createIngredientMarketScene(
       slot.buyBg.roundRect(12, CARD_H - 34, CARD_W - 24, 24, 8)
       slot.buyBg.stroke({ width: 1.5, color: M.buyDark })
     }
+    slot.buyLabel.text = allowed
+      ? `+1  ${formatWon(slot.cost)}`
+      : '잠김'
     slot.buyLabel.style.fill = M.white
-    slot.buyLabel.alpha = canBuy ? 1 : 0.7
+    slot.buyLabel.alpha = canBuy ? 1 : 0.75
   }
 
   displayItems.forEach((item, i) => {
@@ -332,6 +342,22 @@ export function createIngredientMarketScene(
     buyLabel.y = CARD_H - 22
     slotRoot.addChild(buyLabel)
 
+    const lockOverlay = new Container()
+    const lockBg = new Graphics()
+    lockBg.roundRect(0, 0, CARD_W, CARD_H, 12)
+    lockBg.fill({ color: 0x1a1410, alpha: 0.55 })
+    lockOverlay.addChild(lockBg)
+    const lockIcon = new Text({
+      text: '🔒',
+      resolution: textRes,
+      style: { fontSize: 28 },
+    })
+    lockIcon.anchor.set(0.5)
+    lockIcon.x = CARD_W / 2
+    lockIcon.y = CARD_H / 2 - 6
+    lockOverlay.addChild(lockIcon)
+    slotRoot.addChild(lockOverlay)
+
     const slot: SlotView = {
       id: item.id,
       root: slotRoot,
@@ -339,6 +365,7 @@ export function createIngredientMarketScene(
       ownedText,
       buyBg,
       buyLabel,
+      lockOverlay,
       cost: item.unitCost,
       hover: false,
     }
@@ -348,6 +375,7 @@ export function createIngredientMarketScene(
     slotRoot.hitArea = new Rectangle(0, 0, CARD_W, CARD_H)
 
     slotRoot.on('pointerover', () => {
+      if (!state.allowedIds.includes(item.id)) return
       slot.hover = true
       slotRoot.scale.set(1.04)
       slotRoot.x = gridOriginX + col * (CARD_W + GAP_X) - CARD_W * 0.02
@@ -362,8 +390,8 @@ export function createIngredientMarketScene(
       redrawCard(slot)
     })
     slotRoot.on('pointerdown', () => {
+      if (!state.allowedIds.includes(item.id)) return
       if (state.cash < item.unitCost) {
-        // shake
         slotRoot.x = gridOriginX + col * (CARD_W + GAP_X) + 3
         setTimeout(() => {
           if (!slot.hover) {
@@ -372,11 +400,9 @@ export function createIngredientMarketScene(
         }, 80)
         return
       }
-      // optimistic local preview (React state will sync via update)
       state.cash -= item.unitCost
       state.owned[item.id] = (state.owned[item.id] ?? 0) + 1
       cashText.text = formatWon(state.cash)
-      redrawCard(slot)
       slots.forEach(redrawCard)
 
       const fx = new Text({
@@ -450,6 +476,9 @@ export function createIngredientMarketScene(
       }
       if (next.owned !== undefined) {
         state.owned = { ...next.owned }
+      }
+      if (next.allowedIds !== undefined) {
+        state.allowedIds = [...next.allowedIds]
       }
       slots.forEach(redrawCard)
     },

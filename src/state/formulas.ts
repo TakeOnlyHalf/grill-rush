@@ -35,6 +35,17 @@ export function estimateCustomers(
   return Math.round(loc.baseTraffic * getWeatherTrafficFactor(weather) * fameBonus)
 }
 
+/** 오늘 판매 메뉴에 필요한 식재료 ID 집합 */
+export function getRequiredIngredientIds(activeMenuIds: MenuId[]): string[] {
+  const set = new Set<string>()
+  for (const id of activeMenuIds) {
+    const menu = menus.find((m) => m.id === id)
+    if (!menu) continue
+    for (const ing of menu.ingredients) set.add(ing)
+  }
+  return [...set]
+}
+
 /** 정산: 순이익 계산 */
 export function calcDailyProfit({
   sales,
