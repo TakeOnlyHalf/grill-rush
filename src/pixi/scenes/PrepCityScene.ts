@@ -1,11 +1,14 @@
 import {
   Application,
+  Assets,
   Container,
   Graphics,
+  Sprite,
   Text,
   Rectangle,
   type Ticker,
 } from 'pixi.js'
+import { FOOD_TRUCK_ART } from '../../utils/assets'
 
 /* ================================================================
    PALETTE
@@ -262,19 +265,23 @@ function drawLantern(g: Graphics, cx: number, cy: number) {
   g.fill({ color: P.lanternGlow, alpha: 0.15 })
 }
 
-function drawTruck(container: Container, _cx: number, _cy: number) {
-  const g = new Graphics()
-  g.roundRect(-20, -10, 34, 18, 3)
-  g.fill(P.truck)
-  g.roundRect(10, -14, 12, 14, 2)
-  g.fill(P.truckCab)
-  g.roundRect(12, -10, 6, 6, 1)
-  g.fill(P.truckWin)
-  g.circle(-10, 9, 4.5)
-  g.fill(P.wheel)
-  g.circle(14, 9, 4.5)
-  g.fill(P.wheel)
-  container.addChild(g)
+/** 푸드트럭 스프라이트 높이 (디자인 좌표) */
+const TRUCK_DISPLAY_H = 120
+
+async function mountFoodTruckSprite(container: Container) {
+  const texture = await Assets.load(FOOD_TRUCK_ART)
+  texture.source.scaleMode = 'linear'
+  texture.source.autoGenerateMipmaps = true
+
+  const sprite = new Sprite(texture)
+  sprite.anchor.set(0.5, 1)
+  sprite.roundPixels = true
+  // 정수 높이에 맞춰 스케일 → 이동 시 계단·떨림 완화
+  const targetH = Math.round(TRUCK_DISPLAY_H)
+  sprite.height = targetH
+  sprite.scale.x = sprite.scale.y
+  container.removeChildren()
+  container.addChild(sprite)
 }
 
 function drawGlow(
@@ -839,12 +846,15 @@ export function createPrepCityScene(
   drawSmallTree(scatterG, 1005, GROUND_Y)
   cityLayer.addChild(scatterG)
 
-  /* ── Truck marker ────────────────────────────── */
+  /* ── Truck marker (foodtruck.png) ────────────── */
   const truckContainer = new Container()
-  drawTruck(truckContainer, 0, 0)
-  truckContainer.y = GROUND_Y + 22
-  truckContainer.x = stagingX
+  truckContainer.roundPixels = true
+  truckContainer.y = GROUND_Y + 28
+  truckContainer.x = Math.round(stagingX)
   root.addChild(truckContainer)
+  void mountFoodTruckSprite(truckContainer).catch((err) => {
+    console.error('Failed to load food truck sprite', err)
+  })
 
   /* ── Particles (floating leaves) ─────────────── */
   interface Particle {
@@ -912,13 +922,17 @@ export function createPrepCityScene(
       selGlow.alpha = 0.7 + Math.sin(elapsed * 2.5) * 0.3
     }
 
+    const s = root.scale.x || 1
     const dx = truckTargetX - truckContainer.x
-    if (Math.abs(dx) > 1) {
-      truckContainer.x += dx * 3 * dt
+    let nextX = truckContainer.x
+    if (Math.abs(dx) > 0.5) {
+      nextX += dx * 3 * dt
     } else {
-      truckContainer.x = truckTargetX
+      nextX = truckTargetX
     }
-    truckContainer.y = GROUND_Y + 22 + Math.sin(elapsed * 3) * 1.5
+    // 화면 픽셀에 스냅 → 스케일된 씬에서도 계단·떨림 완화
+    truckContainer.x = Math.round(nextX * s) / s
+    truckContainer.y = Math.round((GROUND_Y + 28) * s) / s
 
     particleG.clear()
     for (const p of particles) {
