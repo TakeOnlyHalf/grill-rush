@@ -962,14 +962,39 @@ body:has(.phase-prep-supply) {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.35fr);
   gap: 0.9rem;
+}
+
+.prep-supply-grid--market {
+  grid-template-columns: minmax(260px, 0.75fr) minmax(420px, 1.5fr);
 }
 
 .prep-supply-card {
   min-height: 0;
   overflow: auto;
   padding: 1rem 1.1rem;
+}
+
+.prep-supply-card--market {
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 10px 36px rgba(20, 40, 28, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #2a4f36;
+}
+
+.prep-ingredient-pixi {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 320px;
+}
+
+.prep-ingredient-pixi canvas {
+  border-radius: var(--radius-lg) !important;
 }
 
 .prep-supply-card .panel {
@@ -1500,7 +1525,8 @@ body:has(.phase-prep-supply) {
     font-size: 0.85rem;
   }
 
-  .prep-supply-grid {
+  .prep-supply-grid,
+  .prep-supply-grid--market {
     grid-template-columns: 1fr;
   }
 

@@ -1,45 +1,67 @@
-import ingredients from '../data/ingredients.json'
+import { useCallback, useEffect, useRef } from 'react'
+import type { Application } from 'pixi.js'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
+import { PixiStage } from '../pixi'
+import {
+  createIngredientMarketScene,
+  type IngredientMarketHandle,
+} from '../pixi/scenes/IngredientMarketScene'
+import ingredients from '../data/ingredients.json'
 
-/** 재료 매입 — TODO: 마트/도매시장 분기, 판매 예측 힌트 */
+/** 재료 매입 — PixiJS 마트 UI */
 export default function IngredientShop() {
   const { state, dispatch } = useGame()
+  const sceneRef = useRef<IngredientMarketHandle | null>(null)
+  const stateRef = useRef({
+    cash: state.cash,
+    owned: state.ingredients,
+  })
+  stateRef.current = {
+    cash: state.cash,
+    owned: state.ingredients,
+  }
+
+  const dispatchRef = useRef(dispatch)
+  dispatchRef.current = dispatch
+
+  useEffect(() => {
+    sceneRef.current?.update({
+      cash: state.cash,
+      owned: state.ingredients,
+    })
+  }, [state.cash, state.ingredients])
+
+  const setup = useCallback((app: Application) => {
+    const scene = createIngredientMarketScene(
+      app,
+      stateRef.current,
+      (ingredientId: string) => {
+        const ing = ingredients.find((i) => i.id === ingredientId)
+        if (!ing) return
+        dispatchRef.current({
+          type: ActionTypes.BUY_INGREDIENT,
+          payload: {
+            ingredientId: ing.id,
+            qty: 1,
+            unitCost: ing.unitCost,
+          },
+        })
+      },
+    )
+    sceneRef.current = scene
+    return () => {
+      scene.destroy()
+      sceneRef.current = null
+    }
+  }, [])
 
   return (
-    <div className="panel">
-      <h3>재료 매입</h3>
-      <p className="muted">일반 마트 (도매시장은 이후 구현)</p>
-      <ul className="picker-list shop-list">
-        {ingredients.slice(0, 8).map((ing) => {
-          const owned = state.ingredients[ing.id] ?? 0
-          return (
-            <li key={ing.id} className="shop-row">
-              <span>
-                {ing.icon} {ing.name}{' '}
-                <small>×{owned}</small>
-              </span>
-              <button
-                type="button"
-                className="btn btn-small"
-                disabled={state.cash < ing.unitCost}
-                onClick={() =>
-                  dispatch({
-                    type: ActionTypes.BUY_INGREDIENT,
-                    payload: {
-                      ingredientId: ing.id,
-                      qty: 1,
-                      unitCost: ing.unitCost,
-                    },
-                  })
-                }
-              >
-                +1 ({ing.unitCost.toLocaleString('ko-KR')})
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-    </div>
+    <PixiStage
+      className="prep-ingredient-pixi"
+      fillParent
+      background="#2a4f36"
+      setup={setup}
+    />
   )
 }

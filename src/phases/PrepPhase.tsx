@@ -121,11 +121,11 @@ export default function PrepPhase() {
               )}
             </header>
 
-            <div className="prep-supply-grid">
-              <div className="prep-supply-card glass-panel">
+            <div className="prep-supply-grid prep-supply-grid--market">
+              <div className="prep-supply-card glass-panel prep-supply-card--menu">
                 <MenuSelector />
               </div>
-              <div className="prep-supply-card glass-panel">
+              <div className="prep-supply-card prep-supply-card--market">
                 <IngredientShop />
               </div>
             </div>
