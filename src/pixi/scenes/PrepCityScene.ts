@@ -29,10 +29,19 @@ const P = {
   grass: 0x7cb868,
   grassLight: 0x90d078,
   grassDark: 0x5ca048,
-  road: 0xa8a098,
-  roadDark: 0x908880,
-  roadLine: 0xe8e0d0,
-  sidewalk: 0xd0c8b8,
+  road: 0x6e6a66,
+  roadMid: 0x7a7672,
+  roadLight: 0x8a8680,
+  roadDark: 0x55514e,
+  roadEdge: 0x3e3b38,
+  roadLine: 0xf2ead8,
+  roadDash: 0xf0c94d,
+  curb: 0xb8b0a4,
+  curbShadow: 0x8a8478,
+  sidewalk: 0xd8d0c4,
+  sidewalkDark: 0xc4bcb0,
+  sidewalkLine: 0xb8b0a4,
+  gutter: 0x4a4642,
 
   treeTrunk: 0x886848,
   leaf1: 0x58a848,
@@ -139,6 +148,110 @@ function drawCloud(g: Graphics, cx: number, cy: number, s: number) {
   r(15, 0, 14, P.cloud)
   r(-5, 2, 16, P.cloud)
   r(8, 2, 14, P.cloud)
+}
+
+/** 도시 도로 — 연석·인도·차선·아스팔트 디테일 */
+function drawCityRoad(g: Graphics, x: number, y: number, w: number, h: number) {
+  const curbH = 5
+  const walkH = 10
+  const asphaltY = y + walkH + curbH
+  const asphaltH = h - walkH * 2 - curbH * 2
+
+  // 잔디→도로 경계 음영
+  g.rect(x, y - 3, w, 3)
+  g.fill({ color: P.grassDark, alpha: 0.35 })
+
+  // 상단 인도
+  g.rect(x, y, w, walkH)
+  g.fill(P.sidewalk)
+  for (let i = 0; i < w; i += 28) {
+    g.rect(x + i, y, 1, walkH)
+    g.fill({ color: P.sidewalkLine, alpha: 0.45 })
+  }
+  g.rect(x, y + walkH - 1, w, 1)
+  g.fill({ color: P.sidewalkDark, alpha: 0.55 })
+
+  // 상단 연석
+  g.rect(x, y + walkH, w, curbH)
+  g.fill(P.curb)
+  g.rect(x, y + walkH, w, 1)
+  g.fill({ color: 0xffffff, alpha: 0.25 })
+  g.rect(x, y + walkH + curbH - 1, w, 1)
+  g.fill(P.curbShadow)
+
+  // 배수로
+  g.rect(x, asphaltY - 1, w, 2)
+  g.fill(P.gutter)
+
+  // 아스팔트 본체 (세로 그라데이션)
+  const steps = 10
+  const stepH = asphaltH / steps
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1)
+    // 중앙이 살짝 밝고 가장자리가 어두운 노면
+    const edge = Math.abs(t - 0.45) * 1.4
+    const c = lerp(P.roadLight, P.roadDark, Math.min(1, edge * 0.7 + t * 0.35))
+    g.rect(x, asphaltY + i * stepH, w, stepH + 1)
+    g.fill(c)
+  }
+
+  // 노면 마모·얼룩 (의사난수)
+  for (let i = 0; i < Math.floor(w / 55); i++) {
+    const px = x + 40 + ((i * 97 + 13) % Math.max(1, w - 80))
+    const py = asphaltY + 8 + ((i * 53) % Math.max(1, asphaltH - 16))
+    const pw = 18 + (i % 5) * 6
+    const ph = 3 + (i % 3)
+    g.ellipse(px, py, pw * 0.5, ph)
+    g.fill({ color: P.roadDark, alpha: 0.18 })
+  }
+  for (let i = 0; i < Math.floor(w / 90); i++) {
+    const px = x + 60 + ((i * 131 + 7) % Math.max(1, w - 100))
+    const py = asphaltY + 14 + ((i * 71) % Math.max(1, asphaltH - 20))
+    g.circle(px, py, 1.2 + (i % 2))
+    g.fill({ color: 0x2a2826, alpha: 0.2 })
+  }
+
+  // 차선 외곽 실선 (흰색)
+  g.rect(x, asphaltY + 3, w, 2)
+  g.fill({ color: P.roadLine, alpha: 0.85 })
+  g.rect(x, asphaltY + asphaltH - 5, w, 2)
+  g.fill({ color: P.roadLine, alpha: 0.85 })
+
+  // 중앙 점선 (노랑)
+  const midY = asphaltY + asphaltH * 0.5 - 1.5
+  const dashW = 22
+  const gapW = 16
+  for (let dx = x + 12; dx < x + w - 12; dx += dashW + gapW) {
+    g.roundRect(dx, midY, dashW, 3, 1)
+    g.fill(P.roadDash)
+    g.roundRect(dx, midY, dashW, 1, 1)
+    g.fill({ color: 0xfff3c0, alpha: 0.45 })
+  }
+
+  // 하단 배수로 + 연석 + 인도
+  g.rect(x, asphaltY + asphaltH, w, 2)
+  g.fill(P.gutter)
+
+  g.rect(x, asphaltY + asphaltH + 2, w, curbH)
+  g.fill(P.curb)
+  g.rect(x, asphaltY + asphaltH + 2, w, 1)
+  g.fill({ color: 0xffffff, alpha: 0.2 })
+  g.rect(x, asphaltY + asphaltH + curbH + 1, w, 1)
+  g.fill(P.curbShadow)
+
+  const walkBotY = asphaltY + asphaltH + curbH + 2
+  g.rect(x, walkBotY, w, walkH)
+  g.fill(P.sidewalk)
+  for (let i = 0; i < w; i += 28) {
+    g.rect(x + i, walkBotY, 1, walkH)
+    g.fill({ color: P.sidewalkLine, alpha: 0.45 })
+  }
+  g.rect(x, walkBotY, w, 1)
+  g.fill({ color: P.sidewalkDark, alpha: 0.4 })
+
+  // 하단 잔디 경계
+  g.rect(x, walkBotY + walkH, w, 3)
+  g.fill({ color: P.grassDark, alpha: 0.25 })
 }
 
 function drawMountain(
@@ -314,6 +427,16 @@ interface DistrictDef {
 }
 
 const GROUND_Y = 530
+
+/** 도로 레이아웃 (drawCityRoad와 동일 수치) */
+const ROAD_Y = GROUND_Y + 2
+const ROAD_H = 66
+const ROAD_WALK_H = 10
+const ROAD_CURB_H = 5
+const ASPHALT_TOP = ROAD_Y + ROAD_WALK_H + ROAD_CURB_H
+const ASPHALT_H = ROAD_H - ROAD_WALK_H * 2 - ROAD_CURB_H * 2
+/** 트럭 바퀴가 닿는 아스팔트 하단(하단 백선 바로 위) */
+const TRUCK_GROUND_Y = ASPHALT_TOP + ASPHALT_H - 5
 
 /** 좌측 스테이징(빈 공간) — 트럭이 처음 대기하는 구역 */
 export const STAGE_LEFT = 280
@@ -661,18 +784,8 @@ export function createPrepCityScene(
   /* ── Ground base ─────────────────────────────── */
   const groundG = new Graphics()
   vGrad(groundG, 0, H * 0.42, W, H * 0.58, P.grassLight, P.grassDark, 8)
-
-  groundG.rect(0, GROUND_Y + 6, W, 50)
-  groundG.fill(P.road)
-  groundG.moveTo(0, GROUND_Y + 30)
-  groundG.lineTo(W, GROUND_Y + 30)
-  groundG.stroke({ width: 2, color: P.roadLine })
-
-  groundG.rect(0, GROUND_Y + 56, W, 4)
-  groundG.fill(P.sidewalk)
-  groundG.rect(0, GROUND_Y + 2, W, 4)
-  groundG.fill(P.sidewalk)
-
+  // 도로 총 높이 ≈ 인도10+연석5+아스팔트≈36+연석5+인도10 ≈ 66
+  drawCityRoad(groundG, 0, ROAD_Y, W, ROAD_H)
   root.addChild(groundG)
 
   /* ── Staging area (left empty bay) ───────────── */
@@ -680,9 +793,6 @@ export function createPrepCityScene(
   drawRoundTree(stageG, 55, GROUND_Y, 70, 18)
   drawPineTree(stageG, 130, GROUND_Y, 55)
   drawSmallTree(stageG, 200, GROUND_Y)
-  // 주차/대기 표시
-  stageG.roundRect(STAGE_LEFT * 0.5 - 28, GROUND_Y + 14, 56, 28, 4)
-  stageG.stroke({ width: 2, color: P.roadLine, alpha: 0.7 })
   root.addChild(stageG)
 
   /* ── Far background buildings (atmospheric) ──── */
@@ -741,7 +851,7 @@ export function createPrepCityScene(
     const labelBg = new Graphics()
     const labelW = d.name.length * 16 + 36
     const labelX = (d.left + d.right) / 2 - labelW / 2
-    const labelY = GROUND_Y + 64
+    const labelY = GROUND_Y + 74
     labelBg.roundRect(labelX, labelY, labelW, 28, 14)
     labelBg.fill({ color: P.labelBg, alpha: 0.55 })
     c.addChild(labelBg)
@@ -854,7 +964,7 @@ export function createPrepCityScene(
 
   /* ── Truck marker (foodtruck.png) ────────────── */
   const truckContainer = new Container()
-  truckContainer.y = GROUND_Y + 28
+  truckContainer.y = TRUCK_GROUND_Y
   truckContainer.x = Math.round(stagingX)
   root.addChild(truckContainer)
   void mountFoodTruckSprite(truckContainer).catch((err) => {
@@ -941,7 +1051,7 @@ export function createPrepCityScene(
     }
     // 화면 픽셀에 스냅 → 스케일된 씬에서도 계단·떨림 완화
     truckContainer.x = Math.round(nextX * s) / s
-    truckContainer.y = Math.round((GROUND_Y + 28) * s) / s
+    truckContainer.y = Math.round(TRUCK_GROUND_Y * s) / s
 
     particleG.clear()
     for (const p of particles) {
