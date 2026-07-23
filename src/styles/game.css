@@ -675,7 +675,8 @@ body {
    Prep Phase — Full-screen PixiJS city map
    ═══════════════════════════════════════════════════════ */
 
-body:has(.phase-prep-full) {
+body:has(.phase-prep-full),
+body:has(.phase-prep-supply) {
   overflow: hidden;
   background: #4890d0;
 }
@@ -685,6 +686,35 @@ body:has(.phase-prep-full) {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+}
+
+.prep-map-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.prep-map-layer--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.phase-prep-supply {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 200, 120, 0.35), transparent 55%),
+    linear-gradient(180deg, #5a9fd4 0%, #3d7eb0 45%, #2f6a96 100%);
+  animation: prep-supply-in 280ms ease-out;
+}
+
+@keyframes prep-supply-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .prep-city-bg {
@@ -713,11 +743,6 @@ body:has(.phase-prep-full) {
   pointer-events: auto;
 }
 
-/* 메뉴·재료 단계에서는 맵 클릭 비활성 */
-.prep--supply .prep-city-bg {
-  pointer-events: none;
-}
-
 /* ── Step indicator ─────────────────────────────── */
 .prep-steps {
   display: flex;
@@ -740,6 +765,11 @@ body:has(.phase-prep-full) {
 .prep-step.is-active {
   color: #fff;
   background: rgba(0, 0, 0, 0.5);
+}
+
+.prep-step.is-done {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .prep-step-sep {
@@ -865,7 +895,109 @@ body:has(.phase-prep-full) {
   transform: translateY(-1px);
 }
 
-/* ── Side Panel (Menu / Ingredients) ────────────── */
+/* ── Supply screen (full page) ──────────────────── */
+.prep-supply-screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.5rem 1.25rem 0;
+  width: min(1100px, 100%);
+  margin: 0 auto;
+}
+
+.prep-supply-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.prep-supply-kicker {
+  margin: 0 0 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.prep-supply-header h2 {
+  margin: 0;
+  font-size: 1.65rem;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.prep-supply-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 247, 238, 0.88);
+  border: 1px solid rgba(229, 208, 188, 0.5);
+}
+
+.prep-supply-badge-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.prep-supply-badge strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.prep-supply-badge small {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.prep-supply-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.prep-supply-card {
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem 1.1rem;
+}
+
+.prep-supply-card .panel {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.prep-supply-card .picker-item {
+  background: rgba(255, 244, 230, 0.75);
+}
+
+.prep-supply-card .picker-item.selected {
+  background: color-mix(in srgb, var(--accent-2) 22%, rgba(255, 244, 230, 0.9));
+}
+
+.prep-supply-card .price-field input,
+.prep-supply-card .shop-row button {
+  background: rgba(255, 247, 238, 0.9);
+}
+
+.phase-prep-supply .prep-bottom-bar {
+  margin-top: 0;
+  padding-top: 0.75rem;
+}
+
+/* ── Legacy side panel (unused in prep flow) ────── */
 .prep-side-panel {
   position: absolute;
   top: 0.6rem;
@@ -876,35 +1008,6 @@ body:has(.phase-prep-full) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: prep-panel-in 250ms ease-out;
-}
-
-.prep-supply-panel {
-  position: absolute;
-  top: 5.2rem;
-  right: 0.75rem;
-  bottom: 4.2rem;
-  width: min(400px, calc(100vw - 1.5rem));
-  padding: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  animation: prep-panel-in 250ms ease-out;
-}
-
-.prep-supply-loc {
-  margin: 0;
-  padding: 0.75rem 1rem 0.5rem;
-  font-size: 0.92rem;
-  font-weight: 700;
-  border-bottom: 1px solid rgba(229, 208, 188, 0.45);
-}
-
-.prep-supply-loc span {
-  margin-left: 0.35rem;
-  font-weight: 500;
-  color: var(--muted);
-  font-size: 0.82rem;
 }
 
 .prep-side-scroll {
@@ -914,29 +1017,6 @@ body:has(.phase-prep-full) {
   flex-direction: column;
   gap: 0.8rem;
   flex: 1;
-}
-
-.prep-side-scroll .panel {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
-
-.prep-side-scroll .picker-item {
-  background: rgba(255, 244, 230, 0.7);
-}
-
-.prep-side-scroll .picker-item.selected {
-  background: color-mix(in srgb, var(--accent-2) 22%, rgba(255, 244, 230, 0.85));
-}
-
-.prep-side-scroll .price-field input {
-  background: rgba(255, 247, 238, 0.8);
-}
-
-.prep-side-scroll .shop-row button {
-  background: rgba(255, 247, 238, 0.8);
 }
 
 @keyframes prep-panel-in {
@@ -1420,18 +1500,16 @@ body:has(.phase-prep-full) {
     font-size: 0.85rem;
   }
 
-  .prep-side-panel,
-  .prep-supply-panel {
-    width: 100vw;
-    right: 0;
-    left: 0;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  .prep-supply-grid {
+    grid-template-columns: 1fr;
   }
 
-  .prep-supply-panel {
-    top: auto;
-    bottom: 4.2rem;
-    max-height: min(55vh, 420px);
+  .prep-supply-screen {
+    padding: 0.35rem 0.75rem 0;
+  }
+
+  .prep-supply-header h2 {
+    font-size: 1.35rem;
   }
 
   .vn-slot {
