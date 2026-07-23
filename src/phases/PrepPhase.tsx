@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import CityMap from '../components/CityMap'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import CityMap, { type CityMapHandle } from '../components/CityMap'
+import LocationSelectStrip from '../components/LocationSelectStrip'
 import MenuSelector from '../components/MenuSelector'
 import IngredientShop from '../components/IngredientShop'
 import { useGame } from '../state/GameContext'
@@ -17,11 +18,13 @@ type PrepStep = 'location' | 'menu' | 'market'
 function PrepHud() {
   const { state } = useGame()
   return (
-    <header className="prep-hud-bar">
-      <span className="prep-hud-chip">Day {state.day}/{state.maxDays}</span>
-      <span className="prep-hud-chip">₩{state.cash.toLocaleString('ko-KR')}</span>
-      <span className="prep-hud-chip">명성 {state.fame}</span>
-      <span className="prep-hud-chip">{getWeatherLabel(state.weather)}</span>
+    <header className="prep-hud-bar prep-hud-bar--ref">
+      <div className="prep-hud-pill">
+        <span className="prep-hud-chip">📅 Day {state.day}/{state.maxDays}</span>
+        <span className="prep-hud-chip">🪙 ₩{state.cash.toLocaleString('ko-KR')}</span>
+        <span className="prep-hud-chip">⭐ 명성 {state.fame}</span>
+        <span className="prep-hud-chip">{getWeatherLabel(state.weather)}</span>
+      </div>
     </header>
   )
 }
@@ -30,7 +33,7 @@ function PrepSteps({ step }: { step: PrepStep }) {
   const order: PrepStep[] = ['location', 'menu', 'market']
   const idx = order.indexOf(step)
   return (
-    <nav className="prep-steps" aria-label="준비 단계">
+    <nav className="prep-steps prep-steps--ref" aria-label="준비 단계">
       {(
         [
           ['location', '1. 장소'],
@@ -41,7 +44,7 @@ function PrepSteps({ step }: { step: PrepStep }) {
         <span key={id} className="prep-step-wrap">
           {i > 0 && (
             <span className="prep-step-sep" aria-hidden>
-              →
+              ›
             </span>
           )}
           <span
@@ -64,6 +67,7 @@ export default function PrepPhase() {
   const canStart = state.activeMenus.length > 0
   const [step, setStep] = useState<PrepStep>('location')
   const [locationPicked, setLocationPicked] = useState(false)
+  const mapRef = useRef<CityMapHandle | null>(null)
 
   const needed = useMemo(
     () => getRequiredIngredientIds(state.activeMenus),
@@ -83,6 +87,12 @@ export default function PrepPhase() {
 
   const showMap = step === 'location'
   const showPixiStep = step === 'menu' || step === 'market'
+  const selectedLocId = locationPicked ? state.location : null
+
+  const handlePickLocation = (id: string) => {
+    mapRef.current?.pickLocation(id)
+    setLocationPicked(true)
+  }
 
   return (
     <section
@@ -92,37 +102,37 @@ export default function PrepPhase() {
         className={`prep-map-layer${showMap ? '' : ' prep-map-layer--hidden'}`}
         aria-hidden={!showMap}
       >
-        <CityMap onLocationPick={() => setLocationPicked(true)} />
+        <CityMap ref={mapRef} onLocationPick={() => setLocationPicked(true)} />
       </div>
 
       {step === 'location' && (
-        <div className="prep-overlay">
+        <div className="prep-overlay prep-overlay--location">
           <PrepHud />
           <PrepSteps step="location" />
 
-          {locationPicked && loc ? (
-            <div className="prep-loc-card glass-panel">
-              <h3>
-                {loc.icon} {loc.name}
-              </h3>
-              <p className="prep-loc-desc">{loc.description}</p>
-              <div className="prep-loc-stats">
-                <span>피크 {loc.peakHours}</span>
+          <aside className="prep-hint-board">
+            <h3>📍 영업 장소를 선택하세요</h3>
+            <p>카드를 고르면 트럭이 해당 구역으로 이동합니다.</p>
+            {locationPicked && loc && (
+              <div className="prep-hint-stats">
+                <span>{loc.description}</span>
                 <span>예상 손님 {estimated}명</span>
                 <span>자릿세 {loc.rentCost.toLocaleString('ko-KR')}원</span>
               </div>
-            </div>
-          ) : (
-            <div className="prep-loc-card glass-panel prep-loc-card--hint">
-              <h3>영업 장소를 선택하세요</h3>
-              <p className="prep-loc-desc">맵에서 구역을 클릭하면 트럭이 이동합니다.</p>
-            </div>
-          )}
+            )}
+          </aside>
+
+          <div className="prep-loc-strip-wrap">
+            <LocationSelectStrip
+              selectedId={selectedLocId}
+              onSelect={handlePickLocation}
+            />
+          </div>
 
           <footer className="prep-bottom-bar">
             <button
               type="button"
-              className="prep-btn prep-btn--start"
+              className="prep-btn prep-btn--start prep-btn--cta"
               disabled={!locationPicked}
               onClick={() => setStep('menu')}
             >

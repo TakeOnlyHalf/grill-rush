@@ -692,13 +692,15 @@ export interface PrepCityState {
 
 export interface PrepCityHandle {
   update: (next: Partial<PrepCityState>) => void
+  /** UI 카드에서 장소 선택 시 트럭 이동·선택 연출 */
+  pickLocation: (id: string) => void
   destroy: () => void
 }
 
 export function createPrepCityScene(
   app: Application,
   initial: PrepCityState,
-  onSelect: (id: string) => void,
+  _onSelect: (id: string) => void,
 ): PrepCityHandle {
   const W = DESIGN_W
   const H = DESIGN_H
@@ -848,13 +850,16 @@ export function createPrepCityScene(
     c.addChild(glow)
     districtGlows.set(d.id, glow)
 
+    const chrome = new Container()
+    chrome.visible = false // 카드 UI 모드: 맵 라벨·잠금은 숨김
+
     const labelBg = new Graphics()
     const labelW = d.name.length * 16 + 36
     const labelX = (d.left + d.right) / 2 - labelW / 2
     const labelY = GROUND_Y + 74
     labelBg.roundRect(labelX, labelY, labelW, 28, 14)
     labelBg.fill({ color: P.labelBg, alpha: 0.55 })
-    c.addChild(labelBg)
+    chrome.addChild(labelBg)
 
     const label = new Text({
       text: `${d.icon} ${d.name}`,
@@ -869,7 +874,7 @@ export function createPrepCityScene(
     label.anchor.set(0.5, 0.5)
     label.x = (d.left + d.right) / 2
     label.y = labelY + 14
-    c.addChild(label)
+    chrome.addChild(label)
     districtLabels.push(label)
 
     const overlay = new Container()
@@ -901,53 +906,19 @@ export function createPrepCityScene(
     lockBody.roundRect(lcx - 10, lcy, 20, 16, 4)
     lockBody.fill(P.labelTxt)
 
-    // 고리는 별도 Graphics — fill 후 stroke 경로 이어짐 방지
     const lockShackle = new Graphics()
     lockShackle.arc(lcx, lcy, 9, Math.PI, 0)
     lockShackle.stroke({ width: 3, color: P.labelTxt })
 
     overlay.addChild(lockBody, lockShackle)
-
-    c.addChild(overlay)
+    chrome.addChild(overlay)
     districtOverlays.set(d.id, overlay)
 
-    c.hitArea = new Rectangle(d.left, GROUND_Y - 250, d.right - d.left, 310)
-    c.eventMode = 'static'
-    c.cursor = 'pointer'
+    c.addChild(chrome)
 
-    c.on('pointerdown', () => {
-      if (state.unlockedLocations.includes(d.id)) {
-        locationConfirmed = true
-        state.selectedLocation = d.id
-        truckTargetX = getDistrictCenter(d.id)
-        refreshStates()
-        onSelect(d.id)
-      }
-    })
-    c.on('pointerover', () => {
-      const isSelected =
-        locationConfirmed && state.selectedLocation === d.id
-      if (state.unlockedLocations.includes(d.id) && !isSelected) {
-        const gl = districtGlows.get(d.id)!
-        gl.clear()
-        drawGlow(
-          gl,
-          d.left,
-          GROUND_Y - 250,
-          d.right - d.left,
-          310,
-          P.hover,
-          6,
-        )
-      }
-    })
-    c.on('pointerout', () => {
-      const isSelected =
-        locationConfirmed && state.selectedLocation === d.id
-      if (!isSelected) {
-        districtGlows.get(d.id)!.clear()
-      }
-    })
+    c.hitArea = new Rectangle(d.left, GROUND_Y - 250, d.right - d.left, 310)
+    c.eventMode = 'none'
+    c.cursor = 'default'
 
     cityLayer.addChild(c)
     districtContainers.set(d.id, c)
@@ -1096,6 +1067,13 @@ export function createPrepCityScene(
         changed = true
       }
       if (changed) refreshStates()
+    },
+    pickLocation(id: string) {
+      if (!state.unlockedLocations.includes(id)) return
+      locationConfirmed = true
+      state.selectedLocation = id
+      truckTargetX = getDistrictCenter(id)
+      refreshStates()
     },
     destroy() {
       app.renderer.off('resize', onResize)

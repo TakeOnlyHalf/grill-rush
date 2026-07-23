@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PixiJS 게임 렌더 레이어
  *
  * React는 HUD·페이즈·상태, Pixi는 거리 뷰·미니게임·스프라이트 연출을 담당한다.
@@ -9,5 +9,6 @@ export { PIXI_COLORS } from './colors'
 export { createStreetScene } from './scenes/StreetScene'
 export { createTimingBarScene } from './scenes/TimingBarScene'
 export { createPrepCityScene } from './scenes/PrepCityScene'
+export { createPrepLocationScene } from './scenes/PrepLocationScene'
 export { createIngredientMarketScene } from './scenes/IngredientMarketScene'
 export { createMenuBoardScene } from './scenes/MenuBoardScene'
