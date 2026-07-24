@@ -1,59 +1,91 @@
-import { useCallback, useEffect, useRef } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react'
 import type { Application } from 'pixi.js'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
 import { PixiStage } from '../pixi'
 import {
-  createPrepCityScene,
-  type PrepCityHandle,
-} from '../pixi/scenes/PrepCityScene'
+  createPrepLocationScene,
+  type PrepLocationHandle,
+} from '../pixi/scenes/PrepLocationScene'
 
-export default function CityMap() {
-  const { state, dispatch } = useGame()
+export interface CityMapHandle {
+  pickLocation: (locationId: string) => void
+}
 
-  const sceneRef = useRef<PrepCityHandle | null>(null)
-  const stateRef = useRef({
-    selectedLocation: state.location,
-    unlockedLocations: state.unlockedLocations,
-    day: state.day,
-  })
-  stateRef.current = {
-    selectedLocation: state.location,
-    unlockedLocations: state.unlockedLocations,
-    day: state.day,
-  }
+interface CityMapProps {
+  onLocationPick?: (locationId: string) => void
+}
 
-  const dispatchRef = useRef(dispatch)
-  dispatchRef.current = dispatch
+const CityMap = forwardRef<CityMapHandle, CityMapProps>(
+  function CityMap({ onLocationPick }, ref) {
+    const { state, dispatch } = useGame()
 
-  useEffect(() => {
-    sceneRef.current?.update(stateRef.current)
-  }, [state.location, state.unlockedLocations, state.day])
+    const sceneRef = useRef<PrepLocationHandle | null>(null)
+    const stateRef = useRef({
+      selectedLocation: state.location,
+      unlockedLocations: state.unlockedLocations,
+      day: state.day,
+    })
+    stateRef.current = {
+      selectedLocation: state.location,
+      unlockedLocations: state.unlockedLocations,
+      day: state.day,
+    }
 
-  const setup = useCallback((app: Application) => {
-    const scene = createPrepCityScene(
-      app,
-      stateRef.current,
-      (locationId: string) => {
+    const dispatchRef = useRef(dispatch)
+    dispatchRef.current = dispatch
+    const onPickRef = useRef(onLocationPick)
+    onPickRef.current = onLocationPick
+
+    useImperativeHandle(ref, () => ({
+      pickLocation(locationId: string) {
+        sceneRef.current?.pickLocation(locationId)
         dispatchRef.current({
           type: ActionTypes.SET_LOCATION,
           payload: locationId,
         })
+        onPickRef.current?.(locationId)
       },
-    )
-    sceneRef.current = scene
-    return () => {
-      scene.destroy()
-      sceneRef.current = null
-    }
-  }, [])
+    }))
 
-  return (
-    <PixiStage
-      className="prep-city-bg"
-      fillParent
-      background="#4890d0"
-      setup={setup}
-    />
-  )
-}
+    useEffect(() => {
+      sceneRef.current?.update(stateRef.current)
+    }, [state.location, state.unlockedLocations, state.day])
+
+    const setup = useCallback((app: Application) => {
+      const scene = createPrepLocationScene(
+        app,
+        stateRef.current,
+        (locationId: string) => {
+          dispatchRef.current({
+            type: ActionTypes.SET_LOCATION,
+            payload: locationId,
+          })
+          onPickRef.current?.(locationId)
+        },
+      )
+      sceneRef.current = scene
+      return () => {
+        scene.destroy()
+        sceneRef.current = null
+      }
+    }, [])
+
+    return (
+      <PixiStage
+        className="prep-city-bg"
+        fillParent
+        background="#7eb8e8"
+        setup={setup}
+      />
+    )
+  },
+)
+
+export default CityMap
