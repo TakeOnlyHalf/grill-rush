@@ -7,6 +7,7 @@ import {
   type Ticker,
 } from 'pixi.js'
 import { FOOD_TRUCK_ART, READY_PHASE_BG } from '../../utils/assets'
+import { LOC_X_RATIO, ROAD_Y_RATIO } from '../../data/locationLayout'
 
 export interface PrepLocationState {
   selectedLocation: string
@@ -20,27 +21,17 @@ export interface PrepLocationHandle {
   destroy: () => void
 }
 
-/** 배경 이미지 기준 위치별 트럭 X 비율 (왼쪽→오른쪽) */
-const LOC_X_RATIO: Record<string, number> = {
-  park: 0.16,
-  office: 0.34,
-  festival: 0.5,
-  campus: 0.66,
-  night_market: 0.82,
-}
-
-const LOC_IDS = Object.keys(LOC_X_RATIO)
+export type LocationAnchors = Record<string, { xPct: number; yPct: number }>
 
 /** 화면 픽셀 기준 트럭 높이 (월드 스케일과 분리) */
 const TRUCK_SCREEN_H = 260
-/** 도로면 — 배경 높이 대비 비율 */
-const ROAD_Y_RATIO = 0.78
 /** 선택 이펙트는 그대로, 트럭만 살짝 아래 (월드 좌표) */
 const TRUCK_Y_NUDGE = 26
 /** 화면 픽셀 보빙 진폭 — 스케일 밖에서 적용해 계단 현상 방지 */
 const TRUCK_BOB_AMP_PX = 2.2
 const TRUCK_BOB_SPEED = 2.6
 
+const LOC_IDS = Object.keys(LOC_X_RATIO)
 const GLOW = {
   sel: 0xf0a84a,
   selSoft: 0xffd27a,
@@ -55,6 +46,7 @@ export function createPrepLocationScene(
   app: Application,
   initial: PrepLocationState,
   _onSelect: (id: string) => void,
+  onAnchors?: (anchors: LocationAnchors) => void,
 ): PrepLocationHandle {
   const state = { ...initial }
   let locationConfirmed = false
@@ -156,6 +148,21 @@ export function createPrepLocationScene(
     }
   }
 
+  function publishAnchors() {
+    if (!onAnchors || app.screen.width <= 0 || app.screen.height <= 0) return
+    const s = world.scale.x || 1
+    const anchors: LocationAnchors = {}
+    for (const id of LOC_IDS) {
+      const sx = world.x + locationX(id) * s
+      const sy = world.y + roadY() * s
+      anchors[id] = {
+        xPct: (sx / app.screen.width) * 100,
+        yPct: (sy / app.screen.height) * 100,
+      }
+    }
+    onAnchors(anchors)
+  }
+
   function layout() {
     if (!bgSprite.texture || bgSprite.texture.width === 0) return
     bgW = bgSprite.texture.width
@@ -185,6 +192,7 @@ export function createPrepLocationScene(
 
     refreshMarkers()
     syncTruckToScreen(0)
+    publishAnchors()
   }
 
   async function loadArt() {

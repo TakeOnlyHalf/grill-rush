@@ -12,6 +12,7 @@ import {
 } from '../state/formulas'
 import { getWeatherLabel } from '../utils/weather'
 import ingredients from '../data/ingredients.json'
+import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
 
 type PrepStep = 'location' | 'menu' | 'market'
 
@@ -67,6 +68,7 @@ export default function PrepPhase() {
   const canStart = state.activeMenus.length > 0
   const [step, setStep] = useState<PrepStep>('location')
   const [locationPicked, setLocationPicked] = useState(false)
+  const [locAnchors, setLocAnchors] = useState<LocationAnchors | null>(null)
   const mapRef = useRef<CityMapHandle | null>(null)
 
   const needed = useMemo(
@@ -102,7 +104,11 @@ export default function PrepPhase() {
         className={`prep-map-layer${showMap ? '' : ' prep-map-layer--hidden'}`}
         aria-hidden={!showMap}
       >
-        <CityMap ref={mapRef} onLocationPick={() => setLocationPicked(true)} />
+        <CityMap
+          ref={mapRef}
+          onLocationPick={() => setLocationPicked(true)}
+          onAnchorsChange={setLocAnchors}
+        />
       </div>
 
       {step === 'location' && (
@@ -110,9 +116,20 @@ export default function PrepPhase() {
           <PrepHud />
           <PrepSteps step="location" />
 
-          <aside className="prep-hint-board">
-            <h3>📍 영업 장소를 선택하세요</h3>
-            <p>카드를 고르면 트럭이 해당 구역으로 이동합니다.</p>
+          <aside className="prep-hint-board" aria-label="장소 선택 안내">
+            <div className="prep-hint-board__title-row">
+              <span className="prep-hint-board__pin" aria-hidden="true">
+                <svg viewBox="0 0 24 32" width="22" height="28" fill="none">
+                  <path
+                    d="M12 0C5.4 0 0 5.2 0 11.6c0 8.2 10.2 18.8 10.6 19.2a1.9 1.9 0 0 0 2.8 0C13.8 30.4 24 19.8 24 11.6 24 5.2 18.6 0 12 0Z"
+                    fill="#e85a4a"
+                  />
+                  <circle cx="12" cy="11.5" r="4.2" fill="#fff6ee" />
+                </svg>
+              </span>
+              <h3>영업 장소를 선택하세요</h3>
+            </div>
+            <p>맵에서 구역을 클릭하면 트럭이 이동합니다.</p>
             {locationPicked && loc && (
               <div className="prep-hint-stats">
                 <span>{loc.description}</span>
@@ -120,12 +137,25 @@ export default function PrepPhase() {
                 <span>자릿세 {loc.rentCost.toLocaleString('ko-KR')}원</span>
               </div>
             )}
+            <span className="prep-hint-board__paw" aria-hidden="true">
+              <svg viewBox="0 0 40 36" width="28" height="25" fill="none">
+                <ellipse cx="11" cy="9" rx="4.2" ry="5.2" fill="#c4a07a" transform="rotate(-18 11 9)" />
+                <ellipse cx="20" cy="5.5" rx="4" ry="5" fill="#c4a07a" />
+                <ellipse cx="29" cy="9" rx="4.2" ry="5.2" fill="#c4a07a" transform="rotate(18 29 9)" />
+                <ellipse cx="6.5" cy="16.5" rx="3.6" ry="4.4" fill="#c4a07a" transform="rotate(-32 6.5 16.5)" />
+                <path
+                  d="M20 14c-7.2 0-12.5 5.2-12.5 11.2 0 4.6 3.6 7.6 8.2 7.6 1.8 0 3.4-.6 4.3-1.6.9 1 2.5 1.6 4.3 1.6 4.6 0 8.2-3 8.2-7.6C32.5 19.2 27.2 14 20 14Z"
+                  fill="#c4a07a"
+                />
+              </svg>
+            </span>
           </aside>
 
           <div className="prep-loc-strip-wrap">
             <LocationSelectStrip
               selectedId={selectedLocId}
               onSelect={handlePickLocation}
+              anchors={locAnchors}
             />
           </div>
 
