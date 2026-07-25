@@ -87,6 +87,7 @@ export type GameAction =
   | { type: 'TOGGLE_MENU'; payload: MenuId }
   | { type: 'SET_MENU_PRICE'; payload: { menuId: MenuId; price: number } }
   | { type: 'BUY_INGREDIENT'; payload: { ingredientId: IngredientId; qty: number; unitCost: number } }
+  | { type: 'USE_INGREDIENT'; payload: { ingredientId: IngredientId } }
   | { type: 'START_OPEN' }
   | { type: 'TICK_OPEN'; payload?: { dt?: number } }
   | { type: 'END_OPEN' }

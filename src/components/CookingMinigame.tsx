@@ -1,24 +1,33 @@
-import TimingBar from '../minigames/TimingBar'
-import SequenceMatch from '../minigames/SequenceMatch'
-import RapidTap from '../minigames/RapidTap'
+import { useMemo } from 'react'
+import { useGame } from '../state/GameContext'
+import { createIdleGrillSlots } from '../grill/grillSlots'
+import { grillIngredients } from '../grill/grillIngredients'
+import GrillBoard from './GrillBoard'
+import { ActionTypes } from '../state/actions'
 
 /**
  * 조리 미니게임 컨테이너
  * TODO: 주문에 따라 타입 선택, 그릴 슬롯 게이지 시스템으로 교체 가능
  */
 export default function CookingMinigame() {
+  const { state, dispatch } = useGame()
+  const initialSlots = useMemo(createIdleGrillSlots, [])
+
   return (
     <div className="panel cooking-area">
-      <h3>조리 미니게임</h3>
-      <p className="muted">MVP: TimingBar (PixiJS) · 확장: Sequence / RapidTap</p>
-      <div className="minigame-slots">
-        <TimingBar />
-        <SequenceMatch />
-        <RapidTap />
-      </div>
-      <p className="todo-note">
-        TODO: 그릴 게이지(0~100% 구간) 기반 멀티슬롯 조리로 확장
-      </p>
+      <h3>그릴</h3>
+      <p className="muted">재료를 선택해 올리고 적절한 판정 구간에서 회수하세요.</p>
+      <GrillBoard
+        initialSlots={initialSlots}
+        ingredients={grillIngredients}
+        inventory={state.ingredients}
+        onUseIngredient={(ingredientId) => {
+          dispatch({
+            type: ActionTypes.USE_INGREDIENT,
+            payload: { ingredientId },
+          })
+        }}
+      />
     </div>
   )
 }

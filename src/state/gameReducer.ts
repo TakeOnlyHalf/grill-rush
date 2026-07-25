@@ -89,6 +89,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case ActionTypes.USE_INGREDIENT: {
+      if (state.phase !== 'open') return state
+      const ingredientId = action.payload.ingredientId
+      const current = state.ingredients[ingredientId] ?? 0
+      if (current <= 0) return state
+      return {
+        ...state,
+        ingredients: {
+          ...state.ingredients,
+          [ingredientId]: current - 1,
+        },
+      }
+    }
+
     case ActionTypes.START_OPEN: {
       if (state.phase !== 'prep') return state
       if (state.activeMenus.length === 0) return state
