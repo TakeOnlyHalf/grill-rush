@@ -96,6 +96,16 @@ export default function PrepPhase() {
     setLocationPicked(true)
   }
 
+  const rentCost = loc?.rentCost ?? 0
+  const rentAlreadyPaid = state.dailyCosts.rent ?? 0
+  const canAffordRent = state.cash + rentAlreadyPaid >= rentCost
+
+  const handleConfirmLocation = () => {
+    if (!locationPicked || !canAffordRent) return
+    dispatch({ type: ActionTypes.CONFIRM_LOCATION })
+    setStep('menu')
+  }
+
   return (
     <section
       className={`phase ${showMap ? 'phase-prep-full' : 'phase-prep-supply'}`}
@@ -163,8 +173,8 @@ export default function PrepPhase() {
             <button
               type="button"
               className="prep-btn prep-btn--start prep-btn--cta"
-              disabled={!locationPicked}
-              onClick={() => setStep('menu')}
+              disabled={!locationPicked || !canAffordRent}
+              onClick={handleConfirmLocation}
             >
               다음: 메뉴 선택 →
             </button>
