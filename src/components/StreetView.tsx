@@ -9,16 +9,17 @@ import type { StreetSceneHandle } from '../pixi/scenes/StreetScene'
 export default function StreetView() {
   const state = useGameState()
   const loc = getLocationById(state.location)
-  const customerCount = state.customers.length
-  const locationLabel = `${loc?.icon ?? ''} ${loc?.name ?? '—'} · 대기 ${customerCount}명`
+  const customerTypes = state.customers.map((c) => c.type)
+  const locationLabel = `${loc?.icon ?? ''} ${loc?.name ?? '—'} · 대기 ${customerTypes.length}명`
 
   const sceneRef = useRef<StreetSceneHandle | null>(null)
-  const propsRef = useRef({ customerCount, locationLabel })
-  propsRef.current = { customerCount, locationLabel }
+  const propsRef = useRef({ customerTypes, locationLabel })
+  propsRef.current = { customerTypes, locationLabel }
 
+  const customerTypesKey = customerTypes.join(',')
   useEffect(() => {
     sceneRef.current?.update(propsRef.current)
-  }, [customerCount, locationLabel])
+  }, [customerTypesKey, locationLabel])
 
   const setup = useCallback((app: Application) => {
     const scene = createStreetScene(app, propsRef.current)
@@ -36,9 +37,7 @@ export default function StreetView() {
         height={160}
         setup={setup}
       />
-      <p className="todo-note">
-        TODO: 손님 스프라이트 · 날씨 · 트럭 업그레이드 비주얼
-      </p>
+      <p className="todo-note">TODO: 날씨 · 트럭 업그레이드 비주얼</p>
     </div>
   )
 }
