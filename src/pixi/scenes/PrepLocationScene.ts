@@ -92,7 +92,7 @@ export function createPrepLocationScene(
   let truckSprite: Sprite | null = null
 
   function stagingX(): number {
-    return bgW * 0.06
+    return bgW * 0.1
   }
 
   function locationX(id: string): number {

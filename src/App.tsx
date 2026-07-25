@@ -1,4 +1,5 @@
 import { GameProvider, useGameState } from './state/GameContext'
+import GameViewport from './components/GameViewport'
 import TitlePhase from './phases/TitlePhase'
 import StoryPhase from './phases/StoryPhase'
 import PrepPhase from './phases/PrepPhase'
@@ -50,7 +51,9 @@ function AppShell() {
 export default function App() {
   return (
     <GameProvider>
-      <AppShell />
+      <GameViewport>
+        <AppShell />
+      </GameViewport>
     </GameProvider>
   )
 }
