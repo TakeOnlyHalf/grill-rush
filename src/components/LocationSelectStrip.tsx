@@ -42,6 +42,7 @@ export default function LocationSelectStrip({
             role="option"
             aria-selected={selected}
             aria-disabled={!unlocked}
+            aria-expanded={selected}
             disabled={!unlocked}
             className={[
               'loc-card',
@@ -69,13 +70,22 @@ export default function LocationSelectStrip({
 
             <span className="loc-card-name">{loc.name}</span>
 
-            {unlocked ? (
-              <span className="loc-card-meta">
-                <small>피크 {loc.peakHours}</small>
-                <small>예상 {estimated}명</small>
-              </span>
-            ) : (
+            {!unlocked && (
               <span className="loc-card-lock">Day {loc.unlockDay} 해금</span>
+            )}
+
+            {unlocked && (
+              <span className="loc-card-details">
+                <span className="loc-card-details-inner">
+                  <span className="loc-card-desc">{loc.description}</span>
+                  <span className="loc-card-stats">
+                    <span>피크 {loc.peakHours}</span>
+                    <span>예상 {estimated}명</span>
+                    <span>자릿세 ₩{loc.rentCost.toLocaleString('ko-KR')}</span>
+                    <span>경쟁 노점 {loc.competition}곳</span>
+                  </span>
+                </span>
+              </span>
             )}
 
             <span className="loc-card-stem" aria-hidden />
