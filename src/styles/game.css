@@ -93,7 +93,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #2a1a14;
+  background: var(--bg);
 }
 
 .game-viewport-frame {
