@@ -1,0 +1,115 @@
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import GrillBoard from '../components/GrillBoard'
+import { grillIngredients } from '../grill/grillIngredients'
+import { createIdleGrillSlots, type GrillSlot } from '../grill/grillSlots'
+
+const LONG_DURATION = 1_000_000_000
+
+function slotAt(index: number, ingredientId: string, progress: number): GrillSlot {
+  return {
+    id: `grill-${index + 1}`,
+    status: progress > 1 ? 'burnt' : 'cooking',
+    ingredientId,
+    startedAt: Date.now() - progress * LONG_DURATION,
+    cookDurationMs: LONG_DURATION,
+  }
+}
+
+const defaultInventory = {
+  egg: 3,
+  bacon: 2,
+  corn: 4,
+}
+
+const meta = {
+  title: 'Game/Grill Board',
+  component: GrillBoard,
+  tags: ['autodocs'],
+  args: {
+    ingredients: grillIngredients,
+    height: 350,
+  },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          '영업 화면과 동일한 PixiJS 그릴 및 재료 트레이. 실제 재고와 재료별 조리 시간을 사용합니다.',
+      },
+    },
+  },
+} satisfies Meta<typeof GrillBoard>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const EmptyTray: Story = {
+  name: '재료가 없는 빈 트레이',
+  args: {
+    initialSlots: createIdleGrillSlots(),
+    inventory: {},
+  },
+}
+
+export const DefaultGrill: Story = {
+  name: '재고가 있는 기본 그릴',
+  args: {
+    initialSlots: createIdleGrillSlots(),
+    inventory: defaultInventory,
+  },
+}
+
+export const MixedCookResults: Story = {
+  name: 'Raw · Good · Perfect · Danger · Burnt',
+  args: {
+    initialSlots: [
+      slotAt(0, 'egg', 0.2),
+      slotAt(1, 'bacon', 0.55),
+      slotAt(2, 'corn', 0.78),
+    ],
+    inventory: {
+      egg: 1,
+      bacon: 1,
+      corn: 1,
+      patty: 1,
+      steak: 1,
+    },
+  },
+  render: (args) => (
+    <div style={{ display: 'grid', gap: '0.75rem' }}>
+      <GrillBoard {...args} />
+      <GrillBoard
+        {...args}
+        initialSlots={[
+          slotAt(0, 'patty', 0.95),
+          slotAt(1, 'steak', 1.1),
+          createIdleGrillSlots()[2],
+        ]}
+      />
+    </div>
+  ),
+}
+
+export const PartiallySoldOut: Story = {
+  name: '일부 재료가 품절된 상태',
+  args: {
+    initialSlots: createIdleGrillSlots(),
+    inventory: {
+      egg: 0,
+      bacon: 2,
+      corn: 0,
+      patty: 1,
+    },
+  },
+}
+
+export const FullGrill: Story = {
+  name: '그릴이 가득 찬 상태',
+  args: {
+    initialSlots: [
+      slotAt(0, 'egg', 0.25),
+      slotAt(1, 'bacon', 0.72),
+      slotAt(2, 'corn', 0.93),
+    ],
+    inventory: defaultInventory,
+  },
+}
