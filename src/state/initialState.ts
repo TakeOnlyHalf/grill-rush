@@ -21,7 +21,7 @@ export function createInitialState(): GameState {
     fame: 0,
     reviewAvg: 0,
     location: defaultLocation,
-    activeMenus: starterMenus.slice(0, 2),
+    activeMenus: [],
     menuPrices,
     ingredients: {},
     customers: [],

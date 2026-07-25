@@ -6,7 +6,7 @@ import {
   OPEN_DURATION_SEC,
 } from './actions'
 import { createInitialState } from './initialState'
-import { calcDailyProfit, resolveEnding } from './formulas'
+import { calcDailyProfit, getRequiredIngredientIds, resolveEnding } from './formulas'
 import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
 import type { GameAction, GameState } from '../types/game'
@@ -50,7 +50,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const has = state.activeMenus.includes(id)
       if (has) {
-        if (state.activeMenus.length <= 1) return state
         return {
           ...state,
           activeMenus: state.activeMenus.filter((m) => m !== id),
@@ -72,6 +71,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case ActionTypes.BUY_INGREDIENT: {
       if (state.phase !== 'prep') return state
       const { ingredientId, qty, unitCost } = action.payload
+      const allowed = getRequiredIngredientIds(state.activeMenus)
+      if (!allowed.includes(ingredientId)) return state
       const total = unitCost * qty
       if (state.cash < total) return state
       return {

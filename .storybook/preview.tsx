@@ -11,11 +11,12 @@ const preview = {
     },
     layout: 'padded',
     backgrounds: {
-      default: 'grill',
+      default: 'cream',
       values: [
-        { name: 'grill', value: '#1a1410' },
-        { name: 'panel', value: '#2a211c' },
-        { name: 'light', value: '#f5f0e8' },
+        { name: 'cream', value: '#f6ebe0' },
+        { name: 'panel', value: '#fff7ee' },
+        { name: 'apricot', value: '#ffe8d4' },
+        { name: 'story-sky', value: '#a8d4f0' },
       ],
     },
     a11y: {
@@ -31,7 +32,10 @@ const preview = {
         style={{
           fontFamily: 'var(--font)',
           color: 'var(--text)',
+          background: 'var(--bg)',
           minHeight: '100%',
+          borderRadius: 'var(--radius)',
+          padding: '0.25rem',
         }}
       >
         <Story />

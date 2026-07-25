@@ -35,14 +35,33 @@ export default function TitlePhase() {
   return (
     <section className="phase phase-title" aria-label="타이틀">
       <div className="title-stage">
+        {/* 좌우 여백을 손그림 톤으로 자연스럽게 연장 */}
+        <img
+          className="title-art-bleed"
+          src={TITLE_DAY_ART}
+          alt=""
+          aria-hidden
+          decoding="async"
+        />
         <img className="title-art" src={TITLE_DAY_ART} alt="" decoding="async" />
         <h1 className="visually-hidden">Grill Rush — Food Truck Tycoon</h1>
         <nav className="title-actions" aria-label="타이틀 메뉴">
-          <TitleMenuButton disabled={!canContinue} onClick={handleContinue}>
+          <TitleMenuButton
+            tone={canContinue ? 'primary' : 'secondary'}
+            icon="continue"
+            disabled={!canContinue}
+            onClick={handleContinue}
+          >
             이어서 하기
           </TitleMenuButton>
-          <TitleMenuButton onClick={handleNewGame}>처음부터</TitleMenuButton>
-          <TitleMenuButton variant="chalk" onClick={() => setOptionsOpen(true)}>
+          <TitleMenuButton
+            tone={canContinue ? 'secondary' : 'primary'}
+            icon="new"
+            onClick={handleNewGame}
+          >
+            처음부터
+          </TitleMenuButton>
+          <TitleMenuButton tone="tertiary" icon="options" onClick={() => setOptionsOpen(true)}>
             옵션
           </TitleMenuButton>
         </nav>

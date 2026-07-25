@@ -38,7 +38,7 @@ function PhaseRouter() {
 
 function AppShell() {
   const { phase } = useGameState()
-  const bleed = phase === 'title' || phase === 'story'
+  const bleed = phase === 'title' || phase === 'story' || phase === 'prep'
 
   return (
     <div className={bleed ? 'app-shell app-shell--bleed' : 'app-shell'}>

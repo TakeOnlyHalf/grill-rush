@@ -35,7 +35,6 @@ export default function StreetView() {
       <PixiStage
         className="street-pixi"
         height={160}
-        background="#2a211c"
         setup={setup}
       />
       <p className="todo-note">TODO: 날씨 · 트럭 업그레이드 비주얼</p>
