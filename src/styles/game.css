@@ -1411,6 +1411,10 @@ body:has(.phase-prep-supply) {
 }
 
 /* Open */
+.grill-board-wrap {
+  position: relative;
+}
+
 .time-bar {
   height: 10px;
   background: var(--cream);

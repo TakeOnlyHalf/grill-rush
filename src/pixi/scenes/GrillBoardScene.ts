@@ -11,6 +11,7 @@ import {
   type GrillIngredient,
   type GrillSlot,
 } from '../../grill/grillSlots'
+import { COOK_FEEDBACK_DURATION_MS, cookFeedback } from '../../grill/grillFeedback'
 
 export interface GrillBoardSceneOptions {
   slots: GrillSlot[]
@@ -20,11 +21,13 @@ export interface GrillBoardSceneOptions {
   onCollect?: (item: CollectedGrillItem) => void
   onSlotsChange?: (slots: GrillSlot[]) => void
   now?: () => number
+  initialFeedback?: CookResult
 }
 
 export interface GrillBoardSceneHandle {
   destroy: () => void
   updateInventory: (inventory: Record<string, number>) => void
+  showFeedback: (result: CookResult) => void
 }
 
 interface SlotView {
@@ -34,6 +37,7 @@ interface SlotView {
   state: Text
   ingredient: Text
   gauge: Graphics
+  steam: Text
 }
 
 interface TrayView {
@@ -56,7 +60,7 @@ const resultColors: Record<CookResult, string> = {
   raw: cookColors.idle.value,
   good: cookColors.cooking.value,
   perfect: cookColors.done.value,
-  danger: cookColors.warning.value,
+  danger: colors.danger.value,
   burnt: cookColors.burnt.value,
 }
 
@@ -72,13 +76,26 @@ export function createGrillBoardScene(
   const trayTitle = createText('재료 트레이', 13, colors.text.value, '700')
   const trayHint = createText('', 10, colors.muted.value)
   const emptyTray = createText('구매한 조리 재료가 없습니다', 12, colors.muted.value, '600')
+  const feedbackRoot = new Container()
+  const feedbackPanel = new Graphics()
+  const feedbackTitle = createText('', 28, colors.cream.value, '700')
+  const feedbackStars = createText('', 18, colors.gold.value, '700')
+  const feedbackDetail = createText('', 12, colors.cream.value, '600')
   let slots = cloneSlots(options.slots)
   let inventory = { ...options.inventory }
   let selectedIngredientId: string | null = null
   const now = options.now ?? Date.now
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  let feedbackStartedAt: number | null = null
 
   app.stage.addChild(root)
-  root.addChild(board, grillTitle, trayTitle, trayHint, emptyTray)
+  root.addChild(board, grillTitle, trayTitle, trayHint, emptyTray, feedbackRoot)
+  feedbackRoot.eventMode = 'none'
+  feedbackRoot.visible = false
+  feedbackTitle.anchor.set(0.5)
+  feedbackStars.anchor.set(0.5)
+  feedbackDetail.anchor.set(0.5)
+  feedbackRoot.addChild(feedbackPanel, feedbackTitle, feedbackStars, feedbackDetail)
 
   const slotViews: SlotView[] = slots.map((_slot, index) => {
     const slotRoot = new Container()
@@ -89,10 +106,12 @@ export function createGrillBoardScene(
       state: createText('', 11, colors.text.value, '700'),
       ingredient: createText('', 10, colors.muted.value),
       gauge: new Graphics(),
+      steam: createText('〰 〰 〰', 13, colors.cream.value, '700'),
     }
     slotRoot.eventMode = 'static'
     slotRoot.on('pointertap', () => handleSlotTap(index))
-    slotRoot.addChild(view.surface, view.food, view.state, view.ingredient, view.gauge)
+    view.steam.anchor.set(0.5)
+    slotRoot.addChild(view.surface, view.food, view.steam, view.state, view.ingredient, view.gauge)
     root.addChild(slotRoot)
     return view
   })
@@ -115,6 +134,7 @@ export function createGrillBoardScene(
     root.addChild(trayRoot)
     return view
   })
+  root.addChild(feedbackRoot)
 
   function handleTrayTap(ingredientId: string) {
     if ((inventory[ingredientId] ?? 0) <= 0 || isGrillFull()) return
@@ -150,7 +170,7 @@ export function createGrillBoardScene(
     if (!slot.ingredientId) return
     const progress = getCookProgress(slot, time)
     const result = getCookResult(progress)
-    options.onCollect?.({
+    reportResult({
       slotId: slot.id,
       ingredientId: slot.ingredientId,
       result,
@@ -164,6 +184,32 @@ export function createGrillBoardScene(
 
   function emitSlots() {
     options.onSlotsChange?.(cloneSlots(slots))
+  }
+
+  function reportResult(item: CollectedGrillItem) {
+    showFeedback(item.result)
+    options.onCollect?.(item)
+  }
+
+  function showFeedback(result: CookResult) {
+    const feedback = cookFeedback[result]
+    const accent = resultColors[result]
+    const darkPanel = result === 'burnt'
+    feedbackStartedAt = now()
+    feedbackTitle.text = feedback.title
+    feedbackTitle.style.fill = darkPanel ? colors.cream.value : colors.text.value
+    feedbackStars.text = feedback.stars > 0 ? '★'.repeat(feedback.stars) : ''
+    feedbackDetail.text = feedback.detail
+    feedbackDetail.style.fill = darkPanel ? colors.cream.value : colors.text.value
+    feedbackPanel.clear()
+    feedbackPanel.roundRect(-150, -60, 300, 120, 18)
+    feedbackPanel.fill({ color: darkPanel ? colors.text.value : colors.bgPanel.value, alpha: 0.97 })
+    feedbackPanel.stroke({ color: result === 'burnt' ? colors.danger.value : accent, width: result === 'perfect' ? 4 : 3 })
+    feedbackTitle.y = feedback.stars > 0 ? -27 : -18
+    feedbackStars.y = 4
+    feedbackDetail.y = feedback.stars > 0 ? 34 : 22
+    feedbackRoot.visible = true
+    feedbackRoot.alpha = 1
   }
 
   function isGrillFull() {
@@ -206,6 +252,8 @@ export function createGrillBoardScene(
     trayTitle.y = 235
     trayHint.x = app.screen.width - trayHint.width - 18
     trayHint.y = 237
+    feedbackRoot.x = app.screen.width / 2
+    feedbackRoot.y = 144
 
     slotViews.forEach((view, index) => {
       view.root.x = padding + index * (slotWidth + gap)
@@ -260,6 +308,21 @@ export function createGrillBoardScene(
     }
 
     view.food.text = ingredient?.icon ?? ''
+    const pulse = reduceMotion ? 0.5 : (Math.sin(time / 90) + 1) / 2
+    const emphasisScale = result === 'perfect'
+      ? 1.04 + pulse * 0.05
+      : result === 'danger'
+        ? 1 + pulse * 0.08
+        : result === 'good'
+          ? 1.03
+          : 1
+    view.food.scale.set(emphasisScale)
+    view.food.alpha = result === 'burnt' ? 0.38 : 1
+    view.surface.alpha = result === 'danger' ? 0.68 + pulse * 0.32 : 1
+    view.steam.x = slotWidth / 2
+    view.steam.y = 23 - pulse * 5
+    view.steam.visible = slot.status === 'cooking' && progress >= 0.3
+    view.steam.alpha = reduceMotion ? 0.62 : 0.35 + pulse * 0.4
     view.state.text = slot.status === 'idle' ? '비어 있음 · 선택 재료 투입' : resultLabels[result]
     view.ingredient.text = ingredient?.name ?? '빈 슬롯'
     view.root.cursor = slot.status === 'idle' && !selectedIngredientId ? 'default' : 'pointer'
@@ -276,6 +339,28 @@ export function createGrillBoardScene(
         view.gauge.fill(colors.text.value)
       }
     }
+  }
+
+  function renderFeedback(time: number) {
+    if (feedbackStartedAt === null) return
+    const elapsed = time - feedbackStartedAt
+    if (elapsed >= COOK_FEEDBACK_DURATION_MS) {
+      feedbackStartedAt = null
+      feedbackRoot.visible = false
+      return
+    }
+    if (reduceMotion) {
+      feedbackRoot.scale.set(1)
+      feedbackRoot.y = 144
+      feedbackRoot.alpha = elapsed < 700 ? 1 : (COOK_FEEDBACK_DURATION_MS - elapsed) / 100
+      return
+    }
+    const progress = elapsed / COOK_FEEDBACK_DURATION_MS
+    const entry = Math.min(1, progress / 0.22)
+    const rebound = 1 + Math.sin(entry * Math.PI) * 0.1
+    feedbackRoot.scale.set((0.72 + entry * 0.28) * rebound)
+    feedbackRoot.y = 144 - progress * 18
+    feedbackRoot.alpha = progress < 0.72 ? 1 : (1 - progress) / 0.28
   }
 
   function renderTray() {
@@ -326,7 +411,7 @@ export function createGrillBoardScene(
         slots[index] = resolved
         changed = true
         if (resolved.ingredientId) {
-          options.onCollect?.({
+          reportResult({
             slotId: resolved.id,
             ingredientId: resolved.ingredientId,
             result: 'burnt',
@@ -336,6 +421,7 @@ export function createGrillBoardScene(
       }
       renderSlot(index, time)
     }
+    renderFeedback(time)
     if (changed) {
       emitSlots()
       renderTray()
@@ -345,6 +431,7 @@ export function createGrillBoardScene(
   layout()
   renderTray()
   onTick(app.ticker)
+  if (options.initialFeedback) showFeedback(options.initialFeedback)
   app.ticker.add(onTick)
 
   return {
@@ -355,11 +442,13 @@ export function createGrillBoardScene(
       }
       renderTray()
     },
+    showFeedback,
     destroy() {
       app.ticker.remove(onTick)
       slotViews.forEach((view) => view.root.removeAllListeners())
       trayViews.forEach((view) => view.root.removeAllListeners())
       selectedIngredientId = null
+      feedbackStartedAt = null
       slots = []
       inventory = {}
       root.destroy({ children: true })
