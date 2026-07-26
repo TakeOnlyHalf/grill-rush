@@ -113,3 +113,18 @@ export const FullGrill: Story = {
     inventory: defaultInventory,
   },
 }
+
+export const ResultFeedback: Story = {
+  name: '조리 판정 결과 피드백',
+  args: {
+    initialSlots: createIdleGrillSlots(),
+    inventory: defaultInventory,
+    initialFeedback: 'perfect',
+  },
+  argTypes: {
+    initialFeedback: {
+      control: 'select',
+      options: ['raw', 'good', 'perfect', 'danger', 'burnt'],
+    },
+  },
+}
