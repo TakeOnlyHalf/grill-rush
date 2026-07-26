@@ -48,7 +48,7 @@ export default function MenuSelector() {
     <PixiStage
       className="prep-menu-pixi"
       fillParent
-      background="#3a241c"
+      background="transparent"
       setup={setup}
     />
   )

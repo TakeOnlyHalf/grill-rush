@@ -1309,7 +1309,17 @@ body:has(.phase-prep-supply) {
   min-height: 360px;
 }
 
-.prep-menu-pixi canvas,
+.prep-pixi-stage-wrap:has(.prep-menu-pixi) {
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+.prep-menu-pixi canvas {
+  border-radius: 0 !important;
+}
+
 .prep-ingredient-pixi canvas {
   border-radius: var(--radius-lg) !important;
 }

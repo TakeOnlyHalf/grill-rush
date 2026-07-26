@@ -17,3 +17,6 @@ export const FOOD_TRUCK_ART = publicUrl('images/ready_phase/foodtruck.png')
 
 /** 준비 페이즈 장소 선택 배경 */
 export const READY_PHASE_BG = publicUrl('images/ready_phase/ready_background.png')
+
+/** 메뉴 선택 — 나무 메뉴판 */
+export const MENU_BOARD_ART = publicUrl('images/ready_phase/menu_board.png')
