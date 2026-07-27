@@ -18,15 +18,19 @@ export const FOOD_TRUCK_ART = publicUrl('images/ready_phase/foodtruck.webp')
 /** 준비 페이즈 장소 선택 배경 */
 export const READY_PHASE_BG = publicUrl('images/ready_phase/ready_background.webp')
 
-/** 메뉴 선택 — 나무 메뉴판 */
-export const MENU_BOARD_ART = publicUrl('images/ready_phase/menu_board.webp')
+/** 메뉴 선택 배경 */
+export const MENU_BACKGROUND_ART = publicUrl('images/ready_phase/menu_background.webp')
+
+/** 재료 마트 배경 */
+export const MART_BACKGROUND_ART = publicUrl('images/ready_phase/mart_background.webp')
 
 /** 앱 부트 시 미리 받아둘 핵심 이미지 (탭 전환 시 깜빡임 방지) */
 export const CRITICAL_IMAGE_URLS = [
   TITLE_DAY_ART,
   READY_PHASE_BG,
   FOOD_TRUCK_ART,
-  MENU_BOARD_ART,
+  MENU_BACKGROUND_ART,
+  MART_BACKGROUND_ART,
   DAY_STREET_BG,
 ] as const
 

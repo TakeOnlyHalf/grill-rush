@@ -212,11 +212,15 @@ export default function PrepPhase() {
 
       {showPixiStep && (
         <>
-          <PrepHud />
-          <PrepSteps step={step} />
+          <div className="prep-supply-stage" aria-hidden={false}>
+            {step === 'menu' ? <MenuSelector /> : <IngredientShop />}
+          </div>
 
-          <div className="prep-supply-screen prep-supply-screen--solo">
-            <header className="prep-supply-header">
+          <div className="prep-overlay prep-overlay--supply">
+            <PrepHud />
+            <PrepSteps step={step} />
+
+            <header className="prep-supply-header prep-supply-header--overlay">
               <div>
                 <p className="prep-supply-kicker">오늘의 준비</p>
                 <h2>{step === 'menu' ? '메뉴 선택' : '재료 마트'}</h2>
@@ -238,50 +242,46 @@ export default function PrepPhase() {
               )}
             </header>
 
-            <div className="prep-pixi-stage-wrap">
-              {step === 'menu' ? <MenuSelector /> : <IngredientShop />}
-            </div>
+            <footer className="prep-bottom-bar">
+              {step === 'menu' ? (
+                <>
+                  <button
+                    type="button"
+                    className="prep-btn prep-btn--menu"
+                    onClick={() => setStep('location')}
+                  >
+                    ← 장소
+                  </button>
+                  <button
+                    type="button"
+                    className="prep-btn prep-btn--start"
+                    disabled={!canStart}
+                    onClick={() => setStep('market')}
+                  >
+                    다음: 마트 →
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="prep-btn prep-btn--menu"
+                    onClick={() => setStep('menu')}
+                  >
+                    ← 메뉴
+                  </button>
+                  <button
+                    type="button"
+                    className="prep-btn prep-btn--start"
+                    disabled={!canStart}
+                    onClick={() => dispatch({ type: ActionTypes.START_OPEN })}
+                  >
+                    ▶ 영업 시작
+                  </button>
+                </>
+              )}
+            </footer>
           </div>
-
-          <footer className="prep-bottom-bar">
-            {step === 'menu' ? (
-              <>
-                <button
-                  type="button"
-                  className="prep-btn prep-btn--menu"
-                  onClick={() => setStep('location')}
-                >
-                  ← 장소
-                </button>
-                <button
-                  type="button"
-                  className="prep-btn prep-btn--start"
-                  disabled={!canStart}
-                  onClick={() => setStep('market')}
-                >
-                  다음: 마트 →
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="prep-btn prep-btn--menu"
-                  onClick={() => setStep('menu')}
-                >
-                  ← 메뉴
-                </button>
-                <button
-                  type="button"
-                  className="prep-btn prep-btn--start"
-                  disabled={!canStart}
-                  onClick={() => dispatch({ type: ActionTypes.START_OPEN })}
-                >
-                  ▶ 영업 시작
-                </button>
-              </>
-            )}
-          </footer>
         </>
       )}
     </section>

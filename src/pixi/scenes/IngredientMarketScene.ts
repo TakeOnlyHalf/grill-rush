@@ -1,12 +1,16 @@
 import {
   Application,
+  Assets,
   Container,
   Graphics,
   Rectangle,
+  Sprite,
   Text,
   type Ticker,
 } from 'pixi.js'
 import ingredientsData from '../../data/ingredients.json'
+import { MART_BACKGROUND_ART } from '../../utils/assets'
+import { layoutPrepUiWorld } from '../layoutPrepUi'
 
 /* ================================================================
    DESIGN
@@ -90,7 +94,7 @@ function drawRoundRect(
   g.fill({ color, alpha })
 }
 
-/** 재료 마트 씬 — 선반·상자 UI로 매입 */
+/** 재료 마트 씬 — mart_background.webp 선반 배경 + 매입 카드 UI */
 export function createIngredientMarketScene(
   app: Application,
   initial: IngredientMarketState,
@@ -106,54 +110,35 @@ export function createIngredientMarketScene(
   const root = new Container()
   app.stage.addChild(root)
 
+  /** 전체 화면을 채우는 배경 (UI world와 분리) */
+  const bgSprite = new Sprite()
+  root.addChild(bgSprite)
+
   const world = new Container()
   root.addChild(world)
 
   let elapsed = 0
   const floatTexts: { t: Text; life: number; vy: number }[] = []
 
-  function layoutToScreen() {
-    const s = Math.min(
-      app.screen.width / MARKET_W,
-      app.screen.height / MARKET_H,
-    )
-    world.scale.set(s)
-    world.x = (app.screen.width - MARKET_W * s) / 2
-    world.y = (app.screen.height - MARKET_H * s) / 2
+  function placeBgSprite() {
+    if (!bgSprite.texture || bgSprite.texture.width === 0) return
+    if (app.screen.width <= 0 || app.screen.height <= 0) return
+    const tw = bgSprite.texture.width
+    const th = bgSprite.texture.height
+    const cover = Math.max(app.screen.width / tw, app.screen.height / th)
+    bgSprite.width = tw * cover
+    bgSprite.height = th * cover
+    bgSprite.x = (app.screen.width - bgSprite.width) / 2
+    bgSprite.y = (app.screen.height - bgSprite.height) / 2
   }
+
+  function layoutToScreen() {
+    layoutPrepUiWorld(app, world, MARKET_W, MARKET_H)
+    placeBgSprite()
+  }
+
   const onResize = () => layoutToScreen()
   app.renderer.on('resize', onResize)
-
-  /* ── Background ──────────────────────────────── */
-  const bg = new Graphics()
-  bg.rect(0, 0, MARKET_W, MARKET_H * 0.55)
-  bg.fill(M.bgTop)
-  bg.rect(0, MARKET_H * 0.55, MARKET_W, MARKET_H * 0.45)
-  bg.fill(M.bgBot)
-  // soft vignette bands
-  bg.rect(0, 0, MARKET_W, 90)
-  bg.fill({ color: 0x1a3020, alpha: 0.18 })
-  world.addChild(bg)
-
-  // decorative floor planks
-  const floor = new Graphics()
-  floor.rect(0, MARKET_H - 70, MARKET_W, 70)
-  floor.fill(M.woodDark)
-  for (let i = 0; i < 12; i++) {
-    floor.rect(i * 80, MARKET_H - 70, 2, 70)
-    floor.fill({ color: 0x000000, alpha: 0.12 })
-  }
-  world.addChild(floor)
-
-  // back wall shelves
-  const shelves = new Graphics()
-  for (const y of [120, 270, 420]) {
-    shelves.rect(40, y, MARKET_W - 80, 14)
-    shelves.fill(M.shelf)
-    shelves.rect(40, y + 14, MARKET_W - 80, 6)
-    shelves.fill(M.woodDark)
-  }
-  world.addChild(shelves)
 
   /* ── Shop sign ───────────────────────────────── */
   const sign = new Container()
@@ -438,6 +423,18 @@ export function createIngredientMarketScene(
     r: 1 + (i % 3),
     sp: 8 + (i % 5) * 3,
   }))
+
+  async function loadBg() {
+    const tex = await Assets.load(MART_BACKGROUND_ART)
+    tex.source.scaleMode = 'linear'
+    bgSprite.texture = tex
+    placeBgSprite()
+    layoutToScreen()
+  }
+
+  void loadBg().catch((err) => {
+    console.error('Failed to load mart background', err)
+  })
 
   layoutToScreen()
 

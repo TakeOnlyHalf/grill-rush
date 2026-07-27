@@ -10,7 +10,8 @@ out_specs = [
     ('public/images/title_day.png', 1400, 800, False),
     ('public/images/day_street.png', 1400, 800, False),
     ('public/images/ready_phase/ready_background.png', 1400, 800, False),
-    ('public/images/ready_phase/menu_board.png', 1200, 700, True),
+    ('public/images/ready_phase/menu_background.png', 1400, 800, False),
+    ('public/images/ready_phase/mart_background.png', 1400, 800, False),
     ('public/images/ready_phase/foodtruck.png', 512, 512, True),
 ]
 
