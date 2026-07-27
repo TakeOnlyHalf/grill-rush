@@ -15,6 +15,8 @@ import { MENU_BOARD_ART } from '../../utils/assets'
 
 export const MENU_BOARD_W = 1000
 export const MENU_BOARD_H = 600
+/** contain 대비 메뉴판 아트만 살짝 확대 */
+const BOARD_ART_SCALE = 1.1
 
 const C = {
   card: 0xfff8ef,
@@ -204,11 +206,11 @@ export function createMenuBoardScene(
     if (!boardSprite.texture || boardSprite.texture.width === 0) return
     const tw = boardSprite.texture.width
     const th = boardSprite.texture.height
-    const fit = Math.min(MENU_BOARD_W / tw, MENU_BOARD_H / th)
+    const fit = Math.min(MENU_BOARD_W / tw, MENU_BOARD_H / th) * BOARD_ART_SCALE
     boardSprite.width = tw * fit
     boardSprite.height = th * fit
     boardSprite.x = (MENU_BOARD_W - boardSprite.width) / 2
-    boardSprite.y = (MENU_BOARD_H - boardSprite.height) / 2
+    boardSprite.y = (MENU_BOARD_H - boardSprite.height) / 2 - 20
   }
 
   function refreshCard(card: CardView) {
