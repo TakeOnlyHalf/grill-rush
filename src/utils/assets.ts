@@ -31,8 +31,8 @@ export const CRITICAL_IMAGE_URLS = [
 ] as const
 
 /**
- * 브라우저 캐시에 이미지를 미리 적재한다.
- * Pixi Assets.load 전에 호출해도 이후 동일 URL은 네트워크를 다시 타지 않는다.
+ * HTTP 캐시에만 이미지를 미리 받아 둔다.
+ * Pixi Assets.load 는 Application.init 이후에 씬에서 호출해야 GPU 텍스처가 정상이다.
  */
 export function preloadImages(urls: readonly string[]): Promise<void[]> {
   return Promise.all(

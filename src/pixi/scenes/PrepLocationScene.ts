@@ -219,7 +219,10 @@ export function createPrepLocationScene(
 
     truckWorldX = stagingX()
     truckTargetWorldX = truckWorldX
+
+    // 첫 프레임에 screen 크기가 아직 0일 수 있어 다음 프레임에 한 번 더 맞춤
     layout()
+    requestAnimationFrame(() => layout())
   }
 
   void loadArt().catch((err) => {
