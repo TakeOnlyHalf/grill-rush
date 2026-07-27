@@ -13,7 +13,7 @@ import {
 import { getWeatherLabel } from '../utils/weather'
 import ingredients from '../data/ingredients.json'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
-import { preloadCriticalAssets } from '../utils/assets'
+import { READY_PHASE_BG, preloadCriticalAssets } from '../utils/assets'
 
 type PrepStep = 'location' | 'menu' | 'market'
 
@@ -70,6 +70,8 @@ export default function PrepPhase() {
   const [step, setStep] = useState<PrepStep>('location')
   const [locationPicked, setLocationPicked] = useState(false)
   const [locAnchors, setLocAnchors] = useState<LocationAnchors | null>(null)
+  const [mapReady, setMapReady] = useState(false)
+  const [posterDimmed, setPosterDimmed] = useState(false)
   const mapRef = useRef<CityMapHandle | null>(null)
 
   const needed = useMemo(
@@ -86,11 +88,21 @@ export default function PrepPhase() {
   useEffect(() => {
     setStep('location')
     setLocationPicked(false)
+    setMapReady(false)
+    setPosterDimmed(false)
+    setLocAnchors(null)
   }, [state.day])
 
   useEffect(() => {
     void preloadCriticalAssets()
   }, [])
+
+  useEffect(() => {
+    if (!mapReady) return undefined
+    // transitionend 누락(reduced-motion 등) 대비 — 페이드 후 포스터 제거
+    const id = window.setTimeout(() => setPosterDimmed(true), 620)
+    return () => window.clearTimeout(id)
+  }, [mapReady])
 
   const showMap = step === 'location'
   const showPixiStep = step === 'menu' || step === 'market'
@@ -119,10 +131,21 @@ export default function PrepPhase() {
         className={`prep-map-layer${showMap ? '' : ' prep-map-layer--hidden'}`}
         aria-hidden={!showMap}
       >
+        {/* 캐시 배경을 먼저 깔고, Pixi가 준비되면 위에 페이드인한 뒤 포스터를 걷는다 */}
+        <img
+          className={`prep-map-poster${posterDimmed ? ' is-dimmed' : ''}`}
+          src={READY_PHASE_BG}
+          alt=""
+          aria-hidden
+          draggable={false}
+        />
         <CityMap
           ref={mapRef}
+          reveal={mapReady}
           onLocationPick={() => setLocationPicked(true)}
           onAnchorsChange={setLocAnchors}
+          onSceneReady={() => setMapReady(true)}
+          onRevealSettled={() => setPosterDimmed(true)}
         />
       </div>
 

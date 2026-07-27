@@ -12,7 +12,6 @@ import './styles/game.css'
 /**
  * 페이즈 라우팅
  * title → prep → open → settle → night → … → ending
- * (오프닝 스토리는 건너뛰고 본 게임부터 시작)
  */
 function PhaseRouter() {
   const { phase } = useGameState()

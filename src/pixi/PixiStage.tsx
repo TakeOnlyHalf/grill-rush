@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode, type TransitionEventHandler } from 'react'
 import { Application } from 'pixi.js'
 import { colors } from '../ui/tokens'
 
@@ -25,6 +25,7 @@ export interface PixiStageProps {
   fillParent?: boolean
   /** 앱 준비 후 씬 생성. 정리 함수를 반환하면 unmount 시 호출된다. */
   setup: PixiSetup
+  onTransitionEnd?: TransitionEventHandler<HTMLDivElement>
 }
 
 /**
@@ -38,6 +39,7 @@ export default function PixiStage({
   background = colors.bgPanel2.value,
   fillParent = false,
   setup,
+  onTransitionEnd,
 }: PixiStageProps): ReactNode {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const setupRef = useRef(setup)
@@ -122,6 +124,7 @@ export default function PixiStage({
     <div
       ref={hostRef}
       className={className}
+      onTransitionEnd={onTransitionEnd}
       style={
         fillParent
           ? { width: '100%', height: '100%', overflow: 'hidden' }
