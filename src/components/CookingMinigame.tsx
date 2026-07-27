@@ -27,6 +27,12 @@ export default function CookingMinigame() {
             payload: { ingredientId },
           })
         }}
+        onCollect={(item) => {
+          dispatch({
+            type: ActionTypes.COLLECT_INGREDIENT,
+            payload: { ingredientId: item.ingredientId, result: item.result },
+          })
+        }}
       />
     </div>
   )

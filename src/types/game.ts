@@ -1,4 +1,5 @@
 /** 공유 게임 도메인 타입 */
+import type { CookResult } from '../grill/grillSlots'
 
 export type Phase = 'title' | 'story' | 'prep' | 'open' | 'settle' | 'night' | 'ending'
 
@@ -38,6 +39,18 @@ export interface Order {
   status: 'queued' | 'cooking' | 'done' | 'failed'
 }
 
+/** 그릴에서 회수한 재료 중 서빙 가능한 품질(raw/danger/burnt는 폐기) */
+export type GrillQuality = Extract<CookResult, 'good' | 'perfect'>
+
+/** 방금 서빙된 결과 — 영업 화면 피드백 UI용 */
+export interface LastServeResult {
+  id: string
+  menuName: string
+  stars: number
+  tip: number
+  price: number
+}
+
 export interface DaySummary {
   day: number
   sales: number
@@ -66,6 +79,9 @@ export interface GameState {
   ingredients: Record<IngredientId, number>
   customers: Customer[]
   orders: Order[]
+  /** 그릴에서 회수된 재료 풀(품질 태그 포함) — 주문 매칭 대기 중 */
+  collectedIngredients: Record<IngredientId, GrillQuality[]>
+  lastServe: LastServeResult | null
   dailySales: number
   dailyTips: number
   dailyServed: number
@@ -89,6 +105,7 @@ export type GameAction =
   | { type: 'SET_MENU_PRICE'; payload: { menuId: MenuId; price: number } }
   | { type: 'BUY_INGREDIENT'; payload: { ingredientId: IngredientId; qty: number; unitCost: number } }
   | { type: 'USE_INGREDIENT'; payload: { ingredientId: IngredientId } }
+  | { type: 'COLLECT_INGREDIENT'; payload: { ingredientId: IngredientId; result: CookResult } }
   | { type: 'START_OPEN' }
   | { type: 'TICK_OPEN'; payload?: { dt?: number } }
   | { type: 'END_OPEN' }

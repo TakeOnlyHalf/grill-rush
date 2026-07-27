@@ -1,7 +1,7 @@
 ﻿import locations from '../data/locations.json'
 import menus from '../data/menus.json'
-import { DAILY_TRUCK_COST } from './actions'
-import type { DailyCosts, EndingId, LocationId, MenuId, WeatherId } from '../types/game'
+import { DAILY_TRUCK_COST, OPEN_DURATION_SEC } from './actions'
+import type { DailyCosts, EndingId, GrillQuality, LocationId, MenuId, WeatherId } from '../types/game'
 
 /** 가격 대비 만족도 배율 */
 export function getPriceFactor(price: number, cost: number): number {
@@ -9,6 +9,59 @@ export function getPriceFactor(price: number, cost: number): number {
   if (price <= cost * 2.0) return 1.0
   if (price <= cost * 2.5) return 0.8
   return 0.5
+}
+
+const QUALITY_FACTOR: Record<GrillQuality, number> = { good: 0.75, perfect: 1 }
+
+/** 서빙 만족도(0~1) — 가격 대비 · 대기 여유 · 그릴 품질 평균을 종합 */
+export function calcSatisfaction({
+  price,
+  cost,
+  patienceRatio,
+  qualities,
+}: {
+  price: number
+  cost: number
+  patienceRatio: number
+  qualities: GrillQuality[]
+}): number {
+  const priceFactor = getPriceFactor(price, cost) / 1.3
+  const avgQuality = qualities.length
+    ? qualities.reduce((sum, q) => sum + QUALITY_FACTOR[q], 0) / qualities.length
+    : 0.75
+  const raw = priceFactor * 0.35 + patienceRatio * 0.3 + avgQuality * 0.35
+  return Math.min(1, Math.max(0, raw))
+}
+
+/** 날짜별 난이도 계수 — Day가 오를수록 손님이 늘고 인내심이 줄어듦 (Day1→Day7 선형 보간) */
+export function getDayDifficulty(day: number) {
+  const t = Math.max(0, Math.min(1, (day - 1) / 6))
+  return {
+    /** 스폰 간격에 곱해서 나눔 — 값이 클수록 손님이 자주 옴 */
+    spawnRateMultiplier: 1 + t * 0.6,
+    /** 손님 초기 인내심에 곱함 — 값이 작을수록 빨리 이탈 */
+    patienceMultiplier: 1 - t * 0.25,
+  }
+}
+
+function parsePeakHours(peakHours: string): [number, number] | null {
+  const m = peakHours.match(/(\d{1,2}):(\d{2})~(\d{1,2}):(\d{2})/)
+  if (!m) return null
+  return [Number(m[1]) + Number(m[2]) / 60, Number(m[3]) + Number(m[4]) / 60]
+}
+
+const DAY_START_HOUR = 9
+const DAY_END_HOUR = 24
+
+/** 현재 영업 시각이 해당 장소의 러시아워 구간(peakHours)에 들어가는지 */
+export function isRushHour(locationId: LocationId, time: number): boolean {
+  const loc = locations.find((l) => l.id === locationId)
+  if (!loc) return false
+  const range = parsePeakHours(loc.peakHours)
+  if (!range) return false
+  const ratio = Math.min(1, Math.max(0, time / OPEN_DURATION_SEC))
+  const hour = DAY_START_HOUR + ratio * (DAY_END_HOUR - DAY_START_HOUR)
+  return hour >= range[0] && hour < range[1]
 }
 
 /** 날씨별 유동인구 배율 */

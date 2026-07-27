@@ -1,4 +1,5 @@
 import locations from '../data/locations.json'
+import ingredientsData from '../data/ingredients.json'
 import {
   ActionTypes,
   DAILY_TRUCK_COST,
@@ -6,10 +7,17 @@ import {
   OPEN_DURATION_SEC,
 } from './actions'
 import { createInitialState } from './initialState'
-import { calcDailyProfit, getRequiredIngredientIds, resolveEnding } from './formulas'
+import {
+  calcDailyProfit,
+  calcSatisfaction,
+  getMenuById,
+  getRequiredIngredientIds,
+  resolveEnding,
+} from './formulas'
 import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
-import type { GameAction, GameState } from '../types/game'
+import { satisfactionToStars } from '../utils/reviewGenerator'
+import type { GameAction, GameState, GrillQuality, Order } from '../types/game'
 
 const MAX_QUEUE = 8
 
@@ -121,6 +129,77 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case ActionTypes.COLLECT_INGREDIENT: {
+      if (state.phase !== 'open') return state
+      const { ingredientId, result } = action.payload
+
+      // raw/danger/burnt — 서빙 불가, 재료만 날림 (낭비 비용에 반영)
+      if (result !== 'good' && result !== 'perfect') {
+        const ingredient = ingredientsData.find((i) => i.id === ingredientId)
+        const wasteCost = ingredient?.unitCost ?? 0
+        if (wasteCost <= 0) return state
+        return {
+          ...state,
+          dailyCosts: { ...state.dailyCosts, waste: state.dailyCosts.waste + wasteCost },
+        }
+      }
+
+      const pool: Record<string, GrillQuality[]> = {}
+      for (const key of Object.keys(state.collectedIngredients)) {
+        pool[key] = [...state.collectedIngredients[key]]
+      }
+      pool[ingredientId] = [...(pool[ingredientId] ?? []), result]
+
+      // 가장 오래된 주문부터 재료가 다 모였는지 확인해 자동 서빙 (FIFO)
+      let dailySales = state.dailySales
+      let dailyTips = state.dailyTips
+      let dailyServed = state.dailyServed
+      let dailyReviews = state.dailyReviews
+      let lastServe = state.lastServe
+      const removedCustomerIds = new Set<string>()
+      const remainingOrders: Order[] = []
+
+      for (const order of state.orders) {
+        const menu = getMenuById(order.menuId)
+        const customer = state.customers.find((c) => c.id === order.customerId)
+        if (!menu || !customer) continue
+
+        const canComplete = menu.ingredients.every((ing) => (pool[ing]?.length ?? 0) >= 1)
+        if (!canComplete) {
+          remainingOrders.push(order)
+          continue
+        }
+
+        const qualities: GrillQuality[] = menu.ingredients.map((ing) => pool[ing].shift()!)
+        const price = state.menuPrices[menu.id] ?? menu.basePrice
+        const patienceRatio = customer.patience / customer.maxPatience
+        const satisfaction = calcSatisfaction({ price, cost: menu.cost, patienceRatio, qualities })
+        const stars = satisfactionToStars(satisfaction)
+        const tip = Math.random() < customer.tipChance ? Math.round(price * 0.1) : 0
+
+        dailySales += price
+        dailyTips += tip
+        dailyServed += 1
+        dailyReviews = [...dailyReviews, stars]
+        lastServe = { id: order.id, menuName: menu.name, stars, tip, price }
+        removedCustomerIds.add(customer.id)
+      }
+
+      return {
+        ...state,
+        collectedIngredients: pool,
+        customers: removedCustomerIds.size
+          ? state.customers.filter((c) => !removedCustomerIds.has(c.id))
+          : state.customers,
+        orders: remainingOrders,
+        dailySales,
+        dailyTips,
+        dailyServed,
+        dailyReviews,
+        lastServe,
+      }
+    }
+
     case ActionTypes.START_OPEN: {
       if (state.phase !== 'prep') return state
       if (state.activeMenus.length === 0) return state
@@ -132,6 +211,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         time: 0,
         customers: [],
         orders: [],
+        collectedIngredients: {},
+        lastServe: null,
         dailySales: 0,
         dailyTips: 0,
         dailyServed: 0,
@@ -155,32 +236,47 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return endOpenDay(state, nextTime)
       }
 
-      // patience 소진 → 이탈 처리
+      // patience 소진 → 이탈 처리 (해당 주문도 함께 제거)
       let dailyLeft = state.dailyLeft
+      const leftCustomerIds = new Set<string>()
       const customers = state.customers
         .map((c) => ({ ...c, patience: c.patience - dt }))
         .filter((c) => {
           if (c.patience > 0) return true
           dailyLeft += 1
+          leftCustomerIds.add(c.id)
           return false
         })
+      const orders = leftCustomerIds.size
+        ? state.orders.filter((o) => !leftCustomerIds.has(o.customerId))
+        : state.orders
 
-      // 스폰 주기마다 새 손님 추가 (최대 대기 인원 제한)
+      // 스폰 주기마다 새 손님 + 주문 추가 (최대 대기 인원 제한)
       const spawnCtx: SpawnContext = {
         locationId: state.location,
         weather: state.weather,
         activeMenus: state.activeMenus,
         fame: state.fame,
+        day: state.day,
+        time: state.time,
       }
       const interval = getSpawnIntervalSec(spawnCtx)
       const crossedInterval =
         Math.floor(state.time / interval) !== Math.floor(nextTime / interval)
+
+      let nextOrders = orders
       if (crossedInterval && customers.length < MAX_QUEUE) {
         const spawned = spawnCustomer(spawnCtx)
-        if (spawned) customers.push(spawned)
+        if (spawned) {
+          customers.push(spawned)
+          nextOrders = [
+            ...orders,
+            { id: `o_${spawned.id}`, customerId: spawned.id, menuId: spawned.orderMenuId, status: 'queued' },
+          ]
+        }
       }
 
-      return { ...state, time: nextTime, customers, dailyLeft }
+      return { ...state, time: nextTime, customers, orders: nextOrders, dailyLeft }
     }
 
     case ActionTypes.END_OPEN: {
@@ -202,9 +298,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         (state.dailyCosts.waste ?? 0) -
         (state.dailyCosts.truck ?? 0)
 
+      const reviewAvg = avgReviews(state.dailyReviews)
+      const fameDelta = state.dailyReviews.length ? Math.round((reviewAvg - 3) * 4) : 0
+
       return {
         ...state,
         cash: state.cash + openDayDelta,
+        fame: Math.max(0, state.fame + fameDelta),
+        reviewAvg: state.dailyReviews.length ? reviewAvg : state.reviewAvg,
         phase: 'night',
         history: [
           ...state.history,
@@ -216,7 +317,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             profit,
             served: state.dailyServed,
             left: state.dailyLeft,
-            reviewAvg: avgReviews(state.dailyReviews),
+            reviewAvg,
             weather: state.weather,
             location: state.location,
           },
@@ -256,6 +357,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ingredients: {},
         customers: [],
         orders: [],
+        collectedIngredients: {},
+        lastServe: null,
         dailySales: 0,
         dailyTips: 0,
         dailyServed: 0,
@@ -292,7 +395,7 @@ function avgReviews(reviews: number[]): number {
 }
 
 function endOpenDay(state: GameState, time: number): GameState {
-  const waste = 0
+  const waste = state.dailyCosts.waste
   return {
     ...state,
     phase: 'settle',

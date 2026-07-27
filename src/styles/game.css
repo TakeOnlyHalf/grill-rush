@@ -219,6 +219,46 @@ body {
   color: var(--accent);
 }
 
+.hud-rush {
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.serve-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, var(--cream) 0%, var(--bg-panel-2) 100%);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.9rem;
+  animation: serve-toast-in 0.25s ease-out;
+}
+
+.serve-toast-stars {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.serve-toast-amount {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--ok);
+}
+
+@keyframes serve-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .btn {
   appearance: none;
   border: none;
@@ -1595,17 +1635,78 @@ body:has(.phase-prep-supply) {
   overflow: hidden;
 }
 
+.queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.queue-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, var(--cream) 0%, var(--bg-panel-2) 100%);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.queue-card-badge {
+  flex: none;
+  width: 2.3rem;
+  height: 2.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  border-radius: 999px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+}
+
+.queue-card-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.queue-card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.queue-card-order {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.1rem;
+}
+
 .patience-bar {
-  height: 4px;
+  height: 6px;
   background: var(--cream);
   border-radius: 4px;
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
   overflow: hidden;
 }
 
 .patience-bar > div {
   height: 100%;
+  border-radius: 4px;
   background: var(--ok);
+  transition:
+    width 0.25s linear,
+    background-color 0.25s ease;
+}
+
+.patience-bar > div.is-warning {
+  background: var(--warning);
+}
+
+.patience-bar > div.is-danger {
+  background: var(--danger);
 }
 
 .minigame-slots {
