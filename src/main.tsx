@@ -1,7 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { preloadCriticalAssets } from './utils/assets'
 import './index.css'
+
+/** GitHub Pages 등 원격 환경에서 탭 전환 시 이미지가 늦게 뜨지 않도록 부트 직후 프리로드 */
+void preloadCriticalAssets()
 
 const rootEl = document.getElementById('root')
 if (!rootEl) {

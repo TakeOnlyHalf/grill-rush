@@ -84,6 +84,7 @@ export type GameAction =
   | { type: 'FINISH_STORY' }
   | { type: 'LOAD_GAME'; payload: GameState }
   | { type: 'SET_LOCATION'; payload: LocationId }
+  | { type: 'CONFIRM_LOCATION' }
   | { type: 'TOGGLE_MENU'; payload: MenuId }
   | { type: 'SET_MENU_PRICE'; payload: { menuId: MenuId; price: number } }
   | { type: 'BUY_INGREDIENT'; payload: { ingredientId: IngredientId; qty: number; unitCost: number } }

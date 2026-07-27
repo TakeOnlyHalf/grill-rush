@@ -93,7 +93,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #2a1a14;
+  background: var(--bg);
 }
 
 .game-viewport-frame {
@@ -871,106 +871,171 @@ body:has(.phase-prep-supply) {
   box-shadow: 0 2px 10px rgba(240, 168, 74, 0.45);
 }
 
-/* ── Location hint board ────────────────────────── */
+/* ── Location hint board (reference card) ───────── */
 .prep-hint-board {
   position: absolute;
   top: 5.2rem;
-  left: 1.1rem;
+  left: 1.25rem;
   z-index: 2;
-  max-width: min(280px, 42vw);
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
-  background: linear-gradient(160deg, #fff6e8 0%, #f3e0c4 100%);
-  border: 1px solid rgba(180, 140, 90, 0.45);
-  box-shadow: 0 10px 28px rgba(60, 40, 20, 0.18);
+  width: min(320px, 34%);
+  padding: 1.05rem 1.2rem 1.15rem 1.1rem;
+  border-radius: 22px;
+  background:
+    linear-gradient(165deg, #fff8ef 0%, #f7e8d4 55%, #f3dfc6 100%);
+  border: 1.5px solid rgba(210, 175, 130, 0.55);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 10px 22px rgba(90, 55, 30, 0.16),
+    0 2px 6px rgba(90, 55, 30, 0.08);
   animation: prep-card-in 300ms ease-out;
 }
 
-.prep-hint-board h3 {
-  margin: 0 0 0.3rem;
-  font-size: 1rem;
-  color: #3a2a1c;
+.prep-hint-board__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.45rem;
 }
 
-.prep-hint-board p {
+.prep-hint-board__pin {
+  flex-shrink: 0;
+  display: flex;
+  line-height: 0;
+  filter: drop-shadow(0 2px 2px rgba(180, 60, 40, 0.28));
+}
+
+.prep-hint-board h3 {
   margin: 0;
-  font-size: 0.8rem;
-  color: #7a6550;
-  line-height: 1.35;
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #4a3426;
+}
+
+.prep-hint-board > p {
+  margin: 0;
+  padding-right: 1.6rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #8a7360;
+  line-height: 1.45;
+}
+
+.prep-hint-board__paw {
+  position: absolute;
+  right: 0.85rem;
+  bottom: 0.7rem;
+  line-height: 0;
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .prep-hint-stats {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  margin-top: 0.55rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(180, 140, 90, 0.35);
-  font-size: 0.75rem;
-  color: #5a4a3a;
+  gap: 0.2rem;
+  margin-top: 0.7rem;
+  padding: 0.55rem 0.65rem 0.5rem;
+  padding-right: 2rem;
+  border-radius: 12px;
+  background: rgba(255, 250, 242, 0.65);
+  border: 1px solid rgba(200, 165, 120, 0.35);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #5c4a3a;
+  line-height: 1.35;
 }
 
-/* ── Location card strip (reference layout) ─────── */
+/* ── Location cards floating above truck spots ──── */
 .prep-loc-strip-wrap {
   position: absolute;
-  left: 50%;
-  top: 48%;
-  transform: translate(-50%, -50%);
-  width: min(1040px, calc(100% - 1.5rem));
+  inset: 0;
   z-index: 2;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .loc-strip {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.65rem;
-  align-items: end;
+  position: absolute;
+  inset: 0;
 }
 
 .loc-card {
-  position: relative;
+  --loc-x: 50%;
+  --loc-y: 56%;
+  --float-delay: 0s;
+  --float-base: 280px;
+  --float-amp: 4px;
+  --card-head: 188px;
+  position: absolute;
+  left: var(--loc-x);
+  /* 상단 고정 — 선택 시 아래로 펼쳐져도 트럭 위 위치 유지 */
+  top: calc(var(--loc-y) - var(--float-base) - var(--card-head));
+  width: 164px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 220px;
-  padding: 0.85rem 0.55rem 0.75rem;
-  border: 2px solid rgba(255, 255, 255, 0.12);
+  gap: 0.36rem;
+  padding: 0.78rem 0.55rem 0.72rem;
+  border: 2px solid rgba(255, 255, 255, 0.14);
   border-radius: 22px 22px 16px 16px;
   background: linear-gradient(
     180deg,
-    rgba(28, 22, 18, 0.72) 0%,
-    rgba(18, 14, 12, 0.82) 100%
+    rgba(28, 22, 18, 0.78) 0%,
+    rgba(18, 14, 12, 0.86) 100%
   );
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   color: #fff;
   cursor: pointer;
   font: inherit;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+  transform: translate3d(-50%, 0, 0);
+  transform-origin: top center;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.32),
+    0 2px 0 rgba(255, 255, 255, 0.06) inset;
+  animation: loc-card-float 5.5s ease-in-out infinite;
+  animation-delay: var(--float-delay);
+  will-change: transform;
   transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease,
+    border-radius 220ms ease;
+}
+
+@keyframes loc-card-float {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  50% {
+    transform: translate3d(-50%, calc(var(--float-amp) * -1), 0);
+  }
 }
 
 .loc-card:hover:not(:disabled) {
-  transform: translateY(-6px);
-  border-color: rgba(255, 210, 120, 0.45);
+  border-color: rgba(255, 210, 120, 0.5);
+  filter: brightness(1.06);
+  animation-play-state: paused;
+  transform: translate3d(-50%, -6px, 0);
 }
 
 .loc-card.is-selected {
+  --float-amp: 5px;
   border-color: #f0c14a;
+  border-radius: 22px 22px 18px 18px;
   box-shadow:
     0 0 0 2px rgba(240, 193, 74, 0.35),
-    0 16px 36px rgba(240, 160, 40, 0.35);
+    0 18px 36px rgba(240, 160, 40, 0.38);
   background: linear-gradient(
     180deg,
-    rgba(70, 48, 24, 0.88) 0%,
-    rgba(30, 20, 12, 0.9) 100%
+    rgba(70, 48, 24, 0.9) 0%,
+    rgba(30, 20, 12, 0.92) 100%
   );
-  transform: translateY(-10px) scale(1.03);
+  animation-duration: 6s;
+  z-index: 3;
 }
 
 .loc-card.is-locked {
@@ -979,14 +1044,40 @@ body:has(.phase-prep-supply) {
   filter: grayscale(0.35);
 }
 
+/* Soft tether toward the truck spot below */
+.loc-card-stem {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 2px);
+  width: 2px;
+  height: 48px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 210, 140, 0.4) 0%,
+    rgba(255, 210, 140, 0) 100%
+  );
+  pointer-events: none;
+  transition: height 220ms ease;
+}
+
+.loc-card.is-selected .loc-card-stem {
+  height: 36px;
+  background: linear-gradient(
+    180deg,
+    rgba(240, 193, 74, 0.65) 0%,
+    rgba(240, 193, 74, 0) 100%
+  );
+}
+
 .loc-card-crest {
-  font-size: 1.15rem;
+  font-size: 1.08rem;
   line-height: 1;
 }
 
 .loc-card-thumb {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -1005,33 +1096,78 @@ body:has(.phase-prep-supply) {
 }
 
 .loc-card-thumb-emoji {
-  font-size: 2rem;
+  font-size: 1.8rem;
   line-height: 1;
 }
 
 .loc-card-name {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: -0.01em;
   text-align: center;
 }
 
-.loc-card-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  align-items: center;
-  text-align: center;
+/* Collapsed by default — expands downward when selected */
+.loc-card-details {
+  display: grid;
+  grid-template-rows: 0fr;
+  width: 100%;
+  opacity: 0;
+  transition:
+    grid-template-rows 280ms ease,
+    opacity 220ms ease 40ms,
+    margin 280ms ease;
 }
 
-.loc-card-meta small {
+.loc-card-details-inner {
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.loc-card.is-selected .loc-card-details {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 0.15rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(240, 193, 74, 0.28);
+}
+
+.loc-card-desc {
+  display: block;
   font-size: 0.68rem;
-  color: rgba(255, 245, 230, 0.72);
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  color: rgba(255, 236, 210, 0.88);
+}
+
+.loc-card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+.loc-card-stats > span {
+  display: block;
+  padding: 0.22rem 0.4rem;
+  border-radius: 8px;
+  background: rgba(255, 248, 235, 0.08);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  color: rgba(255, 245, 230, 0.9);
 }
 
 .loc-card-lock {
-  margin-top: 0.15rem;
-  font-size: 0.72rem;
+  margin-top: 0.1rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: #ffd7a8;
 }
@@ -1173,7 +1309,17 @@ body:has(.phase-prep-supply) {
   min-height: 360px;
 }
 
-.prep-menu-pixi canvas,
+.prep-pixi-stage-wrap:has(.prep-menu-pixi) {
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+.prep-menu-pixi canvas {
+  border-radius: 0 !important;
+}
+
 .prep-ingredient-pixi canvas {
   border-radius: var(--radius-lg) !important;
 }
@@ -1793,6 +1939,16 @@ body:has(.phase-prep-supply) {
   }
 
   .vn-slot {
+    transition: none;
+  }
+
+  .loc-card,
+  .loc-card.is-selected {
+    animation: none;
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  .loc-card-details {
     transition: none;
   }
 }

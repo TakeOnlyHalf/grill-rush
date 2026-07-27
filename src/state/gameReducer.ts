@@ -43,6 +43,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, location: action.payload }
     }
 
+    case ActionTypes.CONFIRM_LOCATION: {
+      if (state.phase !== 'prep') return state
+      if (!state.unlockedLocations.includes(state.location)) return state
+      const loc = locations.find((l) => l.id === state.location)
+      const rent = loc?.rentCost ?? 0
+      const alreadyPaid = state.dailyCosts.rent ?? 0
+      const nextCash = state.cash + alreadyPaid - rent
+      if (nextCash < 0) return state
+      return {
+        ...state,
+        cash: nextCash,
+        dailyCosts: {
+          ...state.dailyCosts,
+          rent,
+        },
+      }
+    }
+
     case ActionTypes.TOGGLE_MENU: {
       if (state.phase !== 'prep') return state
       const id = action.payload
@@ -121,7 +139,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         dailyReviews: [],
         dailyCosts: {
           ...state.dailyCosts,
-          rent: loc?.rentCost ?? 0,
+          // 자릿세는 CONFIRM_LOCATION에서 이미 차감·기록
+          rent: state.dailyCosts.rent || (loc?.rentCost ?? 0),
           truck: DAILY_TRUCK_COST,
           waste: 0,
         },
@@ -176,10 +195,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         tips: state.dailyTips,
         costs: state.dailyCosts,
       })
+      // 재료·자릿세는 prep에서 이미 현금 차감됨
       const openDayDelta =
         state.dailySales +
         state.dailyTips -
-        (state.dailyCosts.rent ?? 0) -
         (state.dailyCosts.waste ?? 0) -
         (state.dailyCosts.truck ?? 0)
 
