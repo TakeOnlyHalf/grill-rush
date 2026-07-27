@@ -734,6 +734,36 @@ body:has(.phase-prep-supply) {
   pointer-events: none;
 }
 
+.prep-supply-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 200, 120, 0.35), transparent 55%),
+    linear-gradient(180deg, #5a9fd4 0%, #3d7eb0 45%, #2f6a96 100%);
+}
+
+.prep-supply-layer--hidden {
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.prep-pixi-panel {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.prep-pixi-panel.is-active {
+  visibility: visible;
+  pointer-events: auto;
+}
+
 .phase-prep-supply {
   position: relative;
   width: 100%;
@@ -1292,6 +1322,7 @@ body:has(.phase-prep-supply) {
 }
 
 .prep-pixi-stage-wrap {
+  position: relative;
   flex: 1;
   min-height: 0;
   border-radius: var(--radius-lg);
@@ -1309,7 +1340,7 @@ body:has(.phase-prep-supply) {
   min-height: 360px;
 }
 
-.prep-pixi-stage-wrap:has(.prep-menu-pixi) {
+.prep-pixi-stage-wrap:has(.prep-pixi-panel.is-active .prep-menu-pixi) {
   box-shadow: none;
   border: none;
   background: transparent;

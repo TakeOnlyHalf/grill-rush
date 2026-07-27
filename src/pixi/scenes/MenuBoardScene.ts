@@ -108,7 +108,7 @@ interface CardView {
   active: boolean
 }
 
-/** 메뉴 보드 씬 — menu_board.png 배경 + 레퍼런스 카드 UI */
+/** 메뉴 보드 씬 — menu_board.webp 배경 + 레퍼런스 카드 UI */
 export function createMenuBoardScene(
   app: Application,
   initial: MenuBoardState,
