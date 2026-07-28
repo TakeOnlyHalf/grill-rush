@@ -24,6 +24,14 @@ export const MENU_BACKGROUND_ART = publicUrl('images/ready_phase/menu_background
 /** 재료 마트 배경 */
 export const MART_BACKGROUND_ART = publicUrl('images/ready_phase/mart_background.webp')
 
+/** 정산(오늘의 결산) 보드 배경 */
+export const TODAY_CALC_BG = publicUrl('images/ready_phase/today_calc.webp')
+
+/** 정산 — 순손익 아이콘 */
+export const NET_LOSS_ICON = publicUrl('images/ready_phase/net-loss.webp')
+export const NET_NEUTRAL_ICON = publicUrl('images/ready_phase/net-neutral.webp')
+export const NET_PROFIT_ICON = publicUrl('images/ready_phase/net-profit.webp')
+
 /** 앱 부트 시 미리 받아둘 핵심 이미지 (탭 전환 시 깜빡임 방지) */
 export const CRITICAL_IMAGE_URLS = [
   TITLE_DAY_ART,
@@ -31,6 +39,10 @@ export const CRITICAL_IMAGE_URLS = [
   FOOD_TRUCK_ART,
   MENU_BACKGROUND_ART,
   MART_BACKGROUND_ART,
+  TODAY_CALC_BG,
+  NET_LOSS_ICON,
+  NET_NEUTRAL_ICON,
+  NET_PROFIT_ICON,
   DAY_STREET_BG,
 ] as const
 
