@@ -1,18 +1,22 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useGame, startNewGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
 import TitleMenuButton from '../ui/TitleMenuButton'
 import OptionsModal from '../components/OptionsModal'
 import { hasSave, loadGame } from '../utils/saveGame'
-import { TITLE_DAY_ART } from '../utils/assets'
+import { TITLE_DAY_ART, preloadCriticalAssets } from '../utils/assets'
 
 /**
- * 타이틀 화면 — public/images/title_day.png 풀블리드 히어로
+ * 타이틀 화면 — public/images/title_day.webp 풀블리드 히어로
  */
 export default function TitlePhase() {
   const { dispatch } = useGame()
   const [canContinue, setCanContinue] = useState(() => hasSave())
   const [optionsOpen, setOptionsOpen] = useState(false)
+
+  useEffect(() => {
+    void preloadCriticalAssets()
+  }, [])
 
   const handleContinue = useCallback(() => {
     const saved = loadGame()
@@ -42,8 +46,15 @@ export default function TitlePhase() {
           alt=""
           aria-hidden
           decoding="async"
+          fetchPriority="high"
         />
-        <img className="title-art" src={TITLE_DAY_ART} alt="" decoding="async" />
+        <img
+          className="title-art"
+          src={TITLE_DAY_ART}
+          alt=""
+          decoding="async"
+          fetchPriority="high"
+        />
         <h1 className="visually-hidden">Grill Rush — Food Truck Tycoon</h1>
         <nav className="title-actions" aria-label="타이틀 메뉴">
           <TitleMenuButton

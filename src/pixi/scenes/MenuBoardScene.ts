@@ -1,35 +1,34 @@
 import {
   Application,
+  Assets,
   Container,
   Graphics,
   Rectangle,
+  Sprite,
   Text,
   type Ticker,
 } from 'pixi.js'
 import menusData from '../../data/menus.json'
 import ingredientsData from '../../data/ingredients.json'
 import { MAX_ACTIVE_MENUS } from '../../state/actions'
+import { MENU_BOARD_ART } from '../../utils/assets'
 
-export const MENU_BOARD_W = 960
-export const MENU_BOARD_H = 580
+export const MENU_BOARD_W = 1000
+export const MENU_BOARD_H = 600
 
 const C = {
-  bgTop: 0x5c3d2e,
-  bgBot: 0x3a241c,
-  wood: 0x8b5a2b,
-  woodLight: 0xc4894a,
-  card: 0xfff6ea,
-  cardSel: 0xffe4c4,
-  cardEdge: 0xd9b896,
-  lock: 0x2a221c,
-  accent: 0xe85d04,
-  accent2: 0xf48c06,
+  card: 0xfff8ef,
+  cardSel: 0xfffdf8,
+  cardEdge: 0xe5d2bc,
+  cardEdgeSel: 0xf0c14a,
+  lockDim: 0xb8a894,
   text: 0x3a2a1c,
-  muted: 0x7a6550,
-  chalk: 0xf5efe4,
-  white: 0xffffff,
-  star: 0xf4c430,
-  ok: 0x2f9e44,
+  muted: 0x8a7360,
+  chalk: 0xf0ebe3,
+  ok: 0x3d9a5c,
+  okBg: 0xe8f6ec,
+  okEdge: 0x8fd4a4,
+  plaque: 0xd8d0c4,
 }
 
 interface MenuDef {
@@ -64,7 +63,8 @@ function ingName(id: string): string {
 }
 
 function stars(n: number): string {
-  return '★'.repeat(Math.max(1, Math.min(5, n))) + '☆'.repeat(Math.max(0, 5 - n))
+  const filled = Math.max(1, Math.min(5, n))
+  return '★'.repeat(filled) + '☆'.repeat(Math.max(0, 5 - filled))
 }
 
 function drawRoundRect(
@@ -95,15 +95,20 @@ export interface MenuBoardHandle {
 interface CardView {
   id: string
   root: Container
+  baseX: number
+  baseY: number
   bg: Graphics
-  lockOverlay: Container
+  statusBg: Graphics
   statusText: Text
   recipeText: Text
+  nameText: Text
+  metaText: Text
+  iconText: Text
   unlocked: boolean
   active: boolean
 }
 
-/** 메뉴 보드 씬 — 레시피·잠금·선택 */
+/** 메뉴 보드 씬 — menu_board.webp 배경 + 레퍼런스 카드 UI */
 export function createMenuBoardScene(
   app: Application,
   initial: MenuBoardState,
@@ -123,46 +128,23 @@ export function createMenuBoardScene(
 
   let elapsed = 0
 
-  function layoutToScreen() {
-    const s = Math.min(
-      app.screen.width / MENU_BOARD_W,
-      app.screen.height / MENU_BOARD_H,
-    )
-    world.scale.set(s)
-    world.x = (app.screen.width - MENU_BOARD_W * s) / 2
-    world.y = (app.screen.height - MENU_BOARD_H * s) / 2
-  }
-  const onResize = () => layoutToScreen()
-  app.renderer.on('resize', onResize)
-
-  const bg = new Graphics()
-  bg.rect(0, 0, MENU_BOARD_W, MENU_BOARD_H * 0.5)
-  bg.fill(C.bgTop)
-  bg.rect(0, MENU_BOARD_H * 0.5, MENU_BOARD_W, MENU_BOARD_H * 0.5)
-  bg.fill(C.bgBot)
-  bg.rect(0, 0, MENU_BOARD_W, 100)
-  bg.fill({ color: 0x000000, alpha: 0.18 })
-  world.addChild(bg)
-
-  // chalkboard header
-  const board = new Graphics()
-  drawRoundRect(board, MENU_BOARD_W / 2 - 220, 18, 440, 64, 12, 0x2b2b2b)
-  drawRoundRect(board, MENU_BOARD_W / 2 - 210, 26, 420, 48, 8, 0x3a3a3a)
-  world.addChild(board)
+  const boardSprite = new Sprite()
+  world.addChild(boardSprite)
 
   const title = new Text({
     text: '📋  오늘의 메뉴판',
     resolution: textRes,
     style: {
       fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-      fontSize: 26,
+      fontSize: 22,
       fontWeight: 'bold',
       fill: C.chalk,
+      letterSpacing: 0.5,
     },
   })
   title.anchor.set(0.5)
   title.x = MENU_BOARD_W / 2
-  title.y = 50
+  title.y = 48
   world.addChild(title)
 
   const countText = new Text({
@@ -172,12 +154,12 @@ export function createMenuBoardScene(
       fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
       fontSize: 14,
       fontWeight: 'bold',
-      fill: C.chalk,
+      fill: C.plaque,
     },
   })
   countText.anchor.set(1, 0.5)
-  countText.x = MENU_BOARD_W - 36
-  countText.y = 50
+  countText.x = MENU_BOARD_W - 52
+  countText.y = 48
   world.addChild(countText)
 
   const hint = new Text({
@@ -191,21 +173,42 @@ export function createMenuBoardScene(
   })
   hint.anchor.set(0.5, 0)
   hint.x = MENU_BOARD_W / 2
-  hint.y = 92
+  hint.y = 78
   world.addChild(hint)
 
   const COLS = 4
-  const CARD_W = 210
-  const CARD_H = 200
-  const GAP = 16
-  const gridW = COLS * CARD_W + (COLS - 1) * GAP
+  const CARD_W = 198
+  const CARD_H = 188
+  const GAP_X = 14
+  const GAP_Y = 14
+  const gridW = COLS * CARD_W + (COLS - 1) * GAP_X
   const originX = (MENU_BOARD_W - gridW) / 2
-  const originY = 122
-
+  const originY = 118
   const cards: CardView[] = []
 
   function recipeLine(menu: MenuDef): string {
-    return menu.ingredients.map((id) => `${ingIcon(id)}${ingName(id)}`).join(' · ')
+    return menu.ingredients.map((id) => `${ingIcon(id)} ${ingName(id)}`).join(' · ')
+  }
+
+  function layoutToScreen() {
+    const s = Math.min(
+      app.screen.width / MENU_BOARD_W,
+      app.screen.height / MENU_BOARD_H,
+    )
+    world.scale.set(s)
+    world.x = (app.screen.width - MENU_BOARD_W * s) / 2
+    world.y = (app.screen.height - MENU_BOARD_H * s) / 2
+  }
+
+  function placeBoardSprite() {
+    if (!boardSprite.texture || boardSprite.texture.width === 0) return
+    const tw = boardSprite.texture.width
+    const th = boardSprite.texture.height
+    const fit = Math.min(MENU_BOARD_W / tw, MENU_BOARD_H / th)
+    boardSprite.width = tw * fit
+    boardSprite.height = th * fit
+    boardSprite.x = (MENU_BOARD_W - boardSprite.width) / 2
+    boardSprite.y = (MENU_BOARD_H - boardSprite.height) / 2
   }
 
   function refreshCard(card: CardView) {
@@ -214,75 +217,97 @@ export function createMenuBoardScene(
     card.active = state.activeMenus.includes(card.id)
 
     card.bg.clear()
-    const fill = card.active ? C.cardSel : C.card
-    drawRoundRect(card.bg, 0, 0, CARD_W, CARD_H, 14, fill)
-    card.bg.roundRect(0, 0, CARD_W, CARD_H, 14)
+    card.statusBg.clear()
+
+    const fill = !card.unlocked ? 0xf3ebe0 : card.active ? C.cardSel : C.card
+    drawRoundRect(card.bg, 0, 0, CARD_W, CARD_H, 16, fill)
+    card.bg.roundRect(0, 0, CARD_W, CARD_H, 16)
     card.bg.stroke({
-      width: card.active ? 3 : 1.5,
-      color: card.active ? C.accent : C.cardEdge,
+      width: card.active ? 2.5 : 1.5,
+      color: card.active ? C.cardEdgeSel : C.cardEdge,
+      alpha: card.unlocked ? 1 : 0.55,
     })
-    drawRoundRect(card.bg, 0, 0, CARD_W, 10, 14, C.woodLight)
-    card.bg.rect(0, 6, CARD_W, 6)
-    card.bg.fill(C.woodLight)
 
-    card.lockOverlay.visible = !card.unlocked
-    card.root.alpha = card.unlocked ? 1 : 0.95
-    card.root.cursor = card.unlocked ? 'pointer' : 'not-allowed'
-
-    if (!card.unlocked) {
-      card.statusText.text = menu.unlockCondition
-        ? `🔒 ${menu.unlockCondition}`
-        : '🔒 잠김'
-      card.statusText.style.fill = 0xffd7a8
-    } else if (card.active) {
-      card.statusText.text = '✓ 판매 중'
-      card.statusText.style.fill = C.ok
-    } else {
-      card.statusText.text = `판매가 ₩${(state.menuPrices[card.id] ?? menu.basePrice).toLocaleString('ko-KR')}`
-      card.statusText.style.fill = C.muted
+    if (card.unlocked) {
+      drawRoundRect(card.bg, 3, 3, CARD_W - 6, 28, 12, 0xffffff, 0.22)
     }
 
-    card.recipeText.text = card.unlocked
-      ? `재료: ${recipeLine(menu)}`
-      : '해금 후 레시피 확인'
+    const dim = card.unlocked ? 1 : 0.42
+    card.iconText.alpha = dim
+    card.nameText.alpha = card.unlocked ? 1 : 0.45
+    card.metaText.alpha = card.unlocked ? 1 : 0.4
+    card.recipeText.alpha = card.unlocked ? 1 : 0.4
+    card.root.cursor = card.unlocked ? 'pointer' : 'not-allowed'
+    card.nameText.style.fill = card.unlocked ? C.text : C.lockDim
+    card.metaText.style.fill = card.unlocked ? C.muted : C.lockDim
+
+    if (!card.unlocked) {
+      card.recipeText.text = '해금 후 레시피 확인'
+      card.recipeText.style.fill = C.lockDim
+      card.statusText.text = `🔒  ${menu.unlockCondition ?? '잠김'}`
+      card.statusText.style.fill = 0x9a8068
+      card.statusBg.visible = false
+    } else if (card.active) {
+      card.recipeText.text = `재료: ${recipeLine(menu)}`
+      card.recipeText.style.fill = C.text
+      card.statusText.text = '✓  판매 중'
+      card.statusText.style.fill = C.ok
+      card.statusBg.visible = true
+      drawRoundRect(card.statusBg, CARD_W / 2 - 48, CARD_H - 36, 96, 24, 12, C.okBg)
+      card.statusBg.roundRect(CARD_W / 2 - 48, CARD_H - 36, 96, 24, 12)
+      card.statusBg.stroke({ width: 1.2, color: C.okEdge })
+    } else {
+      card.recipeText.text = `재료: ${recipeLine(menu)}`
+      card.recipeText.style.fill = C.text
+      card.statusText.text = `판매가 ₩${(state.menuPrices[card.id] ?? menu.basePrice).toLocaleString('ko-KR')}`
+      card.statusText.style.fill = C.muted
+      card.statusBg.visible = false
+    }
   }
 
   MENUS.forEach((menu, i) => {
     const col = i % COLS
     const row = Math.floor(i / COLS)
+    const baseX = originX + col * (CARD_W + GAP_X)
+    const baseY = originY + row * (CARD_H + GAP_Y)
+
     const cardRoot = new Container()
-    cardRoot.x = originX + col * (CARD_W + GAP)
-    cardRoot.y = originY + row * (CARD_H + GAP)
+    cardRoot.x = baseX
+    cardRoot.y = baseY
+
+    const shadow = new Graphics()
+    drawRoundRect(shadow, 3, 5, CARD_W, CARD_H, 16, 0x1a1008, 0.2)
+    cardRoot.addChild(shadow)
 
     const bg = new Graphics()
     cardRoot.addChild(bg)
 
-    const icon = new Text({
+    const iconText = new Text({
       text: menu.icon,
       resolution: textRes,
-      style: { fontSize: 42 },
+      style: { fontSize: 40 },
     })
-    icon.anchor.set(0.5, 0)
-    icon.x = CARD_W / 2
-    icon.y = 18
-    cardRoot.addChild(icon)
+    iconText.anchor.set(0.5, 0)
+    iconText.x = CARD_W / 2
+    iconText.y = 14
+    cardRoot.addChild(iconText)
 
-    const name = new Text({
+    const nameText = new Text({
       text: menu.name,
       resolution: textRes,
       style: {
         fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: 15,
+        fontWeight: '800',
         fill: C.text,
       },
     })
-    name.anchor.set(0.5, 0)
-    name.x = CARD_W / 2
-    name.y = 66
-    cardRoot.addChild(name)
+    nameText.anchor.set(0.5, 0)
+    nameText.x = CARD_W / 2
+    nameText.y = 58
+    cardRoot.addChild(nameText)
 
-    const meta = new Text({
+    const metaText = new Text({
       text: `${menu.category} · ${menu.cookTime}초 · ${stars(menu.difficulty)}`,
       resolution: textRes,
       style: {
@@ -291,10 +316,10 @@ export function createMenuBoardScene(
         fill: C.muted,
       },
     })
-    meta.anchor.set(0.5, 0)
-    meta.x = CARD_W / 2
-    meta.y = 88
-    cardRoot.addChild(meta)
+    metaText.anchor.set(0.5, 0)
+    metaText.x = CARD_W / 2
+    metaText.y = 80
+    cardRoot.addChild(metaText)
 
     const recipeText = new Text({
       text: '',
@@ -304,14 +329,18 @@ export function createMenuBoardScene(
         fontSize: 11,
         fill: C.text,
         wordWrap: true,
-        wordWrapWidth: CARD_W - 20,
+        wordWrapWidth: CARD_W - 22,
         align: 'center',
+        lineHeight: 16,
       },
     })
     recipeText.anchor.set(0.5, 0)
     recipeText.x = CARD_W / 2
-    recipeText.y = 110
+    recipeText.y = 104
     cardRoot.addChild(recipeText)
+
+    const statusBg = new Graphics()
+    cardRoot.addChild(statusBg)
 
     const statusText = new Text({
       text: '',
@@ -323,33 +352,23 @@ export function createMenuBoardScene(
         fill: C.muted,
       },
     })
-    statusText.anchor.set(0.5, 0)
+    statusText.anchor.set(0.5, 0.5)
     statusText.x = CARD_W / 2
-    statusText.y = 168
+    statusText.y = CARD_H - 24
     cardRoot.addChild(statusText)
-
-    const lockOverlay = new Container()
-    const lockBg = new Graphics()
-    drawRoundRect(lockBg, 0, 0, CARD_W, CARD_H, 14, C.lock, 0.55)
-    lockOverlay.addChild(lockBg)
-    const lockIcon = new Text({
-      text: '🔒',
-      resolution: textRes,
-      style: { fontSize: 36 },
-    })
-    lockIcon.anchor.set(0.5)
-    lockIcon.x = CARD_W / 2
-    lockIcon.y = CARD_H / 2 - 8
-    lockOverlay.addChild(lockIcon)
-    cardRoot.addChild(lockOverlay)
 
     const card: CardView = {
       id: menu.id,
       root: cardRoot,
+      baseX,
+      baseY,
       bg,
-      lockOverlay,
+      statusBg,
       statusText,
       recipeText,
+      nameText,
+      metaText,
+      iconText,
       unlocked: false,
       active: false,
     }
@@ -363,13 +382,13 @@ export function createMenuBoardScene(
     cardRoot.on('pointerover', () => {
       if (!state.unlockedMenus.includes(menu.id)) return
       cardRoot.scale.set(1.03)
-      cardRoot.x = originX + col * (CARD_W + GAP) - CARD_W * 0.015
-      cardRoot.y = originY + row * (CARD_H + GAP) - CARD_H * 0.015
+      cardRoot.x = card.baseX - CARD_W * 0.015
+      cardRoot.y = card.baseY - CARD_H * 0.015
     })
     cardRoot.on('pointerout', () => {
       cardRoot.scale.set(1)
-      cardRoot.x = originX + col * (CARD_W + GAP)
-      cardRoot.y = originY + row * (CARD_H + GAP)
+      cardRoot.x = card.baseX
+      cardRoot.y = card.baseY
     })
 
     refreshCard(card)
@@ -381,12 +400,31 @@ export function createMenuBoardScene(
     countText.text = `선택 ${state.activeMenus.length} / ${MAX_ACTIVE_MENUS}`
     cards.forEach(refreshCard)
   }
+
+  async function loadBoard() {
+    const tex = await Assets.load(MENU_BOARD_ART)
+    tex.source.scaleMode = 'linear'
+    boardSprite.texture = tex
+    placeBoardSprite()
+    layoutToScreen()
+  }
+
+  void loadBoard().catch((err) => {
+    console.error('Failed to load menu board', err)
+  })
+
+  const onResize = () => {
+    placeBoardSprite()
+    layoutToScreen()
+  }
+  app.renderer.on('resize', onResize)
+
   refreshAll()
   layoutToScreen()
 
   const onTick = (ticker: Ticker) => {
     elapsed += ticker.deltaMS / 1000
-    title.y = 50 + Math.sin(elapsed * 1.4) * 1.5
+    title.y = 48 + Math.sin(elapsed * 1.2) * 1.2
   }
   app.ticker.add(onTick)
 

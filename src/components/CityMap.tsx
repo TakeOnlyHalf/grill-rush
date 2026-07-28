@@ -11,6 +11,7 @@ import { ActionTypes } from '../state/actions'
 import { PixiStage } from '../pixi'
 import {
   createPrepLocationScene,
+  type LocationAnchors,
   type PrepLocationHandle,
 } from '../pixi/scenes/PrepLocationScene'
 
@@ -20,10 +21,11 @@ export interface CityMapHandle {
 
 interface CityMapProps {
   onLocationPick?: (locationId: string) => void
+  onAnchorsChange?: (anchors: LocationAnchors) => void
 }
 
 const CityMap = forwardRef<CityMapHandle, CityMapProps>(
-  function CityMap({ onLocationPick }, ref) {
+  function CityMap({ onLocationPick, onAnchorsChange }, ref) {
     const { state, dispatch } = useGame()
 
     const sceneRef = useRef<PrepLocationHandle | null>(null)
@@ -42,6 +44,8 @@ const CityMap = forwardRef<CityMapHandle, CityMapProps>(
     dispatchRef.current = dispatch
     const onPickRef = useRef(onLocationPick)
     onPickRef.current = onLocationPick
+    const onAnchorsRef = useRef(onAnchorsChange)
+    onAnchorsRef.current = onAnchorsChange
 
     useImperativeHandle(ref, () => ({
       pickLocation(locationId: string) {
@@ -69,6 +73,7 @@ const CityMap = forwardRef<CityMapHandle, CityMapProps>(
           })
           onPickRef.current?.(locationId)
         },
+        (anchors) => onAnchorsRef.current?.(anchors),
       )
       sceneRef.current = scene
       return () => {

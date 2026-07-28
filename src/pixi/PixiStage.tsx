@@ -61,11 +61,14 @@ export default function PixiStage({
       app = application
 
       try {
-        const dpr = rendererResolution()
+        const dpr = Math.min(window.devicePixelRatio || 1, 2)
+        const transparent = background === 'transparent'
+        const bgColor = transparent ? '#000000' : background
         if (fillParent) {
           await application.init({
             resizeTo: host,
-            background,
+            background: bgColor,
+            backgroundAlpha: transparent ? 0 : 1,
             antialias: true,
             resolution: dpr,
             autoDensity: true,
@@ -74,7 +77,8 @@ export default function PixiStage({
           await application.init({
             width,
             height,
-            background,
+            background: bgColor,
+            backgroundAlpha: transparent ? 0 : 1,
             antialias: true,
             resolution: dpr,
             autoDensity: true,
