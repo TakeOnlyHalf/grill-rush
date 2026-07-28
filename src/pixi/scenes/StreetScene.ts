@@ -1,11 +1,8 @@
-import { Container, Graphics, Text, type Application, type Ticker } from 'pixi.js'
+import { Container, Graphics, Text, type Application, type Texture, type Ticker } from 'pixi.js'
 import { PIXI_COLORS } from '../colors'
-import {
-  createCustomerSprite,
-  loadCustomerFrames,
-  type CustomerSpriteFrames,
-} from '../sprites/customerSprite'
-import { getCustomerSpriteConfig } from '../sprites/customerRegistry'
+import { createCustomerSprite } from '../sprites/customerSprite'
+import { loadCharacterPortraits, type CharacterKey } from '../sprites/characterPortraits'
+import { pickRandomGuestCharacter } from '../sprites/customerRegistry'
 
 export interface StreetSceneState {
   /** 대기열 손님 타입 목록 (data/customers.json의 id), 대기 순서대로 */
@@ -49,24 +46,16 @@ export function createStreetScene(
   let elapsed = 0
   let destroyed = false
 
-  // 타입별로 로드된 프레임을 캐싱 — 손님 타입이 늘어나도 씬 로직은 그대로 재사용된다.
-  const framesByType = new Map<string, CustomerSpriteFrames>()
-  const loadingTypes = new Set<string>()
+  // 캐릭터 시트는 한 장뿐이라 씬당 한 번만 로드해 재사용한다.
+  let portraits: Record<CharacterKey, Texture> | null = null
+  // 대기열 슬롯(인덱스)별 직전 손님 캐릭터 — 리빌드 때 같은 얼굴이 연달아 나오는 걸 막는 데 쓴다.
+  const lastGuestByIndex = new Map<number, CharacterKey>()
 
-  function ensureFramesLoaded(types: string[]) {
-    for (const type of types) {
-      if (framesByType.has(type) || loadingTypes.has(type)) continue
-      const config = getCustomerSpriteConfig(type)
-      if (!config) continue
-      loadingTypes.add(type)
-      loadCustomerFrames(config).then((frames) => {
-        loadingTypes.delete(type)
-        if (destroyed) return
-        framesByType.set(type, frames)
-        rebuildCrowd(app.screen.width, app.screen.height)
-      })
-    }
-  }
+  loadCharacterPortraits().then((loaded) => {
+    if (destroyed) return
+    portraits = loaded
+    rebuildCrowd(app.screen.width, app.screen.height)
+  })
 
   function layout() {
     const w = app.screen.width
@@ -107,16 +96,23 @@ export function createStreetScene(
     const baseY = h * 0.62 - 8
 
     types.forEach((type, i) => {
-      const frames = framesByType.get(type)
-      if (frames) {
-        const { sprite } = createCustomerSprite(frames, 'walk')
-        sprite.height = 34
-        sprite.width = 34 * (sprite.texture.width / sprite.texture.height)
+      const previousGuest = lastGuestByIndex.get(i)
+      const guestKey = portraits ? pickRandomGuestCharacter(type, previousGuest) : undefined
+      const guestTexture = guestKey && portraits ? portraits[guestKey] : undefined
+
+      if (guestKey) {
+        lastGuestByIndex.set(i, guestKey)
+      }
+
+      if (guestTexture) {
+        const sprite = createCustomerSprite(guestTexture)
+        sprite.height = 40
+        sprite.width = 40 * (guestTexture.width / guestTexture.height)
         sprite.x = 28 + i * 36
         sprite.y = baseY
         crowdLayer.addChild(sprite)
       } else {
-        // 스프라이트 설정이 아직 없는 손님 타입은 플레이스홀더 도형으로 대체
+        // 캐릭터가 아직 로드 전이거나 등록되지 않은 타입은 플레이스홀더 도형으로 대체
         const person = new Graphics()
         const shade = i % 2 === 0 ? PIXI_COLORS.crowd : PIXI_COLORS.muted
         person.circle(0, -18, 7)
@@ -125,7 +121,6 @@ export function createStreetScene(
         person.fill(shade)
         person.x = 28 + i * 36
         person.y = baseY
-        person.pivot.y = 0
         crowdLayer.addChild(person)
       }
     })
@@ -134,7 +129,6 @@ export function createStreetScene(
   function update(next: StreetSceneState = {}) {
     if (Array.isArray(next.customerTypes)) {
       customerTypes = next.customerTypes
-      ensureFramesLoaded(customerTypes)
     }
     if (typeof next.locationLabel === 'string') {
       locationLabel = next.locationLabel
@@ -146,15 +140,13 @@ export function createStreetScene(
   const onTick = (ticker: Ticker) => {
     elapsed += ticker.deltaMS / 1000
     truck.y = app.screen.height * 0.62 - 48 + Math.sin(elapsed * 2.2) * 1.5
-    // 손님 스프라이트는 걷기 프레임 자체로 움직임을 표현하므로, 플레이스홀더 도형에만 흔들림을 준다.
+    // 손님은 정적 일러스트라 살짝 흔들어 대기 중인 느낌을 준다.
+    const baseY = app.screen.height * 0.62 - 8
     crowdLayer.children.forEach((child, i) => {
-      if (child instanceof Graphics) {
-        child.y = app.screen.height * 0.62 - 8 + Math.sin(elapsed * 3 + i * 0.7) * 2
-      }
+      child.y = baseY + Math.sin(elapsed * 3 + i * 0.7) * 2
     })
   }
 
-  ensureFramesLoaded(customerTypes)
   layout()
   app.ticker.add(onTick)
 
