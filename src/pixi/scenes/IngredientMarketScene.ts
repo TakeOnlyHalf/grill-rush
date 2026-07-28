@@ -1,12 +1,16 @@
 import {
   Application,
+  Assets,
   Container,
   Graphics,
   Rectangle,
+  Sprite,
   Text,
   type Ticker,
 } from 'pixi.js'
 import ingredientsData from '../../data/ingredients.json'
+import { MART_BACKGROUND_ART } from '../../utils/assets'
+import { layoutPrepUiWorld } from '../layoutPrepUi'
 
 /* ================================================================
    DESIGN
@@ -90,7 +94,7 @@ function drawRoundRect(
   g.fill({ color, alpha })
 }
 
-/** 재료 마트 씬 — 선반·상자 UI로 매입 */
+/** 재료 마트 씬 — mart_background.webp 선반 배경 + 매입 카드 UI */
 export function createIngredientMarketScene(
   app: Application,
   initial: IngredientMarketState,
@@ -106,112 +110,65 @@ export function createIngredientMarketScene(
   const root = new Container()
   app.stage.addChild(root)
 
+  /** 전체 화면을 채우는 배경 (UI world와 분리) */
+  const bgSprite = new Sprite()
+  root.addChild(bgSprite)
+
   const world = new Container()
   root.addChild(world)
 
-  let elapsed = 0
   const floatTexts: { t: Text; life: number; vy: number }[] = []
 
-  function layoutToScreen() {
-    const s = Math.min(
-      app.screen.width / MARKET_W,
-      app.screen.height / MARKET_H,
-    )
-    world.scale.set(s)
-    world.x = (app.screen.width - MARKET_W * s) / 2
-    world.y = (app.screen.height - MARKET_H * s) / 2
-  }
   const onResize = () => layoutToScreen()
   app.renderer.on('resize', onResize)
 
-  /* ── Background ──────────────────────────────── */
-  const bg = new Graphics()
-  bg.rect(0, 0, MARKET_W, MARKET_H * 0.55)
-  bg.fill(M.bgTop)
-  bg.rect(0, MARKET_H * 0.55, MARKET_W, MARKET_H * 0.45)
-  bg.fill(M.bgBot)
-  // soft vignette bands
-  bg.rect(0, 0, MARKET_W, 90)
-  bg.fill({ color: 0x1a3020, alpha: 0.18 })
-  world.addChild(bg)
+  /* ── Cash (배경 이미지 우측 명패 위치) ───────── */
+  /** mart_background.webp 기준 명패 중심 (정규화 좌표) */
+  const CASH_CX = 0.762
+  const CASH_CY = 0.2545
+  const CASH_ART_W = 1400
 
-  // decorative floor planks
-  const floor = new Graphics()
-  floor.rect(0, MARKET_H - 70, MARKET_W, 70)
-  floor.fill(M.woodDark)
-  for (let i = 0; i < 12; i++) {
-    floor.rect(i * 80, MARKET_H - 70, 2, 70)
-    floor.fill({ color: 0x000000, alpha: 0.12 })
-  }
-  world.addChild(floor)
-
-  // back wall shelves
-  const shelves = new Graphics()
-  for (const y of [120, 270, 420]) {
-    shelves.rect(40, y, MARKET_W - 80, 14)
-    shelves.fill(M.shelf)
-    shelves.rect(40, y + 14, MARKET_W - 80, 6)
-    shelves.fill(M.woodDark)
-  }
-  world.addChild(shelves)
-
-  /* ── Shop sign ───────────────────────────────── */
-  const sign = new Container()
-  sign.x = MARKET_W / 2
-  sign.y = 42
-  const signBoard = new Graphics()
-  drawRoundRect(signBoard, -170, -28, 340, 56, 10, M.sign)
-  drawRoundRect(signBoard, -160, -20, 320, 40, 8, M.wood)
-  sign.addChild(signBoard)
-  const signText = new Text({
-    text: '🏪  일반 마트',
-    resolution: textRes,
-    style: {
-      fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-      fontSize: 26,
-      fontWeight: 'bold',
-      fill: M.chalk,
-    },
-  })
-  signText.anchor.set(0.5)
-  sign.addChild(signText)
-  world.addChild(sign)
-
-  const subtitle = new Text({
-    text: '선택한 메뉴의 필요 재료만 구매 가능 · 나머지는 잠김',
-    resolution: textRes,
-    style: {
-      fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-      fontSize: 13,
-      fill: M.chalk,
-    },
-  })
-  subtitle.anchor.set(0.5, 0)
-  subtitle.x = MARKET_W / 2
-  subtitle.y = 78
-  world.addChild(subtitle)
-
-  /* ── Cash badge ──────────────────────────────── */
-  const cashBox = new Container()
-  cashBox.x = MARKET_W - 28
-  cashBox.y = 36
-  const cashBg = new Graphics()
-  drawRoundRect(cashBg, -168, -20, 168, 40, 12, M.cashBg, 0.82)
-  cashBox.addChild(cashBg)
+  const cashRoot = new Container()
+  root.addChild(cashRoot)
   const cashText = new Text({
     text: formatWon(state.cash),
     resolution: textRes,
     style: {
       fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-      fontSize: 18,
+      fontSize: 22,
       fontWeight: 'bold',
       fill: 0xffe08a,
     },
   })
-  cashText.anchor.set(1, 0.5)
-  cashText.x = -14
-  cashBox.addChild(cashText)
-  world.addChild(cashBox)
+  cashText.anchor.set(0.5)
+  cashRoot.addChild(cashText)
+
+  function placeCash() {
+    if (!bgSprite.texture || bgSprite.texture.width === 0) return
+    if (bgSprite.width <= 0) return
+    const scale = bgSprite.width / CASH_ART_W
+    cashRoot.scale.set(scale)
+    cashRoot.x = bgSprite.x + bgSprite.width * CASH_CX
+    cashRoot.y = bgSprite.y + bgSprite.height * CASH_CY
+  }
+
+  function placeBgSprite() {
+    if (!bgSprite.texture || bgSprite.texture.width === 0) return
+    if (app.screen.width <= 0 || app.screen.height <= 0) return
+    const tw = bgSprite.texture.width
+    const th = bgSprite.texture.height
+    const cover = Math.max(app.screen.width / tw, app.screen.height / th)
+    bgSprite.width = tw * cover
+    bgSprite.height = th * cover
+    bgSprite.x = (app.screen.width - bgSprite.width) / 2
+    bgSprite.y = (app.screen.height - bgSprite.height) / 2
+    placeCash()
+  }
+
+  function layoutToScreen() {
+    layoutPrepUiWorld(app, world, MARKET_W, MARKET_H)
+    placeBgSprite()
+  }
 
   /* ── Item grid ───────────────────────────────── */
   const GRID_COLS = 5
@@ -221,7 +178,7 @@ export function createIngredientMarketScene(
   const GAP_Y = 18
   const gridW = GRID_COLS * CARD_W + (GRID_COLS - 1) * GAP_X
   const gridOriginX = (MARKET_W - gridW) / 2
-  const gridOriginY = 118
+  const gridOriginY = 188
 
   const slots: SlotView[] = []
   const displayItems = ITEMS.slice(0, 15)
@@ -439,13 +396,22 @@ export function createIngredientMarketScene(
     sp: 8 + (i % 5) * 3,
   }))
 
+  async function loadBg() {
+    const tex = await Assets.load(MART_BACKGROUND_ART)
+    tex.source.scaleMode = 'linear'
+    bgSprite.texture = tex
+    placeBgSprite()
+    layoutToScreen()
+  }
+
+  void loadBg().catch((err) => {
+    console.error('Failed to load mart background', err)
+  })
+
   layoutToScreen()
 
   const onTick = (ticker: Ticker) => {
     const dt = ticker.deltaMS / 1000
-    elapsed += dt
-
-    sign.y = 42 + Math.sin(elapsed * 1.6) * 2
 
     dustG.clear()
     for (const d of dust) {

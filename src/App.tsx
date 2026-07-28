@@ -12,7 +12,6 @@ import './styles/game.css'
 /**
  * 페이즈 라우팅
  * title → prep → open → settle → night → … → ending
- * (오프닝 스토리는 건너뛰고 본 게임부터 시작)
  */
 function PhaseRouter() {
   const { phase } = useGameState()
@@ -39,7 +38,12 @@ function PhaseRouter() {
 
 function AppShell() {
   const { phase } = useGameState()
-  const bleed = phase === 'title' || phase === 'story' || phase === 'prep'
+  const bleed =
+    phase === 'title' ||
+    phase === 'story' ||
+    phase === 'prep' ||
+    phase === 'settle' ||
+    phase === 'night'
 
   return (
     <div className={bleed ? 'app-shell app-shell--bleed' : 'app-shell'}>

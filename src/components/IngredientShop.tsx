@@ -69,7 +69,7 @@ export default function IngredientShop() {
     <PixiStage
       className="prep-ingredient-pixi"
       fillParent
-      background="#2a4f36"
+      background="transparent"
       setup={setup}
     />
   )

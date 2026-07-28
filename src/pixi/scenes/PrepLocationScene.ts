@@ -47,6 +47,7 @@ export function createPrepLocationScene(
   initial: PrepLocationState,
   _onSelect: (id: string) => void,
   onAnchors?: (anchors: LocationAnchors) => void,
+  onReady?: () => void,
 ): PrepLocationHandle {
   const state = { ...initial }
   let locationConfirmed = false
@@ -55,6 +56,7 @@ export function createPrepLocationScene(
   let truckTargetWorldX = 0
   let bgW = 1920
   let bgH = 1080
+  let destroyed = false
 
   const root = new Container()
   app.stage.addChild(root)
@@ -214,6 +216,7 @@ export function createPrepLocationScene(
     truck.roundPixels = false
     truck.height = TRUCK_SCREEN_H
     truck.scale.x = truck.scale.y
+    truck.alpha = 0
     truckLayer.addChild(truck)
     truckSprite = truck
 
@@ -222,11 +225,16 @@ export function createPrepLocationScene(
 
     // 첫 프레임에 screen 크기가 아직 0일 수 있어 다음 프레임에 한 번 더 맞춤
     layout()
-    requestAnimationFrame(() => layout())
+    requestAnimationFrame(() => {
+      if (destroyed) return
+      layout()
+      onReady?.()
+    })
   }
 
   void loadArt().catch((err) => {
     console.error('Failed to load location backdrop', err)
+    if (!destroyed) onReady?.()
   })
 
   const onResize = () => layout()
@@ -235,6 +243,10 @@ export function createPrepLocationScene(
   const onTick = (ticker: Ticker) => {
     const dt = ticker.deltaMS / 1000
     elapsed += dt
+
+    if (truckSprite && truckSprite.alpha < 1) {
+      truckSprite.alpha = Math.min(1, truckSprite.alpha + dt * 1.8)
+    }
 
     const dx = truckTargetWorldX - truckWorldX
     if (Math.abs(dx) > 0.35) {
@@ -288,6 +300,7 @@ export function createPrepLocationScene(
       refreshMarkers()
     },
     destroy() {
+      destroyed = true
       app.renderer.off('resize', onResize)
       app.ticker.remove(onTick)
       root.destroy({ children: true })
