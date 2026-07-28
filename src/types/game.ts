@@ -38,6 +38,28 @@ export interface Order {
   status: 'queued' | 'cooking' | 'done' | 'failed'
 }
 
+export type CookResult = 'raw' | 'good' | 'perfect' | 'danger' | 'burnt'
+export type PreparedCookResult = Exclude<CookResult, 'raw' | 'burnt'>
+
+export interface PreparedIngredient {
+  id: string
+  ingredientId: IngredientId
+  cookResult: PreparedCookResult
+  quality: number
+}
+
+export interface ServeFeedback {
+  id: number
+  menuId: MenuId
+  menuName: string
+  amount: number
+}
+
+export interface CustomerLeaveFeedback {
+  id: number
+  customerName: string
+}
+
 export interface DaySummary {
   day: number
   sales: number
@@ -66,6 +88,10 @@ export interface GameState {
   ingredients: Record<IngredientId, number>
   customers: Customer[]
   orders: Order[]
+  preparedIngredients: PreparedIngredient[]
+  nextPreparedIngredientId: number
+  lastServeFeedback: ServeFeedback | null
+  lastCustomerLeaveFeedback: CustomerLeaveFeedback | null
   dailySales: number
   dailyTips: number
   dailyServed: number
@@ -89,6 +115,11 @@ export type GameAction =
   | { type: 'SET_MENU_PRICE'; payload: { menuId: MenuId; price: number } }
   | { type: 'BUY_INGREDIENT'; payload: { ingredientId: IngredientId; qty: number; unitCost: number } }
   | { type: 'USE_INGREDIENT'; payload: { ingredientId: IngredientId } }
+  | {
+      type: 'COLLECT_COOKED_INGREDIENT'
+      payload: { ingredientId: IngredientId; cookResult: CookResult; quality: number }
+    }
+  | { type: 'SERVE_ORDER'; payload: { orderId: string; customerId: string } }
   | { type: 'START_OPEN' }
   | { type: 'TICK_OPEN'; payload?: { dt?: number } }
   | { type: 'END_OPEN' }

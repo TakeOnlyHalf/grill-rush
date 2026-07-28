@@ -17,6 +17,7 @@ export interface GrillBoardSceneOptions {
   slots: GrillSlot[]
   ingredients: GrillIngredient[]
   inventory: Record<string, number>
+  neededIngredientIds?: string[]
   onUseIngredient?: (ingredientId: string) => void
   onCollect?: (item: CollectedGrillItem) => void
   onSlotsChange?: (slots: GrillSlot[]) => void
@@ -27,6 +28,7 @@ export interface GrillBoardSceneOptions {
 export interface GrillBoardSceneHandle {
   destroy: () => void
   updateInventory: (inventory: Record<string, number>) => void
+  updateNeededIngredients: (ingredientIds: string[]) => void
   showFeedback: (result: CookResult) => void
 }
 
@@ -83,7 +85,7 @@ export function createGrillBoardScene(
   const feedbackDetail = createText('', 12, colors.cream.value, '600')
   let slots = cloneSlots(options.slots)
   let inventory = { ...options.inventory }
-  let selectedIngredientId: string | null = null
+  let neededIngredientIds = new Set(options.neededIngredientIds ?? [])
   const now = options.now ?? Date.now
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   let feedbackStartedAt: number | null = null
@@ -137,27 +139,28 @@ export function createGrillBoardScene(
   root.addChild(feedbackRoot)
 
   function handleTrayTap(ingredientId: string) {
-    if ((inventory[ingredientId] ?? 0) <= 0 || isGrillFull()) return
-    selectedIngredientId = selectedIngredientId === ingredientId ? null : ingredientId
+    if ((inventory[ingredientId] ?? 0) <= 0) return
+    const emptyIndex = slots.findIndex((slot) => slot.status === 'idle')
+    if (emptyIndex < 0) {
+      showNotice('그릴이 가득 찼습니다', '재료를 먼저 회수해주세요', colors.warning.value)
+      return
+    }
+    const ingredient = options.ingredients.find((item) => item.id === ingredientId)
+    if (!ingredient) return
+    const time = now()
+    slots[emptyIndex] = placeIngredient(slots[emptyIndex], ingredient, time)
+    inventory[ingredientId] -= 1
+    options.onUseIngredient?.(ingredientId)
+    emitSlots()
     renderTray()
+    renderSlot(emptyIndex, time)
+    showNotice('투입 완료', `${ingredient.name} 조리를 시작합니다`, colors.accent.value)
   }
 
   function handleSlotTap(index: number) {
     const slot = slots[index]
     const time = now()
-    if (slot.status === 'idle') {
-      if (!selectedIngredientId || isGrillFull()) return
-      const ingredient = options.ingredients.find((item) => item.id === selectedIngredientId)
-      if (!ingredient || (inventory[ingredient.id] ?? 0) <= 0) return
-      slots[index] = placeIngredient(slot, ingredient, time)
-      inventory[ingredient.id] = Math.max(0, (inventory[ingredient.id] ?? 0) - 1)
-      options.onUseIngredient?.(ingredient.id)
-      if (inventory[ingredient.id] === 0) selectedIngredientId = null
-      emitSlots()
-      renderTray()
-      renderSlot(index, time)
-      return
-    }
+    if (slot.status === 'idle') return
 
     if (slot.status === 'burnt') {
       slots[index] = clearGrillSlot(slot)
@@ -195,19 +198,23 @@ export function createGrillBoardScene(
     const feedback = cookFeedback[result]
     const accent = resultColors[result]
     const darkPanel = result === 'burnt'
+    showNotice(feedback.title, feedback.detail, accent, feedback.stars, darkPanel)
+  }
+
+  function showNotice(title: string, detail: string, accent: string, stars = 0, darkPanel = false) {
     feedbackStartedAt = now()
-    feedbackTitle.text = feedback.title
+    feedbackTitle.text = title
     feedbackTitle.style.fill = darkPanel ? colors.cream.value : colors.text.value
-    feedbackStars.text = feedback.stars > 0 ? '★'.repeat(feedback.stars) : ''
-    feedbackDetail.text = feedback.detail
+    feedbackStars.text = stars > 0 ? '★'.repeat(stars) : ''
+    feedbackDetail.text = detail
     feedbackDetail.style.fill = darkPanel ? colors.cream.value : colors.text.value
     feedbackPanel.clear()
     feedbackPanel.roundRect(-150, -60, 300, 120, 18)
     feedbackPanel.fill({ color: darkPanel ? colors.text.value : colors.bgPanel.value, alpha: 0.97 })
-    feedbackPanel.stroke({ color: result === 'burnt' ? colors.danger.value : accent, width: result === 'perfect' ? 4 : 3 })
-    feedbackTitle.y = feedback.stars > 0 ? -27 : -18
+    feedbackPanel.stroke({ color: darkPanel ? colors.danger.value : accent, width: stars === 3 ? 4 : 3 })
+    feedbackTitle.y = stars > 0 ? -27 : -18
     feedbackStars.y = 4
-    feedbackDetail.y = feedback.stars > 0 ? 34 : 22
+    feedbackDetail.y = stars > 0 ? 34 : 22
     feedbackRoot.visible = true
     feedbackRoot.alpha = 1
   }
@@ -323,9 +330,9 @@ export function createGrillBoardScene(
     view.steam.y = 23 - pulse * 5
     view.steam.visible = slot.status === 'cooking' && progress >= 0.3
     view.steam.alpha = reduceMotion ? 0.62 : 0.35 + pulse * 0.4
-    view.state.text = slot.status === 'idle' ? '비어 있음 · 선택 재료 투입' : resultLabels[result]
+    view.state.text = slot.status === 'idle' ? '비어 있음 · 트레이 클릭 시 투입' : resultLabels[result]
     view.ingredient.text = ingredient?.name ?? '빈 슬롯'
-    view.root.cursor = slot.status === 'idle' && !selectedIngredientId ? 'default' : 'pointer'
+    view.root.cursor = slot.status === 'idle' ? 'default' : 'pointer'
 
     view.gauge.clear()
     view.gauge.roundRect(10, slotHeight - 12, slotWidth - 20, 6, 3)
@@ -365,7 +372,7 @@ export function createGrillBoardScene(
 
   function renderTray() {
     const full = isGrillFull()
-    trayHint.text = full ? '그릴이 가득 찼습니다' : selectedIngredientId ? '빈 슬롯을 선택하세요' : '재료를 선택하세요'
+    trayHint.text = full ? '그릴이 가득 찼습니다' : '클릭하면 첫 빈 슬롯에 투입됩니다'
     trayHint.x = app.screen.width - trayHint.width - 18
     emptyTray.visible = trayViews.length === 0
     const trayGap = 8
@@ -376,18 +383,18 @@ export function createGrillBoardScene(
     trayViews.forEach((view, index) => {
       const ingredient = trayIngredients[index]
       const count = inventory[ingredient.id] ?? 0
-      const selected = selectedIngredientId === ingredient.id
+      const needed = neededIngredientIds.has(ingredient.id)
       const disabled = count <= 0 || full
       view.surface.clear()
       view.surface.roundRect(0, 0, trayWidth, 78, 9)
-      view.surface.fill(selected ? cookColors.cooking.value : colors.bgPanel2.value)
+      view.surface.fill(needed ? colors.cream.value : colors.bgPanel2.value)
       view.surface.stroke({
-        color: selected ? colors.accent.value : colors.border.value,
-        width: selected ? 3 : 1,
+        color: needed ? colors.accent.value : colors.border.value,
+        width: needed ? 3 : 1,
       })
       view.detail.text = count <= 0
         ? '품절'
-        : `${count}개 · ${ingredient.cookDurationMs / 1_000}초`
+        : `${count}개 · ${ingredient.cookDurationMs / 1_000}초${needed ? ' · 주문 필요' : ''}`
       view.root.alpha = disabled ? 0.48 : 1
       view.root.cursor = disabled ? 'not-allowed' : 'pointer'
     })
@@ -437,9 +444,10 @@ export function createGrillBoardScene(
   return {
     updateInventory(nextInventory) {
       inventory = { ...nextInventory }
-      if (selectedIngredientId && (inventory[selectedIngredientId] ?? 0) <= 0) {
-        selectedIngredientId = null
-      }
+      renderTray()
+    },
+    updateNeededIngredients(ingredientIds) {
+      neededIngredientIds = new Set(ingredientIds)
       renderTray()
     },
     showFeedback,
@@ -447,7 +455,6 @@ export function createGrillBoardScene(
       app.ticker.remove(onTick)
       slotViews.forEach((view) => view.root.removeAllListeners())
       trayViews.forEach((view) => view.root.removeAllListeners())
-      selectedIngredientId = null
       feedbackStartedAt = null
       slots = []
       inventory = {}
