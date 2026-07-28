@@ -13,9 +13,16 @@ import { createCustomerSprite } from '../sprites/customerSprite'
 import { loadCharacterPortraits, type CharacterKey } from '../sprites/characterPortraits'
 import { pickRandomGuestCharacter } from '../sprites/customerRegistry'
 
+export interface StreetSceneCustomer {
+  /** 손님 고유 id — 리사이즈 등으로 다시 그릴 때도 같은 손님이 같은 캐릭터로 유지되도록 하는 키 */
+  id: string
+  /** 손님 타입(data/customers.json의 id) */
+  type: string
+}
+
 export interface StreetSceneState {
-  /** 대기열 손님 타입 목록 (data/customers.json의 id), 대기 순서대로 */
-  customerTypes?: string[]
+  /** 대기열 손님 목록, 대기 순서대로(맨 앞이 가장 오래 기다린 손님) */
+  customers?: StreetSceneCustomer[]
   locationLabel?: string
 }
 
@@ -69,14 +76,15 @@ export function createStreetScene(
   // windowMask는 마스크 전용으로만 쓰고 화면에는 그리지 않는다 (자식으로 추가하지 않음)
   root.addChild(windowLayer, frame)
 
-  let customerTypes = initial.customerTypes ?? []
+  let customers = initial.customers ?? []
   let locationLabel = initial.locationLabel ?? ''
   let destroyed = false
 
   // 캐릭터 시트는 한 장뿐이라 씬당 한 번만 로드해 재사용한다.
   let portraits: Record<CharacterKey, Texture> | null = null
-  // 대기열 슬롯(인덱스)별 직전 손님 캐릭터 — 리빌드 때 같은 얼굴이 연달아 나오는 걸 막는 데 쓴다.
-  const lastGuestByIndex = new Map<number, CharacterKey>()
+  // 손님 id별로 캐릭터를 한 번만 뽑아 고정한다 — 리사이즈 등으로 재배치돼도
+  // 같은 손님이 계속 같은 얼굴을 유지하고, 대기열에서 빠지면 항목도 같이 정리된다.
+  const guestByCustomerId = new Map<string, CharacterKey>()
 
   loadCharacterPortraits().then((loaded) => {
     if (destroyed) return
@@ -145,8 +153,11 @@ export function createStreetScene(
   function rebuildCrowd() {
     crowdLayer.removeChildren()
     const win = windowRect()
-    const types = customerTypes.slice(0, MAX_CROWD)
-    if (types.length === 0 || win.w <= 0 || win.h <= 0) return
+    const visible = customers.slice(0, MAX_CROWD)
+    if (visible.length === 0 || win.w <= 0 || win.h <= 0) {
+      pruneGuestAssignments()
+      return
+    }
 
     const margin = win.w * 0.05
     const usable = win.w - margin * 2
@@ -158,24 +169,21 @@ export function createStreetScene(
     const badgeBaseY = win.h * 0.94
     const badgeR = Math.min(12, step * 0.28)
 
-    // 바로 옆 슬롯과 같은 캐릭터가 나란히 나오는 걸 최우선으로 막고,
-    // 여유가 있으면 이 슬롯의 직전 캐릭터도 피해 화면 전환마다 다양성을 준다.
+    // 손님별로 캐릭터를 한 번만 뽑고, 이후엔(리사이즈 등) 같은 손님이면 재사용한다.
+    // 새로 뽑을 때만 바로 옆 슬롯과 겹치지 않게 고른다.
     let leftNeighborKey: CharacterKey | undefined
     const slots: Container[] = []
 
-    types.forEach((type, i) => {
+    visible.forEach((customer, i) => {
       const cx = margin + step * (i + 0.5)
       const isFront = i === 0
-      const previousGuest = lastGuestByIndex.get(i)
 
-      const guestKey = portraits
-        ? pickRandomGuestCharacter(type, leftNeighborKey, previousGuest)
-        : undefined
-      const guestTexture = guestKey && portraits ? portraits[guestKey] : undefined
-
-      if (guestKey) {
-        lastGuestByIndex.set(i, guestKey)
+      let guestKey = guestByCustomerId.get(customer.id)
+      if (!guestKey && portraits) {
+        guestKey = pickRandomGuestCharacter(customer.type, leftNeighborKey)
+        if (guestKey) guestByCustomerId.set(customer.id, guestKey)
       }
+      const guestTexture = guestKey && portraits ? portraits[guestKey] : undefined
       leftNeighborKey = guestKey
 
       const slot = new Container()
@@ -217,7 +225,7 @@ export function createStreetScene(
     crowdLayer.addChild(...[...slots].reverse())
 
     // 번호 배지는 캐릭터 크기와 무관하게 항상 같은 높이에 고정 배치한다.
-    types.forEach((_, i) => {
+    visible.forEach((_, i) => {
       const cx = margin + step * (i + 0.5)
       const badge = new Graphics()
       badge.circle(cx, badgeBaseY, badgeR)
@@ -235,11 +243,22 @@ export function createStreetScene(
       badgeText.position.set(cx, badgeBaseY)
       crowdLayer.addChild(badge, badgeText)
     })
+
+    pruneGuestAssignments()
+  }
+
+  /** 대기열에서 빠진 손님의 캐릭터 배정을 지운다 (메모리 누수 방지 + id 재사용 대비) */
+  function pruneGuestAssignments() {
+    if (guestByCustomerId.size === 0) return
+    const activeIds = new Set(customers.map((c) => c.id))
+    for (const id of guestByCustomerId.keys()) {
+      if (!activeIds.has(id)) guestByCustomerId.delete(id)
+    }
   }
 
   function update(next: StreetSceneState = {}) {
-    if (Array.isArray(next.customerTypes)) {
-      customerTypes = next.customerTypes
+    if (Array.isArray(next.customers)) {
+      customers = next.customers
     }
     if (typeof next.locationLabel === 'string') {
       locationLabel = next.locationLabel

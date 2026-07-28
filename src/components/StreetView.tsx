@@ -9,17 +9,19 @@ import type { StreetSceneHandle } from '../pixi/scenes/StreetScene'
 export default function StreetView() {
   const state = useGameState()
   const loc = getLocationById(state.location)
-  const customerTypes = state.customers.map((c) => c.type)
-  const locationLabel = `${loc?.icon ?? ''} ${loc?.name ?? '—'} · 대기 ${customerTypes.length}명`
+  const customers = state.customers.map((c) => ({ id: c.id, type: c.type }))
+  const locationLabel = `${loc?.icon ?? ''} ${loc?.name ?? '—'} · 대기 ${customers.length}명`
 
   const sceneRef = useRef<StreetSceneHandle | null>(null)
-  const propsRef = useRef({ customerTypes, locationLabel })
-  propsRef.current = { customerTypes, locationLabel }
+  const propsRef = useRef({ customers, locationLabel })
+  propsRef.current = { customers, locationLabel }
 
-  const customerTypesKey = customerTypes.join(',')
+  // id 순서로 키를 만들어, patience 값만 바뀌는 매초 tick에는 씬을 다시 그리지 않고
+  // 손님 구성(추가/이탈/서빙)이 실제로 바뀔 때만 갱신한다.
+  const customersKey = customers.map((c) => c.id).join(',')
   useEffect(() => {
     sceneRef.current?.update(propsRef.current)
-  }, [customerTypesKey, locationLabel])
+  }, [customersKey, locationLabel])
 
   const setup = useCallback((app: Application) => {
     const scene = createStreetScene(app, propsRef.current)
