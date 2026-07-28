@@ -11,6 +11,10 @@ function destroyApp(app: Application | null) {
   app.destroy({ removeView: true }, { children: true })
 }
 
+function rendererResolution() {
+  return Math.min(window.devicePixelRatio || 1, 2)
+}
+
 export type PixiSetup = (app: Application) => void | (() => void)
 
 export interface PixiStageProps {
@@ -50,13 +54,14 @@ export default function PixiStage({
     let app: Application | null = null
     let disposed = false
     let sceneCleanup: (() => void) | null = null
+    let removeResolutionListener: (() => void) | null = null
 
     ;(async () => {
       const application = new Application()
       app = application
 
       try {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2)
+        const dpr = rendererResolution()
         if (fillParent) {
           await application.init({
             resizeTo: host,
@@ -95,6 +100,19 @@ export default function PixiStage({
       }
       application.canvas.style.borderRadius = '8px'
 
+      const syncResolution = () => {
+        const nextResolution = rendererResolution()
+        if (application.renderer.resolution !== nextResolution) {
+          application.renderer.resize(
+            application.screen.width,
+            application.screen.height,
+            nextResolution,
+          )
+        }
+      }
+      window.addEventListener('resize', syncResolution)
+      removeResolutionListener = () => window.removeEventListener('resize', syncResolution)
+
       const cleanup = setupRef.current?.(application) ?? null
       if (disposed) {
         if (typeof cleanup === 'function') cleanup()
@@ -106,6 +124,8 @@ export default function PixiStage({
 
     return () => {
       disposed = true
+      removeResolutionListener?.()
+      removeResolutionListener = null
       if (typeof sceneCleanup === 'function') sceneCleanup()
       sceneCleanup = null
       destroyApp(app)
