@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import CityMap, { type CityMapHandle } from '../components/CityMap'
 import LocationSelectStrip from '../components/LocationSelectStrip'
 import MenuSelector from '../components/MenuSelector'
@@ -8,10 +8,8 @@ import { ActionTypes } from '../state/actions'
 import {
   estimateCustomers,
   getLocationById,
-  getRequiredIngredientIds,
 } from '../state/formulas'
 import { getWeatherLabel } from '../utils/weather'
-import ingredients from '../data/ingredients.json'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
 import { READY_PHASE_BG, preloadCriticalAssets } from '../utils/assets'
 
@@ -73,17 +71,6 @@ export default function PrepPhase() {
   const [mapReady, setMapReady] = useState(false)
   const [posterDimmed, setPosterDimmed] = useState(false)
   const mapRef = useRef<CityMapHandle | null>(null)
-
-  const needed = useMemo(
-    () => getRequiredIngredientIds(state.activeMenus),
-    [state.activeMenus],
-  )
-  const neededLabels = needed
-    .map((id) => {
-      const ing = ingredients.find((i) => i.id === id)
-      return ing ? `${ing.icon}${ing.name}` : id
-    })
-    .join(' · ')
 
   useEffect(() => {
     setStep('location')
@@ -220,27 +207,23 @@ export default function PrepPhase() {
             <PrepHud />
             <PrepSteps step={step} />
 
-            <header className="prep-supply-header prep-supply-header--overlay">
-              <div>
-                <p className="prep-supply-kicker">오늘의 준비</p>
-                <h2>{step === 'menu' ? '메뉴 선택' : '재료 마트'}</h2>
-              </div>
-              {loc && (
-                <div className="prep-supply-badge">
-                  <span className="prep-supply-badge-icon">{loc.icon}</span>
-                  <div>
-                    <strong>{loc.name}</strong>
-                    <small>
-                      {step === 'menu'
-                        ? `판매 메뉴 ${state.activeMenus.length}종`
-                        : needed.length > 0
-                          ? `필요 재료 ${neededLabels}`
-                          : '먼저 메뉴를 선택하세요'}
-                    </small>
-                  </div>
+            {step === 'menu' && (
+              <header className="prep-supply-header prep-supply-header--overlay">
+                <div>
+                  <p className="prep-supply-kicker">오늘의 준비</p>
+                  <h2>메뉴 선택</h2>
                 </div>
-              )}
-            </header>
+                {loc && (
+                  <div className="prep-supply-badge">
+                    <span className="prep-supply-badge-icon">{loc.icon}</span>
+                    <div>
+                      <strong>{loc.name}</strong>
+                      <small>판매 메뉴 {state.activeMenus.length}종</small>
+                    </div>
+                  </div>
+                )}
+              </header>
+            )}
 
             <footer className="prep-bottom-bar">
               {step === 'menu' ? (

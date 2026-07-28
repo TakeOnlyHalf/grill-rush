@@ -117,8 +117,40 @@ export function createIngredientMarketScene(
   const world = new Container()
   root.addChild(world)
 
-  let elapsed = 0
   const floatTexts: { t: Text; life: number; vy: number }[] = []
+
+  const onResize = () => layoutToScreen()
+  app.renderer.on('resize', onResize)
+
+  /* ── Cash (배경 이미지 우측 명패 위치) ───────── */
+  /** mart_background.webp 기준 명패 중심 (정규화 좌표) */
+  const CASH_CX = 0.762
+  const CASH_CY = 0.2545
+  const CASH_ART_W = 1400
+
+  const cashRoot = new Container()
+  root.addChild(cashRoot)
+  const cashText = new Text({
+    text: formatWon(state.cash),
+    resolution: textRes,
+    style: {
+      fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
+      fontSize: 22,
+      fontWeight: 'bold',
+      fill: 0xffe08a,
+    },
+  })
+  cashText.anchor.set(0.5)
+  cashRoot.addChild(cashText)
+
+  function placeCash() {
+    if (!bgSprite.texture || bgSprite.texture.width === 0) return
+    if (bgSprite.width <= 0) return
+    const scale = bgSprite.width / CASH_ART_W
+    cashRoot.scale.set(scale)
+    cashRoot.x = bgSprite.x + bgSprite.width * CASH_CX
+    cashRoot.y = bgSprite.y + bgSprite.height * CASH_CY
+  }
 
   function placeBgSprite() {
     if (!bgSprite.texture || bgSprite.texture.width === 0) return
@@ -130,73 +162,13 @@ export function createIngredientMarketScene(
     bgSprite.height = th * cover
     bgSprite.x = (app.screen.width - bgSprite.width) / 2
     bgSprite.y = (app.screen.height - bgSprite.height) / 2
+    placeCash()
   }
 
   function layoutToScreen() {
     layoutPrepUiWorld(app, world, MARKET_W, MARKET_H)
     placeBgSprite()
   }
-
-  const onResize = () => layoutToScreen()
-  app.renderer.on('resize', onResize)
-
-  /* ── Shop sign ───────────────────────────────── */
-  const sign = new Container()
-  sign.x = MARKET_W / 2
-  sign.y = 42
-  const signBoard = new Graphics()
-  drawRoundRect(signBoard, -170, -28, 340, 56, 10, M.sign)
-  drawRoundRect(signBoard, -160, -20, 320, 40, 8, M.wood)
-  sign.addChild(signBoard)
-  const signText = new Text({
-    text: '🏪  일반 마트',
-    resolution: textRes,
-    style: {
-      fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-      fontSize: 26,
-      fontWeight: 'bold',
-      fill: M.chalk,
-    },
-  })
-  signText.anchor.set(0.5)
-  sign.addChild(signText)
-  world.addChild(sign)
-
-  const subtitle = new Text({
-    text: '선택한 메뉴의 필요 재료만 구매 가능 · 나머지는 잠김',
-    resolution: textRes,
-    style: {
-      fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-      fontSize: 13,
-      fill: M.chalk,
-    },
-  })
-  subtitle.anchor.set(0.5, 0)
-  subtitle.x = MARKET_W / 2
-  subtitle.y = 78
-  world.addChild(subtitle)
-
-  /* ── Cash badge ──────────────────────────────── */
-  const cashBox = new Container()
-  cashBox.x = MARKET_W - 28
-  cashBox.y = 36
-  const cashBg = new Graphics()
-  drawRoundRect(cashBg, -168, -20, 168, 40, 12, M.cashBg, 0.82)
-  cashBox.addChild(cashBg)
-  const cashText = new Text({
-    text: formatWon(state.cash),
-    resolution: textRes,
-    style: {
-      fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-      fontSize: 18,
-      fontWeight: 'bold',
-      fill: 0xffe08a,
-    },
-  })
-  cashText.anchor.set(1, 0.5)
-  cashText.x = -14
-  cashBox.addChild(cashText)
-  world.addChild(cashBox)
 
   /* ── Item grid ───────────────────────────────── */
   const GRID_COLS = 5
@@ -206,7 +178,7 @@ export function createIngredientMarketScene(
   const GAP_Y = 18
   const gridW = GRID_COLS * CARD_W + (GRID_COLS - 1) * GAP_X
   const gridOriginX = (MARKET_W - gridW) / 2
-  const gridOriginY = 118
+  const gridOriginY = 188
 
   const slots: SlotView[] = []
   const displayItems = ITEMS.slice(0, 15)
@@ -440,9 +412,6 @@ export function createIngredientMarketScene(
 
   const onTick = (ticker: Ticker) => {
     const dt = ticker.deltaMS / 1000
-    elapsed += dt
-
-    sign.y = 42 + Math.sin(elapsed * 1.6) * 2
 
     dustG.clear()
     for (const d of dust) {
