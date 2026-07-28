@@ -19,7 +19,7 @@ import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/
 import { satisfactionToStars } from '../utils/reviewGenerator'
 import type { GameAction, GameState, GrillQuality, Order } from '../types/game'
 
-const MAX_QUEUE = 8
+const MAX_QUEUE = 9
 
 export type { GameState, GameAction }
 
@@ -150,7 +150,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
       pool[ingredientId] = [...(pool[ingredientId] ?? []), result]
 
-      // 가장 오래된 주문부터 재료가 다 모였는지 확인해 자동 서빙 (FIFO)
+      // 맨 앞 주문부터 순서대로만 서빙한다 — 앞 손님의 재료가 안 모였으면
+      // 뒤 손님 재료가 준비돼 있어도 새치기로 서빙하지 않고 그대로 대기시킨다 (엄격한 FIFO)
       let dailySales = state.dailySales
       let dailyTips = state.dailyTips
       let dailyServed = state.dailyServed
@@ -159,15 +160,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const removedCustomerIds = new Set<string>()
       const remainingOrders: Order[] = []
 
-      for (const order of state.orders) {
+      for (let idx = 0; idx < state.orders.length; idx += 1) {
+        const order = state.orders[idx]
         const menu = getMenuById(order.menuId)
         const customer = state.customers.find((c) => c.id === order.customerId)
         if (!menu || !customer) continue
 
         const canComplete = menu.ingredients.every((ing) => (pool[ing]?.length ?? 0) >= 1)
         if (!canComplete) {
-          remainingOrders.push(order)
-          continue
+          // 이 주문(맨 앞)이 막히면 뒤 주문은 이번 틱에 확인조차 하지 않고 그대로 남겨둔다
+          remainingOrders.push(...state.orders.slice(idx))
+          break
         }
 
         const qualities: GrillQuality[] = menu.ingredients.map((ing) => pool[ing].shift()!)

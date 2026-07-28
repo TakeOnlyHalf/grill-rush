@@ -12,7 +12,20 @@ export interface SpawnContext {
   time: number
 }
 
-/** 손님 생성 — 위치가 선호하는 손님 유형 중에서 랜덤 선택, 날짜 난이도에 따라 인내심 보정 */
+/** candidates를 weights 비율대로 뽑는다 (weights 합이 0 이하면 마지막 항목을 반환) */
+function pickWeighted<T>(candidates: T[], weights: number[]): T {
+  const total = weights.reduce((sum, w) => sum + w, 0)
+  if (total <= 0) return candidates[candidates.length - 1]
+
+  let roll = Math.random() * total
+  for (let i = 0; i < candidates.length; i += 1) {
+    roll -= weights[i]
+    if (roll < 0) return candidates[i]
+  }
+  return candidates[candidates.length - 1]
+}
+
+/** 손님 생성 — 위치가 선호하는 손님 유형 중에서 가중치대로 랜덤 선택, 날짜 난이도에 따라 인내심 보정 */
 export function spawnCustomer(ctx: SpawnContext): Customer | null {
   if (!ctx.activeMenus?.length) return null
 
@@ -22,7 +35,10 @@ export function spawnCustomer(ctx: SpawnContext): Customer | null {
     : customerTypes
   const candidates = pool.length ? pool : customerTypes
 
-  const type = candidates[Math.floor(Math.random() * candidates.length)]
+  // customerWeights에 없는 타입은 기본 가중치 1 — 주력 손님이 자주, 나머지는 가끔 섞여 나온다.
+  const customerWeights = loc?.customerWeights as Record<string, number> | undefined
+  const weights = candidates.map((t) => customerWeights?.[t.id] ?? 1)
+  const type = pickWeighted(candidates, weights)
   const menuId = ctx.activeMenus[Math.floor(Math.random() * ctx.activeMenus.length)]
   const menu = menus.find((m) => m.id === menuId)
 

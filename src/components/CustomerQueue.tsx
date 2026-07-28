@@ -7,41 +7,41 @@ function patienceLevel(ratio: number): string {
   return 'is-danger'
 }
 
-/** 대기열 표시 — 손님별 주문 카드 + 인내심 게이지(임계치에 따라 색상 경고) */
+/** 대기열 표시 — 거리 뷰의 번호 배지와 같은 순서로 매긴 주문 카드 스트립 */
 export default function CustomerQueue() {
   const state = useGameState()
 
   return (
-    <div className="panel">
-      <h3>대기열</h3>
+    <div className="queue-strip-panel">
+      <h3 className="queue-strip-title">대기 주문 {state.customers.length}</h3>
       {state.customers.length === 0 ? (
         <p className="muted">손님이 아직 없습니다.</p>
       ) : (
-        <ul className="queue-list">
-          {state.customers.map((c) => {
+        <ol className="queue-strip">
+          {state.customers.map((c, i) => {
             const menu = getMenuById(c.orderMenuId)
             const ratio = c.patience / c.maxPatience
+            const level = patienceLevel(ratio)
 
             return (
-              <li key={c.id} className="queue-card">
-                <span className="queue-card-badge">{c.icon}</span>
-                <div className="queue-card-body">
-                  <div className="queue-card-title">{c.typeName}</div>
-                  <div className="queue-card-order">
-                    {menu?.icon ?? '🍽️'} {c.orderName}
-                    {menu ? ` · ₩${menu.basePrice.toLocaleString('ko-KR')}` : ''}
-                  </div>
-                  <div className="patience-bar">
-                    <div
-                      className={patienceLevel(ratio)}
-                      style={{ width: `${ratio * 100}%` }}
-                    />
-                  </div>
+              <li key={c.id} className={`queue-chip ${level}`}>
+                <span className="queue-chip-index">{i + 1}</span>
+                <div className="queue-chip-art">
+                  <span className="queue-chip-face">{c.icon}</span>
+                  <span className="queue-chip-dish">{menu?.icon ?? '🍽️'}</span>
+                </div>
+                <div className="queue-chip-order">{c.orderName}</div>
+                <div className="queue-chip-timer">
+                  {level === 'is-danger' && <span className="queue-chip-warn">⚠</span>}
+                  <span className="queue-chip-time">{Math.ceil(c.patience)}s</span>
+                </div>
+                <div className="patience-bar">
+                  <div className={level} style={{ width: `${ratio * 100}%` }} />
                 </div>
               </li>
             )
           })}
-        </ul>
+        </ol>
       )}
     </div>
   )

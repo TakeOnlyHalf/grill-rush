@@ -31,13 +31,10 @@ export default function StreetView() {
   }, [])
 
   return (
-    <div className="street-view panel">
-      <PixiStage
-        className="street-pixi"
-        height={160}
-        setup={setup}
-      />
-      <p className="todo-note">TODO: 날씨 · 트럭 업그레이드 비주얼</p>
+    <div className="street-view">
+      <div className="street-frame">
+        <PixiStage className="street-pixi" fillParent setup={setup} />
+      </div>
     </div>
   )
 }

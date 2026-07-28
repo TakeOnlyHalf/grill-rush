@@ -1,5 +1,14 @@
-import { Container, Graphics, Text, type Application, type Texture, type Ticker } from 'pixi.js'
+import {
+  Assets,
+  Container,
+  Graphics,
+  Sprite,
+  Text,
+  type Application,
+  type Texture,
+} from 'pixi.js'
 import { PIXI_COLORS } from '../colors'
+import { OPEN_TRUCK_INTERIOR_ART } from '../../utils/assets'
 import { createCustomerSprite } from '../sprites/customerSprite'
 import { loadCharacterPortraits, type CharacterKey } from '../sprites/characterPortraits'
 import { pickRandomGuestCharacter } from '../sprites/customerRegistry'
@@ -15,9 +24,20 @@ export interface StreetSceneHandle {
   destroy: () => void
 }
 
-const MAX_CROWD = 8
+const MAX_CROWD = 9
 
-/** 영업 페이즈 거리 뷰 씬 (트럭 + 대기 손님 + 배경) */
+/** foodtruck_interior_transparent.webp 원본 크기 — 창문(알파 투명) 영역 좌표 계산 기준 */
+const FRAME_W = 2075
+const FRAME_H = 758
+/** 프레임 안 창문(알파 투명) bbox — 이 영역 안에만 바깥 풍경/손님을 그린다 */
+const WINDOW = { x: 190, y: 72, w: 1696, h: 546 }
+const WINDOW_CORNER_RADIUS = 55
+
+/** 맨 앞(0번) 손님은 카운터에 붙어있는 것처럼 크게 확대하고, 하반신은 창 아래로 잘려 나가게 한다 */
+const FRONT_VISIBLE_FRACTION = 0.58
+const FRONT_TOP_MARGIN_RATIO = 0.02
+
+/** 영업 페이즈 거리 뷰 씬 — 트럭 창문 안쪽에서 바라본 시점 (인테리어 프레임 + 창 밖 손님 대기열) */
 export function createStreetScene(
   app: Application,
   initial: StreetSceneState = {},
@@ -25,25 +45,32 @@ export function createStreetScene(
   const root = new Container()
   app.stage.addChild(root)
 
-  const bg = new Graphics()
+  // 창 밖 풍경(하늘/바닥) + 대기 손님 — 창문 모양으로 마스킹된다
+  const windowLayer = new Container()
+  const sky = new Graphics()
   const crowdLayer = new Container()
-  const truck = new Container()
   const label = new Text({
     text: '',
     style: {
       fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-      fontSize: 13,
+      fontSize: 12,
       fill: PIXI_COLORS.text,
     },
   })
-  label.x = 12
-  label.y = 10
+  const labelBg = new Graphics()
+  windowLayer.addChild(sky, crowdLayer, labelBg, label)
 
-  root.addChild(bg, crowdLayer, truck, label)
+  const windowMask = new Graphics()
+  windowLayer.mask = windowMask
+
+  // 트럭 인테리어 프레임 — 창문 부분은 알파 투명이라 windowLayer가 그대로 비쳐 보인다
+  const frame = new Sprite()
+
+  // windowMask는 마스크 전용으로만 쓰고 화면에는 그리지 않는다 (자식으로 추가하지 않음)
+  root.addChild(windowLayer, frame)
 
   let customerTypes = initial.customerTypes ?? []
   let locationLabel = initial.locationLabel ?? ''
-  let elapsed = 0
   let destroyed = false
 
   // 캐릭터 시트는 한 장뿐이라 씬당 한 번만 로드해 재사용한다.
@@ -54,75 +81,159 @@ export function createStreetScene(
   loadCharacterPortraits().then((loaded) => {
     if (destroyed) return
     portraits = loaded
-    rebuildCrowd(app.screen.width, app.screen.height)
+    rebuildCrowd()
   })
+
+  Assets.load(OPEN_TRUCK_INTERIOR_ART).then((tex: Texture) => {
+    if (destroyed) return
+    frame.texture = tex
+    layout()
+  })
+
+  /** 창문 bbox를 화면 좌표로 변환 (프레임이 화면에 꽉 차게 그려진다는 전제) */
+  function windowRect() {
+    const scaleX = app.screen.width / FRAME_W
+    const scaleY = app.screen.height / FRAME_H
+    return {
+      x: WINDOW.x * scaleX,
+      y: WINDOW.y * scaleY,
+      w: WINDOW.w * scaleX,
+      h: WINDOW.h * scaleY,
+      radius: WINDOW_CORNER_RADIUS * scaleX,
+    }
+  }
 
   function layout() {
     const w = app.screen.width
     const h = app.screen.height
+    if (w <= 0 || h <= 0) return
 
-    bg.clear()
-    bg.rect(0, 0, w, h * 0.62)
-    bg.fill(PIXI_COLORS.skyTop)
-    bg.rect(0, h * 0.62, w, h * 0.38)
-    bg.fill(PIXI_COLORS.ground)
-    bg.moveTo(0, h * 0.62)
-    bg.lineTo(w, h * 0.62)
-    bg.stroke({ width: 2, color: PIXI_COLORS.groundLine })
+    if (frame.texture.width > 0) {
+      frame.width = w
+      frame.height = h
+    }
 
-    truck.removeChildren()
-    const body = new Graphics()
-    body.roundRect(0, 18, 96, 42, 6)
-    body.fill(PIXI_COLORS.truckBody)
-    body.roundRect(62, 4, 34, 28, 4)
-    body.fill(PIXI_COLORS.truckCabin)
-    body.roundRect(70, 10, 18, 14, 2)
-    body.fill(PIXI_COLORS.truckWindow)
-    body.circle(22, 62, 10)
-    body.fill(PIXI_COLORS.truckWheel)
-    body.circle(78, 62, 10)
-    body.fill(PIXI_COLORS.truckWheel)
-    truck.addChild(body)
-    truck.x = w - 130
-    truck.y = h * 0.62 - 48
+    const win = windowRect()
+    windowLayer.position.set(win.x, win.y)
 
-    rebuildCrowd(w, h)
+    windowMask.clear()
+    windowMask.roundRect(win.x, win.y, win.w, win.h, win.radius)
+    windowMask.fill(0xffffff)
+
+    sky.clear()
+    sky.rect(0, 0, win.w, win.h * 0.68)
+    sky.fill(PIXI_COLORS.skyTop)
+    sky.rect(0, win.h * 0.68, win.w, win.h * 0.32)
+    sky.fill(PIXI_COLORS.ground)
+    sky.moveTo(0, win.h * 0.68)
+    sky.lineTo(win.w, win.h * 0.68)
+    sky.stroke({ width: 2, color: PIXI_COLORS.groundLine })
+
+    labelBg.clear()
+    if (locationLabel) {
+      const padX = 8
+      const textW = label.width + padX * 2
+      labelBg.roundRect(6, 6, textW, label.height + 8, 6)
+      labelBg.fill({ color: 0x000000, alpha: 0.35 })
+    }
+    label.position.set(6 + 8, 6 + 4)
     label.text = locationLabel
+
+    rebuildCrowd()
   }
 
-  function rebuildCrowd(_w: number, h: number) {
+  function rebuildCrowd() {
     crowdLayer.removeChildren()
+    const win = windowRect()
     const types = customerTypes.slice(0, MAX_CROWD)
-    const baseY = h * 0.62 - 8
+    if (types.length === 0 || win.w <= 0 || win.h <= 0) return
+
+    const margin = win.w * 0.05
+    const usable = win.w - margin * 2
+    // 인원수와 무관하게 간격을 고정해, 맨 앞 손님이 항상 왼쪽에 있고
+    // 대기열이 늘어날수록 오른쪽으로 채워지도록 한다 (MAX_CROWD 기준으로 폭을 나눔).
+    const step = usable / MAX_CROWD
+    const backBaseY = win.h * 0.9
+    const backGuestHeight = win.h * 0.68
+    const badgeBaseY = win.h * 0.94
+    const badgeR = Math.min(12, step * 0.28)
+
+    // 바로 옆 슬롯과 같은 캐릭터가 나란히 나오는 걸 최우선으로 막고,
+    // 여유가 있으면 이 슬롯의 직전 캐릭터도 피해 화면 전환마다 다양성을 준다.
+    let leftNeighborKey: CharacterKey | undefined
+    const slots: Container[] = []
 
     types.forEach((type, i) => {
+      const cx = margin + step * (i + 0.5)
+      const isFront = i === 0
       const previousGuest = lastGuestByIndex.get(i)
-      const guestKey = portraits ? pickRandomGuestCharacter(type, previousGuest) : undefined
+
+      const guestKey = portraits
+        ? pickRandomGuestCharacter(type, leftNeighborKey, previousGuest)
+        : undefined
       const guestTexture = guestKey && portraits ? portraits[guestKey] : undefined
 
       if (guestKey) {
         lastGuestByIndex.set(i, guestKey)
       }
+      leftNeighborKey = guestKey
+
+      const slot = new Container()
+      slot.x = cx
 
       if (guestTexture) {
+        const aspect = guestTexture.width / guestTexture.height
         const sprite = createCustomerSprite(guestTexture)
-        sprite.height = 40
-        sprite.width = 40 * (guestTexture.width / guestTexture.height)
-        sprite.x = 28 + i * 36
-        sprite.y = baseY
-        crowdLayer.addChild(sprite)
+        if (isFront) {
+          // 맨 앞 손님 — 카운터 바로 앞에 서 있는 것처럼 크게 확대하고, 하반신은 창 아래로 잘려 나가게 한다.
+          const topMargin = win.h * FRONT_TOP_MARGIN_RATIO
+          const frontHeight = (win.h - topMargin) / FRONT_VISIBLE_FRACTION
+          sprite.height = frontHeight
+          sprite.width = frontHeight * aspect
+          slot.y = topMargin + frontHeight
+        } else {
+          sprite.height = backGuestHeight
+          sprite.width = backGuestHeight * aspect
+          slot.y = backBaseY
+        }
+        slot.addChild(sprite)
       } else {
         // 캐릭터가 아직 로드 전이거나 등록되지 않은 타입은 플레이스홀더 도형으로 대체
+        const guestHeight = isFront ? win.h * 0.95 : backGuestHeight
+        slot.y = isFront ? win.h * 0.98 : backBaseY
         const person = new Graphics()
         const shade = i % 2 === 0 ? PIXI_COLORS.crowd : PIXI_COLORS.muted
-        person.circle(0, -18, 7)
+        person.circle(0, -guestHeight * 0.82, guestHeight * 0.14)
         person.fill(shade)
-        person.roundRect(-6, -10, 12, 22, 3)
+        person.roundRect(-guestHeight * 0.12, -guestHeight * 0.46, guestHeight * 0.24, guestHeight * 0.46, 4)
         person.fill(shade)
-        person.x = 28 + i * 36
-        person.y = baseY
-        crowdLayer.addChild(person)
+        slot.addChild(person)
       }
+
+      slots.push(slot)
+    })
+
+    // 맨 앞(0번) 손님이 다른 손님들보다 위에 그려지도록 역순으로 추가한다.
+    crowdLayer.addChild(...[...slots].reverse())
+
+    // 번호 배지는 캐릭터 크기와 무관하게 항상 같은 높이에 고정 배치한다.
+    types.forEach((_, i) => {
+      const cx = margin + step * (i + 0.5)
+      const badge = new Graphics()
+      badge.circle(cx, badgeBaseY, badgeR)
+      badge.fill({ color: 0x1a1410, alpha: 0.55 })
+      const badgeText = new Text({
+        text: String(i + 1),
+        style: {
+          fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
+          fontSize: badgeR * 1.1,
+          fill: 0xffffff,
+          fontWeight: '700',
+        },
+      })
+      badgeText.anchor.set(0.5)
+      badgeText.position.set(cx, badgeBaseY)
+      crowdLayer.addChild(badge, badgeText)
     })
   }
 
@@ -132,29 +243,20 @@ export function createStreetScene(
     }
     if (typeof next.locationLabel === 'string') {
       locationLabel = next.locationLabel
-      label.text = locationLabel
     }
-    rebuildCrowd(app.screen.width, app.screen.height)
+    layout()
   }
 
-  const onTick = (ticker: Ticker) => {
-    elapsed += ticker.deltaMS / 1000
-    truck.y = app.screen.height * 0.62 - 48 + Math.sin(elapsed * 2.2) * 1.5
-    // 손님은 정적 일러스트라 살짝 흔들어 대기 중인 느낌을 준다.
-    const baseY = app.screen.height * 0.62 - 8
-    crowdLayer.children.forEach((child, i) => {
-      child.y = baseY + Math.sin(elapsed * 3 + i * 0.7) * 2
-    })
-  }
+  const onResize = () => layout()
+  app.renderer.on('resize', onResize)
 
   layout()
-  app.ticker.add(onTick)
 
   return {
     update,
     destroy() {
       destroyed = true
-      app.ticker.remove(onTick)
+      app.renderer.off('resize', onResize)
       root.destroy({ children: true })
     },
   }

@@ -35,8 +35,10 @@ export default function OpenPhase() {
 
       <ServeResult />
 
-      <StreetView />
-      <CustomerQueue />
+      <div className="street-block">
+        <StreetView />
+        <CustomerQueue />
+      </div>
       <CookingMinigame />
 
       <footer className="phase-footer">

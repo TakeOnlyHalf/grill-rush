@@ -75,7 +75,7 @@ export const CUSTOMER_CHARACTERS: Record<string, CharacterKey[]> = {
 import { loadCharacterPortraits, createCustomerSprite, pickRandomGuestCharacter } from './pixi'
 
 const portraits = await loadCharacterPortraits() // 시트 로드 + 캐싱 (한 번만 실행됨)
-const guestKey = pickRandomGuestCharacter('student', previousGuest) // 직전 손님과 겹치지 않게 랜덤 선택
+const guestKey = pickRandomGuestCharacter('student', usedGuests) // usedGuests(Set)에 담긴 캐릭터와 겹치지 않게 랜덤 선택
 if (guestKey) {
   const sprite = createCustomerSprite(portraits[guestKey])
   sprite.x = 100
