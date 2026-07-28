@@ -32,6 +32,11 @@ export const NET_LOSS_ICON = publicUrl('images/ready_phase/net-loss.webp')
 export const NET_NEUTRAL_ICON = publicUrl('images/ready_phase/net-neutral.webp')
 export const NET_PROFIT_ICON = publicUrl('images/ready_phase/net-profit.webp')
 
+/** 야간 성장 — 트럭 관리실 보드 */
+export const TRUCK_UPGRADE_NIGHT_BG = publicUrl(
+  'images/ready_phase/truck_upgrade_night.webp',
+)
+
 /** 앱 부트 시 미리 받아둘 핵심 이미지 (탭 전환 시 깜빡임 방지) */
 export const CRITICAL_IMAGE_URLS = [
   TITLE_DAY_ART,
@@ -43,6 +48,7 @@ export const CRITICAL_IMAGE_URLS = [
   NET_LOSS_ICON,
   NET_NEUTRAL_ICON,
   NET_PROFIT_ICON,
+  TRUCK_UPGRADE_NIGHT_BG,
   DAY_STREET_BG,
 ] as const
 

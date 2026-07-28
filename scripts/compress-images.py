@@ -13,6 +13,7 @@ out_specs = [
     ('public/images/ready_phase/menu_background.png', 1400, 800, False),
     ('public/images/ready_phase/mart_background.png', 1400, 800, False),
     ('public/images/ready_phase/today_calc.png', 1400, 800, False),
+    ('public/images/ready_phase/truck_upgrade_night.png', 1600, 900, False),
     ('public/images/ready_phase/net-loss.png', 220, 220, True),
     ('public/images/ready_phase/net-neutral.png', 220, 220, True),
     ('public/images/ready_phase/net-profit.png', 220, 220, True),

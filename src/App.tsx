@@ -42,7 +42,8 @@ function AppShell() {
     phase === 'title' ||
     phase === 'story' ||
     phase === 'prep' ||
-    phase === 'settle'
+    phase === 'settle' ||
+    phase === 'night'
 
   return (
     <div className={bleed ? 'app-shell app-shell--bleed' : 'app-shell'}>
