@@ -25,20 +25,15 @@ function pickWeighted<T>(candidates: T[], weights: number[]): T {
   return candidates[candidates.length - 1]
 }
 
-/** 손님 생성 — 위치가 선호하는 손님 유형 중에서 가중치대로 랜덤 선택, 날짜 난이도에 따라 인내심 보정 */
+/** 손님 생성 — 모든 손님 유형이 어느 장소에서나 나올 수 있되, 장소별 가중치대로 비율만 다르게 뽑는다 */
 export function spawnCustomer(ctx: SpawnContext): Customer | null {
   if (!ctx.activeMenus?.length) return null
 
   const loc = getLocationById(ctx.locationId)
-  const pool = loc?.customers?.length
-    ? customerTypes.filter((t) => loc.customers.includes(t.id))
-    : customerTypes
-  const candidates = pool.length ? pool : customerTypes
-
-  // customerWeights에 없는 타입은 기본 가중치 1 — 주력 손님이 자주, 나머지는 가끔 섞여 나온다.
+  // customerWeights에 없는 타입은 기본 가중치 1 — 주력 손님이 자주, 나머지도 가끔 섞여 나온다.
   const customerWeights = loc?.customerWeights as Record<string, number> | undefined
-  const weights = candidates.map((t) => customerWeights?.[t.id] ?? 1)
-  const type = pickWeighted(candidates, weights)
+  const weights = customerTypes.map((t) => customerWeights?.[t.id] ?? 1)
+  const type = pickWeighted(customerTypes, weights)
   const menuId = ctx.activeMenus[Math.floor(Math.random() * ctx.activeMenus.length)]
   const menu = menus.find((m) => m.id === menuId)
 
