@@ -8,6 +8,10 @@ import type {
   CookResult,
 } from '../grill/grillSlots'
 import type { GrillBoardSceneHandle } from '../pixi/scenes/GrillBoardScene'
+import {
+  GRILL_DESIGN_HEIGHT,
+  GRILL_DESIGN_WIDTH,
+} from '../pixi/scenes/GrillBoardScene'
 import { colors } from '../ui/tokens'
 import { COOK_FEEDBACK_DURATION_MS, getCookFeedbackAnnouncement } from '../grill/grillFeedback'
 
@@ -92,11 +96,15 @@ export default function GrillBoard({
   }, [announceResult])
 
   return (
-    <div className="grill-board-wrap">
+    <div
+      className="grill-board-wrap"
+      style={{ aspectRatio: `${GRILL_DESIGN_WIDTH} / ${GRILL_DESIGN_HEIGHT}` }}
+    >
       <PixiStage
         className="grill-board-pixi"
         height={height}
         background={colors.bg.value}
+        fillParent
         setup={setup}
       />
       <div className="visually-hidden" role="status" aria-live="assertive" aria-atomic="true">

@@ -2,7 +2,7 @@ import upgrades from '../data/upgrades.json'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
 
-/** 업그레이드 상점 — TODO: 효과 실제 적용 */
+/** Storybook / 간단 목록용. 실제 야간 UI는 NightPhase. */
 export default function UpgradeShop() {
   const { state, dispatch } = useGame()
 

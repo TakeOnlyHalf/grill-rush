@@ -4,6 +4,7 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  type TransitionEvent,
 } from 'react'
 import type { Application } from 'pixi.js'
 import { useGame } from '../state/GameContext'
@@ -22,10 +23,24 @@ export interface CityMapHandle {
 interface CityMapProps {
   onLocationPick?: (locationId: string) => void
   onAnchorsChange?: (anchors: LocationAnchors) => void
+  onSceneReady?: () => void
+  /** 캔버스 페이드인이 끝난 뒤 (포스터 제거 타이밍) */
+  onRevealSettled?: () => void
+  /** 씬 준비 전 캔버스를 숨겨 포스터 위에 자연스럽게 덮어씀 */
+  reveal?: boolean
 }
 
 const CityMap = forwardRef<CityMapHandle, CityMapProps>(
-  function CityMap({ onLocationPick, onAnchorsChange }, ref) {
+  function CityMap(
+    {
+      onLocationPick,
+      onAnchorsChange,
+      onSceneReady,
+      onRevealSettled,
+      reveal = true,
+    },
+    ref,
+  ) {
     const { state, dispatch } = useGame()
 
     const sceneRef = useRef<PrepLocationHandle | null>(null)
@@ -46,6 +61,10 @@ const CityMap = forwardRef<CityMapHandle, CityMapProps>(
     onPickRef.current = onLocationPick
     const onAnchorsRef = useRef(onAnchorsChange)
     onAnchorsRef.current = onAnchorsChange
+    const onReadyRef = useRef(onSceneReady)
+    onReadyRef.current = onSceneReady
+    const onSettledRef = useRef(onRevealSettled)
+    onSettledRef.current = onRevealSettled
 
     useImperativeHandle(ref, () => ({
       pickLocation(locationId: string) {
@@ -74,6 +93,7 @@ const CityMap = forwardRef<CityMapHandle, CityMapProps>(
           onPickRef.current?.(locationId)
         },
         (anchors) => onAnchorsRef.current?.(anchors),
+        () => onReadyRef.current?.(),
       )
       sceneRef.current = scene
       return () => {
@@ -82,12 +102,20 @@ const CityMap = forwardRef<CityMapHandle, CityMapProps>(
       }
     }, [])
 
+    const handleTransitionEnd = (event: TransitionEvent<HTMLDivElement>) => {
+      if (event.propertyName !== 'opacity') return
+      if (!reveal) return
+      if (event.target !== event.currentTarget) return
+      onSettledRef.current?.()
+    }
+
     return (
       <PixiStage
-        className="prep-city-bg"
+        className={`prep-city-bg${reveal ? ' is-revealed' : ''}`}
         fillParent
-        background="#7eb8e8"
+        background="transparent"
         setup={setup}
+        onTransitionEnd={handleTransitionEnd}
       />
     )
   },

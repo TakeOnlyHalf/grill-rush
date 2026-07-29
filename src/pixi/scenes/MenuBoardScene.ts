@@ -11,7 +11,8 @@ import {
 import menusData from '../../data/menus.json'
 import ingredientsData from '../../data/ingredients.json'
 import { MAX_ACTIVE_MENUS } from '../../state/actions'
-import { MENU_BOARD_ART } from '../../utils/assets'
+import { MENU_BACKGROUND_ART } from '../../utils/assets'
+import { layoutPrepUiWorld } from '../layoutPrepUi'
 
 export const MENU_BOARD_W = 1000
 export const MENU_BOARD_H = 600
@@ -108,7 +109,7 @@ interface CardView {
   active: boolean
 }
 
-/** 메뉴 보드 씬 — menu_board.webp 배경 + 레퍼런스 카드 UI */
+/** 메뉴 보드 씬 — menu_background.webp 배경 + 카드 UI */
 export function createMenuBoardScene(
   app: Application,
   initial: MenuBoardState,
@@ -123,13 +124,15 @@ export function createMenuBoardScene(
 
   const root = new Container()
   app.stage.addChild(root)
+
+  /** 전체 화면을 채우는 배경 (UI world와 분리) */
+  const boardSprite = new Sprite()
+  root.addChild(boardSprite)
+
   const world = new Container()
   root.addChild(world)
 
   let elapsed = 0
-
-  const boardSprite = new Sprite()
-  world.addChild(boardSprite)
 
   const title = new Text({
     text: '📋  오늘의 메뉴판',
@@ -191,24 +194,20 @@ export function createMenuBoardScene(
   }
 
   function layoutToScreen() {
-    const s = Math.min(
-      app.screen.width / MENU_BOARD_W,
-      app.screen.height / MENU_BOARD_H,
-    )
-    world.scale.set(s)
-    world.x = (app.screen.width - MENU_BOARD_W * s) / 2
-    world.y = (app.screen.height - MENU_BOARD_H * s) / 2
+    layoutPrepUiWorld(app, world, MENU_BOARD_W, MENU_BOARD_H)
+    placeBoardSprite()
   }
 
   function placeBoardSprite() {
     if (!boardSprite.texture || boardSprite.texture.width === 0) return
+    if (app.screen.width <= 0 || app.screen.height <= 0) return
     const tw = boardSprite.texture.width
     const th = boardSprite.texture.height
-    const fit = Math.min(MENU_BOARD_W / tw, MENU_BOARD_H / th)
-    boardSprite.width = tw * fit
-    boardSprite.height = th * fit
-    boardSprite.x = (MENU_BOARD_W - boardSprite.width) / 2
-    boardSprite.y = (MENU_BOARD_H - boardSprite.height) / 2
+    const cover = Math.max(app.screen.width / tw, app.screen.height / th)
+    boardSprite.width = tw * cover
+    boardSprite.height = th * cover
+    boardSprite.x = (app.screen.width - boardSprite.width) / 2
+    boardSprite.y = (app.screen.height - boardSprite.height) / 2
   }
 
   function refreshCard(card: CardView) {
@@ -402,7 +401,7 @@ export function createMenuBoardScene(
   }
 
   async function loadBoard() {
-    const tex = await Assets.load(MENU_BOARD_ART)
+    const tex = await Assets.load(MENU_BACKGROUND_ART)
     tex.source.scaleMode = 'linear'
     boardSprite.texture = tex
     placeBoardSprite()
@@ -414,7 +413,6 @@ export function createMenuBoardScene(
   })
 
   const onResize = () => {
-    placeBoardSprite()
     layoutToScreen()
   }
   app.renderer.on('resize', onResize)

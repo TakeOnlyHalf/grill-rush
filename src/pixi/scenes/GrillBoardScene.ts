@@ -13,6 +13,9 @@ import {
 } from '../../grill/grillSlots'
 import { COOK_FEEDBACK_DURATION_MS, cookFeedback } from '../../grill/grillFeedback'
 
+export const GRILL_DESIGN_WIDTH = 1200
+export const GRILL_DESIGN_HEIGHT = 420
+
 export interface GrillBoardSceneOptions {
   slots: GrillSlot[]
   ingredients: GrillIngredient[]
@@ -35,9 +38,11 @@ export interface GrillBoardSceneHandle {
 interface SlotView {
   root: Container
   surface: Graphics
+  number: Text
   food: Text
   state: Text
   ingredient: Text
+  timer: Text
   gauge: Graphics
   steam: Text
 }
@@ -48,12 +53,22 @@ interface TrayView {
   icon: Text
   name: Text
   detail: Text
+  count: Text
 }
+
+const FRAME_PADDING = 20
+const SLOT_GAP = 16
+const SLOT_TOP = 58
+const SLOT_HEIGHT = 218
+const TRAY_TOP = 292
+const TRAY_HEIGHT = 110
+const SLOT_WIDTH =
+  (GRILL_DESIGN_WIDTH - FRAME_PADDING * 2 - SLOT_GAP * 2) / 3
 
 const resultLabels: Record<CookResult, string> = {
   raw: 'RAW · 덜 익음',
-  good: 'GOOD',
-  perfect: 'PERFECT',
+  good: 'GOOD · 조리 중',
+  perfect: 'PERFECT · 지금 회수',
   danger: 'DANGER · 타기 직전',
   burnt: 'BURNT · 클릭해 제거',
 }
@@ -72,17 +87,19 @@ export function createGrillBoardScene(
   app: Application,
   options: GrillBoardSceneOptions,
 ): GrillBoardSceneHandle {
-  const root = new Container()
-  const board = new Graphics()
-  const grillTitle = createText('GRILL · 슬롯을 클릭해 회수', 14, colors.cream.value, '700')
-  const trayTitle = createText('재료 트레이', 13, colors.text.value, '700')
-  const trayHint = createText('', 10, colors.muted.value)
-  const emptyTray = createText('구매한 조리 재료가 없습니다', 12, colors.muted.value, '600')
+  const world = new Container()
+  const chrome = new Graphics()
+  const title = createText('GRILL STATION', 19, colors.cream.value, '700')
+  const subtitle = createText('재료 선택 → 빈 슬롯 → 판정 구간에서 회수', 13, colors.chalk.value, '600')
+  const capacity = createText('', 13, colors.cream.value, '700')
+  const trayTitle = createText('재료 트레이', 17, colors.text.value, '700')
+  const trayHint = createText('', 12, colors.muted.value, '600')
+  const emptyTray = createText('구매한 조리 재료가 없습니다', 14, colors.muted.value, '600')
   const feedbackRoot = new Container()
   const feedbackPanel = new Graphics()
-  const feedbackTitle = createText('', 28, colors.cream.value, '700')
-  const feedbackStars = createText('', 18, colors.gold.value, '700')
-  const feedbackDetail = createText('', 12, colors.cream.value, '600')
+  const feedbackTitle = createText('', 31, colors.cream.value, '700')
+  const feedbackStars = createText('', 20, colors.gold.value, '700')
+  const feedbackDetail = createText('', 14, colors.cream.value, '600')
   let slots = cloneSlots(options.slots)
   let inventory = { ...options.inventory }
   let neededIngredientIds = new Set(options.neededIngredientIds ?? [])
@@ -90,10 +107,29 @@ export function createGrillBoardScene(
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   let feedbackStartedAt: number | null = null
 
-  app.stage.addChild(root)
-  root.addChild(board, grillTitle, trayTitle, trayHint, emptyTray, feedbackRoot)
+  app.stage.addChild(world)
+  world.addChild(chrome, title, subtitle, capacity, trayTitle, trayHint, emptyTray, feedbackRoot)
+  drawChrome(chrome)
+
+  title.x = 30
+  title.y = 16
+  subtitle.x = 208
+  subtitle.y = 20
+  capacity.anchor.set(1, 0)
+  capacity.x = GRILL_DESIGN_WIDTH - 28
+  capacity.y = 20
+  trayTitle.x = 30
+  trayTitle.y = TRAY_TOP + 13
+  trayHint.anchor.set(1, 0)
+  trayHint.x = GRILL_DESIGN_WIDTH - 30
+  trayHint.y = TRAY_TOP + 16
+  emptyTray.x = 30
+  emptyTray.y = TRAY_TOP + 58
+
   feedbackRoot.eventMode = 'none'
   feedbackRoot.visible = false
+  feedbackRoot.x = GRILL_DESIGN_WIDTH / 2
+  feedbackRoot.y = 178
   feedbackTitle.anchor.set(0.5)
   feedbackStars.anchor.set(0.5)
   feedbackDetail.anchor.set(0.5)
@@ -104,17 +140,44 @@ export function createGrillBoardScene(
     const view: SlotView = {
       root: slotRoot,
       surface: new Graphics(),
-      food: createText('', 34, colors.text.value),
-      state: createText('', 11, colors.text.value, '700'),
-      ingredient: createText('', 10, colors.muted.value),
+      number: createText(String(index + 1).padStart(2, '0'), 13, colors.cream.value, '700'),
+      food: createText('', 56, colors.text.value),
+      state: createText('', 15, colors.text.value, '700'),
+      ingredient: createText('', 13, colors.muted.value, '600'),
+      timer: createText('', 13, colors.text.value, '700'),
       gauge: new Graphics(),
-      steam: createText('〰 〰 〰', 13, colors.cream.value, '700'),
+      steam: createText('♨  ♨', 18, colors.cream.value, '700'),
     }
+    slotRoot.x = FRAME_PADDING + index * (SLOT_WIDTH + SLOT_GAP)
+    slotRoot.y = SLOT_TOP
+    slotRoot.hitArea = new Rectangle(0, 0, SLOT_WIDTH, SLOT_HEIGHT)
     slotRoot.eventMode = 'static'
     slotRoot.on('pointertap', () => handleSlotTap(index))
+    view.number.x = 15
+    view.number.y = 12
+    view.food.anchor.set(0.5)
+    view.food.x = SLOT_WIDTH / 2
+    view.food.y = 86
     view.steam.anchor.set(0.5)
-    slotRoot.addChild(view.surface, view.food, view.steam, view.state, view.ingredient, view.gauge)
-    root.addChild(slotRoot)
+    view.steam.x = SLOT_WIDTH / 2
+    view.state.x = 18
+    view.state.y = 145
+    view.ingredient.x = 18
+    view.ingredient.y = 169
+    view.timer.anchor.set(1, 0)
+    view.timer.x = SLOT_WIDTH - 18
+    view.timer.y = 169
+    slotRoot.addChild(
+      view.surface,
+      view.number,
+      view.food,
+      view.steam,
+      view.state,
+      view.ingredient,
+      view.timer,
+      view.gauge,
+    )
+    world.addChild(slotRoot)
     return view
   })
 
@@ -126,17 +189,78 @@ export function createGrillBoardScene(
     const view: TrayView = {
       root: trayRoot,
       surface: new Graphics(),
-      icon: createText(ingredient.icon, 24, colors.text.value),
-      name: createText(ingredient.name, 10, colors.text.value, '700'),
-      detail: createText('', 9, colors.muted.value),
+      icon: createText(ingredient.icon, 33, colors.text.value),
+      name: createText(ingredient.name, 13, colors.text.value, '700'),
+      detail: createText(`${ingredient.cookDurationMs / 1_000}초 조리`, 11, colors.muted.value, '600'),
+      count: createText('', 16, colors.text.value, '700'),
     }
     trayRoot.eventMode = 'static'
     trayRoot.on('pointertap', () => handleTrayTap(ingredient.id))
-    trayRoot.addChild(view.surface, view.icon, view.name, view.detail)
-    root.addChild(trayRoot)
+    trayRoot.addChild(view.surface, view.icon, view.name, view.detail, view.count)
+    world.addChild(trayRoot)
     return view
   })
-  root.addChild(feedbackRoot)
+  world.addChild(feedbackRoot)
+  layoutTray()
+  const textNodes: Text[] = [
+    title,
+    subtitle,
+    capacity,
+    trayTitle,
+    trayHint,
+    emptyTray,
+    feedbackTitle,
+    feedbackStars,
+    feedbackDetail,
+    ...slotViews.flatMap((view) => [
+      view.number,
+      view.food,
+      view.state,
+      view.ingredient,
+      view.timer,
+      view.steam,
+    ]),
+    ...trayViews.flatMap((view) => [view.icon, view.name, view.detail, view.count]),
+  ]
+
+  function layoutToScreen() {
+    const scale = Math.min(
+      app.screen.width / GRILL_DESIGN_WIDTH,
+      app.screen.height / GRILL_DESIGN_HEIGHT,
+    )
+    world.scale.set(scale)
+    world.x = (app.screen.width - GRILL_DESIGN_WIDTH * scale) / 2
+    world.y = (app.screen.height - GRILL_DESIGN_HEIGHT * scale) / 2
+    const textResolution = Math.min(
+      4,
+      Math.max(2, (window.devicePixelRatio || 1) * scale),
+    )
+    textNodes.forEach((text) => {
+      text.resolution = textResolution
+    })
+  }
+
+  function layoutTray() {
+    const count = trayViews.length
+    if (count === 0) return
+    const gap = 10
+    const availableWidth = GRILL_DESIGN_WIDTH - 48
+    const cardWidth = (availableWidth - gap * (count - 1)) / count
+    trayViews.forEach((view, index) => {
+      view.root.x = 24 + index * (cardWidth + gap)
+      view.root.y = TRAY_TOP + 39
+      view.root.hitArea = new Rectangle(0, 0, cardWidth, 60)
+      view.icon.x = 12
+      view.icon.y = 10
+      view.name.x = 58
+      view.name.y = 10
+      view.detail.x = 58
+      view.detail.y = 31
+      view.count.anchor.set(1, 0.5)
+      view.count.x = cardWidth - 14
+      view.count.y = 29
+    })
+  }
 
   function handleTrayTap(ingredientId: string) {
     if ((inventory[ingredientId] ?? 0) <= 0) return
@@ -209,12 +333,12 @@ export function createGrillBoardScene(
     feedbackDetail.text = detail
     feedbackDetail.style.fill = darkPanel ? colors.cream.value : colors.text.value
     feedbackPanel.clear()
-    feedbackPanel.roundRect(-150, -60, 300, 120, 18)
-    feedbackPanel.fill({ color: darkPanel ? colors.text.value : colors.bgPanel.value, alpha: 0.97 })
-    feedbackPanel.stroke({ color: darkPanel ? colors.danger.value : accent, width: stars === 3 ? 4 : 3 })
-    feedbackTitle.y = stars > 0 ? -27 : -18
-    feedbackStars.y = 4
-    feedbackDetail.y = stars > 0 ? 34 : 22
+    feedbackPanel.roundRect(-176, -72, 352, 144, 20)
+    feedbackPanel.fill({ color: darkPanel ? colors.text.value : colors.bgPanel.value, alpha: 0.98 })
+    feedbackPanel.stroke({ color: darkPanel ? colors.danger.value : accent, width: stars === 3 ? 5 : 3 })
+    feedbackTitle.y = stars > 0 ? -32 : -19
+    feedbackStars.y = 5
+    feedbackDetail.y = stars > 0 ? 40 : 25
     feedbackRoot.visible = true
     feedbackRoot.alpha = 1
   }
@@ -227,95 +351,31 @@ export function createGrillBoardScene(
     return options.ingredients.find((ingredient) => ingredient.id === slot.ingredientId)
   }
 
-  function dimensions() {
-    const width = app.screen.width
-    const padding = 18
-    const gap = 12
-    const slotTop = 38
-    const slotHeight = 170
-    const trayTop = 238
-    return {
-      padding,
-      gap,
-      slotTop,
-      slotHeight,
-      trayTop,
-      slotWidth: (width - padding * 2 - gap * 2) / 3,
-    }
-  }
-
-  function layout() {
-    const { padding, gap, slotTop, slotHeight, trayTop, slotWidth } = dimensions()
-    board.clear()
-    board.roundRect(8, 8, app.screen.width - 16, 212, 14)
-    board.fill(colors.text.value)
-    board.roundRect(12, 12, app.screen.width - 24, 204, 11)
-    board.fill(colors.woodDeep.value)
-    board.roundRect(8, 228, app.screen.width - 16, app.screen.height - 236, 14)
-    board.fill(colors.bgPanel.value)
-    grillTitle.x = 18
-    grillTitle.y = 14
-    trayTitle.x = 18
-    trayTitle.y = 235
-    trayHint.x = app.screen.width - trayHint.width - 18
-    trayHint.y = 237
-    feedbackRoot.x = app.screen.width / 2
-    feedbackRoot.y = 144
-
-    slotViews.forEach((view, index) => {
-      view.root.x = padding + index * (slotWidth + gap)
-      view.root.y = slotTop
-      view.root.hitArea = new Rectangle(0, 0, slotWidth, slotHeight)
-      view.food.x = slotWidth / 2
-      view.food.y = 48
-      view.food.anchor.set(0.5)
-      view.state.x = 10
-      view.state.y = 112
-      view.ingredient.x = 10
-      view.ingredient.y = 132
-    })
-
-    const trayGap = 8
-    const trayWidth = trayViews.length
-      ? (app.screen.width - padding * 2 - trayGap * Math.max(0, trayViews.length - 1)) /
-        trayViews.length
-      : 0
-    trayViews.forEach((view, index) => {
-      view.root.x = padding + index * (trayWidth + trayGap)
-      view.root.y = trayTop + 22
-      view.root.hitArea = new Rectangle(0, 0, trayWidth, 78)
-      view.icon.x = 10
-      view.icon.y = 8
-      view.name.x = 43
-      view.name.y = 10
-      view.detail.x = 43
-      view.detail.y = 31
-    })
-    emptyTray.x = 18
-    emptyTray.y = trayTop + 52
-  }
-
   function renderSlot(index: number, time: number) {
     const slot = slots[index]
     const view = slotViews[index]
-    const { slotWidth, slotHeight } = dimensions()
     const ingredient = ingredientFor(slot)
     const progress = getCookProgress(slot, time)
     const result = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
-    const stateColor = slot.status === 'idle' ? cookColors.idle.value : resultColors[result]
+    const stateColor = slot.status === 'idle' ? colors.border.value : resultColors[result]
+    const pulse = reduceMotion ? 0.5 : (Math.sin(time / 90) + 1) / 2
 
     view.surface.clear()
-    view.surface.roundRect(0, 0, slotWidth, slotHeight, 10)
-    view.surface.fill(stateColor)
-    view.surface.roundRect(5, 5, slotWidth - 10, slotHeight - 10, 7)
+    view.surface.roundRect(0, 0, SLOT_WIDTH, SLOT_HEIGHT, 15)
+    view.surface.fill(colors.text.value)
+    view.surface.stroke({ color: stateColor, width: result === 'perfect' ? 5 : 3 })
+    view.surface.roundRect(6, 6, SLOT_WIDTH - 12, SLOT_HEIGHT - 12, 11)
     view.surface.fill(colors.bgPanel.value)
-    for (let x = 14; x < slotWidth - 8; x += 14) {
-      view.surface.rect(x, 10, 3, 94)
-      view.surface.fill({ color: colors.text.value, alpha: 0.24 })
+    view.surface.roundRect(14, 40, SLOT_WIDTH - 28, 93, 10)
+    view.surface.fill({ color: colors.woodDeep.value, alpha: 0.42 })
+    for (let x = 28; x < SLOT_WIDTH - 18; x += 22) {
+      view.surface.roundRect(x, 49, 4, 72, 2)
+      view.surface.fill({ color: colors.text.value, alpha: 0.27 })
     }
 
-    view.food.text = ingredient?.icon ?? ''
-    const pulse = reduceMotion ? 0.5 : (Math.sin(time / 90) + 1) / 2
+    view.number.style.fill = slot.status === 'idle' ? colors.muted.value : colors.cream.value
+    view.food.text = ingredient?.icon ?? '＋'
+    view.food.style.fill = slot.status === 'idle' ? colors.muted.value : colors.text.value
     const emphasisScale = result === 'perfect'
       ? 1.04 + pulse * 0.05
       : result === 'danger'
@@ -324,28 +384,20 @@ export function createGrillBoardScene(
           ? 1.03
           : 1
     view.food.scale.set(emphasisScale)
-    view.food.alpha = result === 'burnt' ? 0.38 : 1
-    view.surface.alpha = result === 'danger' ? 0.68 + pulse * 0.32 : 1
-    view.steam.x = slotWidth / 2
-    view.steam.y = 23 - pulse * 5
+    view.food.alpha = slot.status === 'idle' ? 0.26 : result === 'burnt' ? 0.38 : 1
+    view.surface.alpha = result === 'danger' ? 0.72 + pulse * 0.28 : 1
+    view.steam.y = 48 - pulse * 7
     view.steam.visible = slot.status === 'cooking' && progress >= 0.3
-    view.steam.alpha = reduceMotion ? 0.62 : 0.35 + pulse * 0.4
-    view.state.text = slot.status === 'idle' ? '비어 있음 · 트레이 클릭 시 투입' : resultLabels[result]
-    view.ingredient.text = ingredient?.name ?? '빈 슬롯'
+    view.steam.alpha = reduceMotion ? 0.62 : 0.34 + pulse * 0.46
+    view.state.text = slot.status === 'idle' ? '빈 슬롯 · 트레이 클릭 시 투입' : resultLabels[result]
+    view.state.style.fill = slot.status === 'idle' ? colors.muted.value : colors.text.value
+    view.ingredient.text = ingredient?.name ?? '대기 중'
+    view.timer.text = slot.status === 'idle'
+      ? ''
+      : `${Math.max(0, Math.ceil((slot.cookDurationMs * (1 - progress)) / 1_000))}s`
     view.root.cursor = slot.status === 'idle' ? 'default' : 'pointer'
 
-    view.gauge.clear()
-    view.gauge.roundRect(10, slotHeight - 12, slotWidth - 20, 6, 3)
-    view.gauge.fill(colors.border.value)
-    if (slot.status !== 'idle') {
-      const gaugeWidth = (slotWidth - 20) * Math.min(1, progress)
-      view.gauge.roundRect(10, slotHeight - 12, gaugeWidth, 6, 3)
-      view.gauge.fill(stateColor)
-      for (const mark of [0.4, 0.7, 0.9]) {
-        view.gauge.rect(10 + (slotWidth - 20) * mark, slotHeight - 13, 1, 8)
-        view.gauge.fill(colors.text.value)
-      }
-    }
+    drawGauge(view.gauge, progress, slot.status !== 'idle', stateColor)
   }
 
   function renderFeedback(time: number) {
@@ -358,7 +410,7 @@ export function createGrillBoardScene(
     }
     if (reduceMotion) {
       feedbackRoot.scale.set(1)
-      feedbackRoot.y = 144
+      feedbackRoot.y = 178
       feedbackRoot.alpha = elapsed < 700 ? 1 : (COOK_FEEDBACK_DURATION_MS - elapsed) / 100
       return
     }
@@ -366,18 +418,19 @@ export function createGrillBoardScene(
     const entry = Math.min(1, progress / 0.22)
     const rebound = 1 + Math.sin(entry * Math.PI) * 0.1
     feedbackRoot.scale.set((0.72 + entry * 0.28) * rebound)
-    feedbackRoot.y = 144 - progress * 18
+    feedbackRoot.y = 178 - progress * 18
     feedbackRoot.alpha = progress < 0.72 ? 1 : (1 - progress) / 0.28
   }
 
   function renderTray() {
     const full = isGrillFull()
+    const activeSlots = slots.filter((slot) => slot.status !== 'idle').length
+    capacity.text = `사용 중 ${activeSlots} / ${slots.length}`
     trayHint.text = full ? '그릴이 가득 찼습니다' : '클릭하면 첫 빈 슬롯에 투입됩니다'
-    trayHint.x = app.screen.width - trayHint.width - 18
     emptyTray.visible = trayViews.length === 0
-    const trayGap = 8
-    const trayWidth = trayViews.length
-      ? (app.screen.width - 36 - trayGap * Math.max(0, trayViews.length - 1)) / trayViews.length
+    const gap = 10
+    const cardWidth = trayViews.length
+      ? (GRILL_DESIGN_WIDTH - 48 - gap * (trayViews.length - 1)) / trayViews.length
       : 0
 
     trayViews.forEach((view, index) => {
@@ -386,30 +439,25 @@ export function createGrillBoardScene(
       const needed = neededIngredientIds.has(ingredient.id)
       const disabled = count <= 0 || full
       view.surface.clear()
-      view.surface.roundRect(0, 0, trayWidth, 78, 9)
+      view.surface.roundRect(0, 0, cardWidth, 60, 11)
       view.surface.fill(needed ? colors.cream.value : colors.bgPanel2.value)
       view.surface.stroke({
         color: needed ? colors.accent.value : colors.border.value,
-        width: needed ? 3 : 1,
+        width: needed ? 4 : 2,
       })
-      view.detail.text = count <= 0
-        ? '품절'
-        : `${count}개 · ${ingredient.cookDurationMs / 1_000}초${needed ? ' · 주문 필요' : ''}`
-      view.root.alpha = disabled ? 0.48 : 1
+      view.detail.text = `${ingredient.cookDurationMs / 1_000}초 조리${needed ? ' · 주문 필요' : ''}`
+      view.count.text = String(count)
+      view.count.style.fill = count <= 0 ? colors.muted.value : colors.text.value
+      view.root.alpha = disabled ? 0.46 : 1
       view.root.cursor = disabled ? 'not-allowed' : 'pointer'
     })
   }
 
-  let lastWidth = 0
-  let lastHeight = 0
+  const onResize = () => layoutToScreen()
+  app.renderer.on('resize', onResize)
+
   const onTick = (_ticker: Ticker) => {
     const time = now()
-    if (lastWidth !== app.screen.width || lastHeight !== app.screen.height) {
-      lastWidth = app.screen.width
-      lastHeight = app.screen.height
-      layout()
-      renderTray()
-    }
     let changed = false
     for (let index = 0; index < slots.length; index += 1) {
       const previous = slots[index]
@@ -435,7 +483,7 @@ export function createGrillBoardScene(
     }
   }
 
-  layout()
+  layoutToScreen()
   renderTray()
   onTick(app.ticker)
   if (options.initialFeedback) showFeedback(options.initialFeedback)
@@ -452,14 +500,47 @@ export function createGrillBoardScene(
     },
     showFeedback,
     destroy() {
+      app.renderer.off('resize', onResize)
       app.ticker.remove(onTick)
       slotViews.forEach((view) => view.root.removeAllListeners())
       trayViews.forEach((view) => view.root.removeAllListeners())
       feedbackStartedAt = null
       slots = []
       inventory = {}
-      root.destroy({ children: true })
+      world.destroy({ children: true })
     },
+  }
+}
+
+function drawChrome(graphics: Graphics) {
+  graphics.roundRect(0, 0, GRILL_DESIGN_WIDTH, GRILL_DESIGN_HEIGHT, 18)
+  graphics.fill(colors.bg.value)
+  graphics.roundRect(8, 8, GRILL_DESIGN_WIDTH - 16, GRILL_DESIGN_HEIGHT - 16, 14)
+  graphics.stroke({ color: colors.border.value, width: 2 })
+  graphics.roundRect(16, 12, GRILL_DESIGN_WIDTH - 32, 38, 10)
+  graphics.fill(colors.text.value)
+  graphics.roundRect(14, SLOT_TOP - 8, GRILL_DESIGN_WIDTH - 28, SLOT_HEIGHT + 16, 16)
+  graphics.fill(colors.woodDeep.value)
+  graphics.roundRect(18, SLOT_TOP - 4, GRILL_DESIGN_WIDTH - 36, SLOT_HEIGHT + 8, 13)
+  graphics.fill({ color: colors.text.value, alpha: 0.86 })
+  graphics.roundRect(14, TRAY_TOP, GRILL_DESIGN_WIDTH - 28, TRAY_HEIGHT, 16)
+  graphics.fill(colors.bgPanel.value)
+  graphics.stroke({ color: colors.border.value, width: 2 })
+}
+
+function drawGauge(graphics: Graphics, progress: number, active: boolean, color: string) {
+  const x = 18
+  const y = SLOT_HEIGHT - 20
+  const width = SLOT_WIDTH - 36
+  graphics.clear()
+  graphics.roundRect(x, y, width, 9, 5)
+  graphics.fill(colors.border.value)
+  if (!active) return
+  graphics.roundRect(x, y, width * Math.min(1, progress), 9, 5)
+  graphics.fill(color)
+  for (const mark of [0.4, 0.7, 0.9]) {
+    graphics.rect(x + width * mark, y - 2, 2, 13)
+    graphics.fill(colors.text.value)
   }
 }
 

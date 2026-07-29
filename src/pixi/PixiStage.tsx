@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode, type TransitionEventHandler } from 'react'
 import { Application } from 'pixi.js'
 import { colors } from '../ui/tokens'
 
@@ -9,6 +9,10 @@ import { colors } from '../ui/tokens'
 function destroyApp(app: Application | null) {
   if (!app?.renderer) return
   app.destroy({ removeView: true }, { children: true })
+}
+
+function rendererResolution() {
+  return Math.min(window.devicePixelRatio || 1, 2)
 }
 
 export type PixiSetup = (app: Application) => void | (() => void)
@@ -25,6 +29,7 @@ export interface PixiStageProps {
   fillParent?: boolean
   /** 앱 준비 후 씬 생성. 정리 함수를 반환하면 unmount 시 호출된다. */
   setup: PixiSetup
+  onTransitionEnd?: TransitionEventHandler<HTMLDivElement>
 }
 
 /**
@@ -38,6 +43,7 @@ export default function PixiStage({
   background = colors.bgPanel2.value,
   fillParent = false,
   setup,
+  onTransitionEnd,
 }: PixiStageProps): ReactNode {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const setupRef = useRef(setup)
@@ -50,6 +56,7 @@ export default function PixiStage({
     let app: Application | null = null
     let disposed = false
     let sceneCleanup: (() => void) | null = null
+    let removeResolutionListener: (() => void) | null = null
 
     ;(async () => {
       const application = new Application()
@@ -99,6 +106,19 @@ export default function PixiStage({
       }
       application.canvas.style.borderRadius = '8px'
 
+      const syncResolution = () => {
+        const nextResolution = rendererResolution()
+        if (application.renderer.resolution !== nextResolution) {
+          application.renderer.resize(
+            application.screen.width,
+            application.screen.height,
+            nextResolution,
+          )
+        }
+      }
+      window.addEventListener('resize', syncResolution)
+      removeResolutionListener = () => window.removeEventListener('resize', syncResolution)
+
       const cleanup = setupRef.current?.(application) ?? null
       if (disposed) {
         if (typeof cleanup === 'function') cleanup()
@@ -110,6 +130,8 @@ export default function PixiStage({
 
     return () => {
       disposed = true
+      removeResolutionListener?.()
+      removeResolutionListener = null
       if (typeof sceneCleanup === 'function') sceneCleanup()
       sceneCleanup = null
       destroyApp(app)
@@ -122,6 +144,7 @@ export default function PixiStage({
     <div
       ref={hostRef}
       className={className}
+      onTransitionEnd={onTransitionEnd}
       style={
         fillParent
           ? { width: '100%', height: '100%', overflow: 'hidden' }
