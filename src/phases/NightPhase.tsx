@@ -52,14 +52,25 @@ function previewStats(owned: string[], planned: string[]) {
 /**
  * 야간 / 성장 — truck_upgrade_night.webp 보드 위 오버레이
  */
-export default function NightPhase() {
+interface NightPhaseProps {
+  mode?: 'night' | 'prep'
+  onBack?: () => void
+}
+
+export default function NightPhase({
+  mode = 'night',
+  onBack,
+}: NightPhaseProps) {
   const { state, dispatch } = useGame()
   const [category, setCategory] = useState<UpgradeCategory>('all')
   const [planned, setPlanned] = useState<string[]>([])
 
   const isLastDay = state.day >= state.maxDays
-  const nextDay = Math.min(state.day + 1, state.maxDays)
-  const tomorrowEvent = events.find((e) => e.day === state.day + 1)
+  const nextDay =
+    mode === 'prep' ? state.day : Math.min(state.day + 1, state.maxDays)
+  const tomorrowEvent = events.find(
+    (e) => e.day === (mode === 'prep' ? state.day : state.day + 1),
+  )
   const owned = state.upgrades
 
   const current = baseTruckStats(owned)
@@ -133,7 +144,9 @@ export default function NightPhase() {
         <header className="night-title">
           <h2 className="night-title__main">트럭 관리실</h2>
           <p className="night-title__sub">
-            설비를 계획하고 한 번에 업그레이드하세요.
+            {mode === 'prep'
+              ? '오늘 영업 전에 트럭 설비를 점검하세요.'
+              : '설비를 계획하고 한 번에 업그레이드하세요.'}
           </p>
         </header>
 
@@ -330,9 +343,19 @@ export default function NightPhase() {
         <button
           type="button"
           className="night-next"
-          onClick={() => dispatch({ type: ActionTypes.NEXT_DAY })}
+          onClick={() => {
+            if (mode === 'prep') {
+              onBack?.()
+              return
+            }
+            dispatch({ type: ActionTypes.NEXT_DAY })
+          }}
         >
-          {isLastDay ? '엔딩 보기 →' : '다음 날로 →'}
+          {mode === 'prep'
+            ? '준비 로비로 →'
+            : isLastDay
+              ? '엔딩 보기 →'
+              : '다음 날로 →'}
         </button>
       </div>
     </section>

@@ -3,17 +3,22 @@ import CityMap, { type CityMapHandle } from '../components/CityMap'
 import LocationSelectStrip from '../components/LocationSelectStrip'
 import MenuSelector from '../components/MenuSelector'
 import IngredientShop from '../components/IngredientShop'
+import PrepLobby, {
+  type PrepLobbyDestination,
+} from '../components/PrepLobby'
+import NightPhase from './NightPhase'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
 import {
   estimateCustomers,
   getLocationById,
+  getRequiredIngredientIds,
 } from '../state/formulas'
 import { getWeatherLabel } from '../utils/weather'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
 import { READY_PHASE_BG, preloadCriticalAssets } from '../utils/assets'
 
-type PrepStep = 'location' | 'menu' | 'market'
+type PrepStep = 'lobby' | 'location' | 'menu' | 'market' | 'upgrade'
 
 function PrepHud() {
   const { state } = useGame()
@@ -64,17 +69,26 @@ export default function PrepPhase() {
   const { state, dispatch } = useGame()
   const loc = getLocationById(state.location)
   const estimated = estimateCustomers(state.location, state.weather, state.fame)
-  const canStart = state.activeMenus.length > 0
-  const [step, setStep] = useState<PrepStep>('location')
+  const menuReady = state.activeMenus.length > 0
+  const requiredIngredients = getRequiredIngredientIds(state.activeMenus)
+  const ingredientsReady =
+    requiredIngredients.length > 0 &&
+    requiredIngredients.every((id) => (state.ingredients[id] ?? 0) > 0)
+  const isFreePrep = state.day >= 2
+  const [step, setStep] = useState<PrepStep>(
+    isFreePrep ? 'lobby' : 'location',
+  )
   const [locationPicked, setLocationPicked] = useState(false)
+  const [locationConfirmed, setLocationConfirmed] = useState(false)
   const [locAnchors, setLocAnchors] = useState<LocationAnchors | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [posterDimmed, setPosterDimmed] = useState(false)
   const mapRef = useRef<CityMapHandle | null>(null)
 
   useEffect(() => {
-    setStep('location')
+    setStep(state.day >= 2 ? 'lobby' : 'location')
     setLocationPicked(false)
+    setLocationConfirmed(false)
     setMapReady(false)
     setPosterDimmed(false)
     setLocAnchors(null)
@@ -107,7 +121,35 @@ export default function PrepPhase() {
   const handleConfirmLocation = () => {
     if (!locationPicked || !canAffordRent) return
     dispatch({ type: ActionTypes.CONFIRM_LOCATION })
-    setStep('menu')
+    setLocationConfirmed(true)
+    setStep(isFreePrep ? 'lobby' : 'menu')
+  }
+
+  const handleOpenLobbyDestination = (destination: PrepLobbyDestination) => {
+    if (destination === 'location') {
+      setLocationPicked(locationConfirmed)
+    }
+    setStep(destination)
+  }
+
+  const canStart = isFreePrep
+    ? menuReady && ingredientsReady && locationConfirmed
+    : menuReady
+
+  if (step === 'lobby') {
+    return (
+      <PrepLobby
+        locationConfirmed={locationConfirmed}
+        ingredientsReady={ingredientsReady}
+        canStart={canStart}
+        onOpen={handleOpenLobbyDestination}
+        onStart={() => dispatch({ type: ActionTypes.START_OPEN })}
+      />
+    )
+  }
+
+  if (step === 'upgrade') {
+    return <NightPhase mode="prep" onBack={() => setStep('lobby')} />
   }
 
   return (
@@ -231,17 +273,17 @@ export default function PrepPhase() {
                   <button
                     type="button"
                     className="prep-btn prep-btn--menu"
-                    onClick={() => setStep('location')}
+                    onClick={() => setStep(isFreePrep ? 'lobby' : 'location')}
                   >
-                    ← 장소
+                    {isFreePrep ? '← 준비 로비' : '← 장소'}
                   </button>
                   <button
                     type="button"
                     className="prep-btn prep-btn--start"
-                    disabled={!canStart}
-                    onClick={() => setStep('market')}
+                    disabled={!menuReady}
+                    onClick={() => setStep(isFreePrep ? 'lobby' : 'market')}
                   >
-                    다음: 마트 →
+                    {isFreePrep ? '선택 완료 →' : '다음: 마트 →'}
                   </button>
                 </>
               ) : (
@@ -249,17 +291,23 @@ export default function PrepPhase() {
                   <button
                     type="button"
                     className="prep-btn prep-btn--menu"
-                    onClick={() => setStep('menu')}
+                    onClick={() => setStep(isFreePrep ? 'lobby' : 'menu')}
                   >
-                    ← 메뉴
+                    {isFreePrep ? '← 준비 로비' : '← 메뉴'}
                   </button>
                   <button
                     type="button"
                     className="prep-btn prep-btn--start"
-                    disabled={!canStart}
-                    onClick={() => dispatch({ type: ActionTypes.START_OPEN })}
+                    disabled={!menuReady}
+                    onClick={() => {
+                      if (isFreePrep) {
+                        setStep('lobby')
+                        return
+                      }
+                      dispatch({ type: ActionTypes.START_OPEN })
+                    }}
                   >
-                    ▶ 영업 시작
+                    {isFreePrep ? '구매 완료 →' : '▶ 영업 시작'}
                   </button>
                 </>
               )}

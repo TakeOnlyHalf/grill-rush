@@ -37,6 +37,19 @@ export const TRUCK_UPGRADE_NIGHT_BG = publicUrl(
   'images/ready_phase/truck_upgrade_night.webp',
 )
 
+/** Day 2+ 자유 준비 로비 */
+export const PREP_LOBBY_BG = publicUrl('images/ready_phase/loby_background.webp')
+export const PREP_LOBBY_MENU = publicUrl(
+  'images/ready_phase/select_learnmenu.webp',
+)
+export const PREP_LOBBY_LOCATION = publicUrl(
+  'images/ready_phase/select_location.webp',
+)
+export const PREP_LOBBY_MART = publicUrl('images/ready_phase/select_mart.webp')
+export const PREP_LOBBY_UPGRADE = publicUrl(
+  'images/ready_phase/select_truckupgrade.webp',
+)
+
 /** 앱 부트 시 미리 받아둘 핵심 이미지 (탭 전환 시 깜빡임 방지) */
 export const CRITICAL_IMAGE_URLS = [
   TITLE_DAY_ART,
@@ -49,6 +62,11 @@ export const CRITICAL_IMAGE_URLS = [
   NET_NEUTRAL_ICON,
   NET_PROFIT_ICON,
   TRUCK_UPGRADE_NIGHT_BG,
+  PREP_LOBBY_BG,
+  PREP_LOBBY_MENU,
+  PREP_LOBBY_LOCATION,
+  PREP_LOBBY_MART,
+  PREP_LOBBY_UPGRADE,
   DAY_STREET_BG,
 ] as const
 
