@@ -62,11 +62,9 @@ function isValidSave(value: Partial<GameState>): value is GameState {
 function sanitizeLoaded(state: GameState): GameState {
   const hydrated: GameState = {
     ...state,
-    preparedIngredients: Array.isArray(state.preparedIngredients)
-      ? state.preparedIngredients
-      : [],
-    nextPreparedIngredientId:
-      typeof state.nextPreparedIngredientId === 'number' ? state.nextPreparedIngredientId : 1,
+    // Open-phase state is not autosaved, so stale prepared ingredients must never cross sessions.
+    preparedIngredients: [],
+    nextPreparedIngredientId: 1,
     lastServeFeedback: state.lastServeFeedback ?? null,
     lastCustomerLeaveFeedback: state.lastCustomerLeaveFeedback ?? null,
   }

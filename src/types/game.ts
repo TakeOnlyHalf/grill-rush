@@ -40,12 +40,13 @@ export interface Order {
 
 export type CookResult = 'raw' | 'good' | 'perfect' | 'danger' | 'burnt'
 export type PreparedCookResult = Exclude<CookResult, 'raw' | 'burnt'>
+export type PreparedQuality = 1 | 2 | 3
 
 export interface PreparedIngredient {
   id: string
   ingredientId: IngredientId
-  cookResult: PreparedCookResult
-  quality: number
+  result: PreparedCookResult
+  quality: PreparedQuality
 }
 
 export interface ServeFeedback {
@@ -117,7 +118,7 @@ export type GameAction =
   | { type: 'USE_INGREDIENT'; payload: { ingredientId: IngredientId } }
   | {
       type: 'COLLECT_COOKED_INGREDIENT'
-      payload: { ingredientId: IngredientId; cookResult: CookResult; quality: number }
+      payload: { ingredientId: IngredientId; cookResult: CookResult }
     }
   | { type: 'SERVE_ORDER'; payload: { orderId: string; customerId: string } }
   | { type: 'START_OPEN' }

@@ -6,6 +6,7 @@ import type {
   CookResult,
   PreparedCookResult,
   PreparedIngredient,
+  PreparedQuality,
 } from '../types/game'
 
 const assemblyIngredientIds = new Set(
@@ -15,7 +16,12 @@ const assemblyIngredientIds = new Set(
 export interface CollectedIngredientInput {
   ingredientId: IngredientId
   cookResult: CookResult
-  quality: number
+}
+
+const qualityByResult: Record<PreparedCookResult, PreparedQuality> = {
+  danger: 1,
+  good: 2,
+  perfect: 3,
 }
 
 /**
@@ -30,8 +36,8 @@ export function collectPreparedIngredient(
   const prepared: PreparedIngredient = {
     id: `prepared-${state.nextPreparedIngredientId}`,
     ingredientId: collected.ingredientId,
-    cookResult: collected.cookResult,
-    quality: collected.quality,
+    result: collected.cookResult,
+    quality: qualityByResult[collected.cookResult],
   }
 
   return {

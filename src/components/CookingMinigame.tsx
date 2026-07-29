@@ -46,7 +46,6 @@ export default function CookingMinigame() {
             payload: {
               ingredientId: item.ingredientId,
               cookResult: item.result,
-              quality: item.progress,
             },
           })
         }}
@@ -60,10 +59,10 @@ export default function CookingMinigame() {
             {state.preparedIngredients.map((item) => {
               const ingredient = ingredientById.get(item.ingredientId)
               return (
-                <li key={item.id} className={`prepared-item prepared-item--${item.cookResult}`}>
+                <li key={item.id} className={`prepared-item prepared-item--${item.result}`}>
                   <span aria-hidden="true">{ingredient?.icon ?? '🍽️'}</span>
                   <span>{ingredient?.name ?? item.ingredientId}</span>
-                  <small>{resultLabels[item.cookResult]}</small>
+                  <small>{resultLabels[item.result]}</small>
                 </li>
               )
             })}
