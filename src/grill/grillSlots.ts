@@ -1,5 +1,7 @@
+import type { CookResult } from '../types/game'
+
+export type { CookResult }
 export type GrillSlotStatus = 'idle' | 'cooking' | 'burnt'
-export type CookResult = 'raw' | 'good' | 'perfect' | 'danger' | 'burnt'
 
 export interface GrillIngredient {
   id: string

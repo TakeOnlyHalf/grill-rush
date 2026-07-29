@@ -10,6 +10,7 @@ import { calcDailyProfit, getRequiredIngredientIds, resolveEnding } from './form
 import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
 import type { GameAction, GameState } from '../types/game'
+import { collectPreparedIngredient, serveOrder } from './orderFulfillment'
 
 const MAX_QUEUE = 8
 
@@ -121,6 +122,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case ActionTypes.COLLECT_COOKED_INGREDIENT: {
+      if (state.phase !== 'open') return state
+      return collectPreparedIngredient(state, action.payload)
+    }
+
+    case ActionTypes.SERVE_ORDER:
+      return serveOrder(state, action.payload.orderId, action.payload.customerId)
+
     case ActionTypes.START_OPEN: {
       if (state.phase !== 'prep') return state
       if (state.activeMenus.length === 0) return state
@@ -132,6 +141,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         time: 0,
         customers: [],
         orders: [],
+        preparedIngredients: [],
+        nextPreparedIngredientId: 1,
+        lastServeFeedback: null,
+        lastCustomerLeaveFeedback: null,
         dailySales: 0,
         dailyTips: 0,
         dailyServed: 0,
@@ -157,6 +170,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // patience 소진 → 이탈 처리
       let dailyLeft = state.dailyLeft
+      const expiredCustomers = state.customers.filter((customer) => customer.patience - dt <= 0)
       const customers = state.customers
         .map((c) => ({ ...c, patience: c.patience - dt }))
         .filter((c) => {
@@ -179,8 +193,31 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const spawned = spawnCustomer(spawnCtx)
         if (spawned) customers.push(spawned)
       }
+      const customerIds = new Set(customers.map((customer) => customer.id))
+      const orders = state.orders.filter((order) => customerIds.has(order.customerId))
+      for (const customer of customers) {
+        if (orders.some((order) => order.customerId === customer.id)) continue
+        orders.push({
+          id: `order-${customer.id}`,
+          customerId: customer.id,
+          menuId: customer.orderMenuId,
+          status: 'queued',
+        })
+      }
 
-      return { ...state, time: nextTime, customers, dailyLeft }
+      return {
+        ...state,
+        time: nextTime,
+        customers,
+        orders,
+        dailyLeft,
+        lastCustomerLeaveFeedback: expiredCustomers.length > 0
+          ? {
+              id: (state.lastCustomerLeaveFeedback?.id ?? 0) + 1,
+              customerName: expiredCustomers[0].typeName,
+            }
+          : state.lastCustomerLeaveFeedback,
+      }
     }
 
     case ActionTypes.END_OPEN: {
@@ -256,6 +293,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ingredients: {},
         customers: [],
         orders: [],
+        preparedIngredients: [],
+        nextPreparedIngredientId: 1,
+        lastServeFeedback: null,
+        lastCustomerLeaveFeedback: null,
         dailySales: 0,
         dailyTips: 0,
         dailyServed: 0,
@@ -297,6 +338,10 @@ function endOpenDay(state: GameState, time: number): GameState {
     ...state,
     phase: 'settle',
     time,
+    customers: [],
+    orders: [],
+    preparedIngredients: [],
+    nextPreparedIngredientId: 1,
     dailyCosts: {
       ...state.dailyCosts,
       waste,
