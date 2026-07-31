@@ -1,5 +1,4 @@
 /** 공유 게임 도메인 타입 */
-import type { CookResult } from '../grill/grillSlots'
 
 export type Phase = 'title' | 'story' | 'prep' | 'open' | 'settle' | 'night' | 'ending'
 
@@ -39,16 +38,30 @@ export interface Order {
   status: 'queued' | 'cooking' | 'done' | 'failed'
 }
 
+export type CookResult = 'raw' | 'good' | 'perfect' | 'danger' | 'burnt'
+export type PreparedCookResult = Exclude<CookResult, 'raw' | 'burnt'>
+export type PreparedQuality = 1 | 2 | 3
+
 /** 그릴에서 회수한 재료 중 서빙 가능한 품질(raw/danger/burnt는 폐기) */
 export type GrillQuality = Extract<CookResult, 'good' | 'perfect'>
 
-/** 방금 서빙된 결과 — 영업 화면 피드백 UI용 */
-export interface LastServeResult {
+export interface PreparedIngredient {
   id: string
+  ingredientId: IngredientId
+  result: PreparedCookResult
+  quality: PreparedQuality
+}
+
+export interface ServeFeedback {
+  id: number
+  menuId: MenuId
   menuName: string
-  stars: number
-  tip: number
-  price: number
+  amount: number
+}
+
+export interface CustomerLeaveFeedback {
+  id: number
+  customerName: string
 }
 
 export interface DaySummary {
@@ -79,9 +92,10 @@ export interface GameState {
   ingredients: Record<IngredientId, number>
   customers: Customer[]
   orders: Order[]
-  /** 그릴에서 회수된 재료 풀(품질 태그 포함) — 주문 매칭 대기 중 */
-  collectedIngredients: Record<IngredientId, GrillQuality[]>
-  lastServe: LastServeResult | null
+  preparedIngredients: PreparedIngredient[]
+  nextPreparedIngredientId: number
+  lastServeFeedback: ServeFeedback | null
+  lastCustomerLeaveFeedback: CustomerLeaveFeedback | null
   dailySales: number
   dailyTips: number
   dailyServed: number
@@ -105,7 +119,11 @@ export type GameAction =
   | { type: 'SET_MENU_PRICE'; payload: { menuId: MenuId; price: number } }
   | { type: 'BUY_INGREDIENT'; payload: { ingredientId: IngredientId; qty: number; unitCost: number } }
   | { type: 'USE_INGREDIENT'; payload: { ingredientId: IngredientId } }
-  | { type: 'COLLECT_INGREDIENT'; payload: { ingredientId: IngredientId; result: CookResult } }
+  | {
+      type: 'COLLECT_COOKED_INGREDIENT'
+      payload: { ingredientId: IngredientId; cookResult: CookResult }
+    }
+  | { type: 'SERVE_ORDER'; payload: { orderId: string; customerId: string } }
   | { type: 'START_OPEN' }
   | { type: 'TICK_OPEN'; payload?: { dt?: number } }
   | { type: 'END_OPEN' }

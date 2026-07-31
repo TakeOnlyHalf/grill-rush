@@ -13,6 +13,7 @@ export default function TitlePhase() {
   const { dispatch } = useGame()
   const [canContinue, setCanContinue] = useState(() => hasSave())
   const [optionsOpen, setOptionsOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     void preloadCriticalAssets()
@@ -27,19 +28,25 @@ export default function TitlePhase() {
     dispatch({ type: ActionTypes.LOAD_GAME, payload: saved })
   }, [dispatch])
 
-  const handleNewGame = useCallback(() => {
+  const handleNewGame = useCallback(async () => {
+    if (busy) return
     if (canContinue) {
       const ok = window.confirm('기존 저장 데이터가 삭제됩니다. 처음부터 시작할까요?')
       if (!ok) return
     }
     setCanContinue(false)
-    startNewGame(dispatch)
-  }, [canContinue, dispatch])
+    setBusy(true)
+    try {
+      await preloadCriticalAssets()
+      startNewGame(dispatch)
+    } finally {
+      setBusy(false)
+    }
+  }, [busy, canContinue, dispatch])
 
   return (
     <section className="phase phase-title" aria-label="타이틀">
       <div className="title-stage">
-        {/* 좌우 여백을 손그림 톤으로 자연스럽게 연장 */}
         <img
           className="title-art-bleed"
           src={TITLE_DAY_ART}
@@ -60,7 +67,7 @@ export default function TitlePhase() {
           <TitleMenuButton
             tone={canContinue ? 'primary' : 'secondary'}
             icon="continue"
-            disabled={!canContinue}
+            disabled={!canContinue || busy}
             onClick={handleContinue}
           >
             이어서 하기
@@ -68,11 +75,19 @@ export default function TitlePhase() {
           <TitleMenuButton
             tone={canContinue ? 'secondary' : 'primary'}
             icon="new"
-            onClick={handleNewGame}
+            disabled={busy}
+            onClick={() => {
+              void handleNewGame()
+            }}
           >
-            처음부터
+            {busy ? '준비 중…' : '처음부터'}
           </TitleMenuButton>
-          <TitleMenuButton tone="tertiary" icon="options" onClick={() => setOptionsOpen(true)}>
+          <TitleMenuButton
+            tone="tertiary"
+            icon="options"
+            disabled={busy}
+            onClick={() => setOptionsOpen(true)}
+          >
             옵션
           </TitleMenuButton>
         </nav>

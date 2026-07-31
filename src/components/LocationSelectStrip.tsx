@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react'
 import locations from '../data/locations.json'
-import { LOC_CARD_ANCHOR_Y, LOC_X_RATIO } from '../data/locationLayout'
 import { useGame } from '../state/GameContext'
 import { estimateCustomers } from '../state/formulas'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
@@ -25,15 +24,21 @@ export default function LocationSelectStrip({
     Boolean,
   )
 
+  const ready = Boolean(anchors && DISPLAY_ORDER.every((id) => anchors[id]))
+
   return (
-    <div className="loc-strip" role="listbox" aria-label="영업 장소">
+    <div
+      className={`loc-strip${ready ? ' is-ready' : ''}`}
+      role="listbox"
+      aria-label="영업 장소"
+      aria-hidden={!ready}
+    >
       {ordered.map((loc, index) => {
         const unlocked = state.unlockedLocations.includes(loc.id)
         const selected = selectedId === loc.id
         const estimated = estimateCustomers(loc.id, state.weather, state.fame)
         const anchor = anchors?.[loc.id]
-        const xPct = anchor?.xPct ?? (LOC_X_RATIO[loc.id] ?? 0.5) * 100
-        const yPct = anchor?.yPct ?? LOC_CARD_ANCHOR_Y * 100
+        if (!anchor) return null
 
         return (
           <button
@@ -43,7 +48,8 @@ export default function LocationSelectStrip({
             aria-selected={selected}
             aria-disabled={!unlocked}
             aria-expanded={selected}
-            disabled={!unlocked}
+            disabled={!unlocked || !ready}
+            tabIndex={ready ? undefined : -1}
             className={[
               'loc-card',
               selected ? 'is-selected' : '',
@@ -53,12 +59,12 @@ export default function LocationSelectStrip({
               .join(' ')}
             style={
               {
-                '--loc-x': `${xPct}%`,
-                '--loc-y': `${yPct}%`,
-                '--float-delay': `${index * 0.35}s`,
+                '--loc-x': `${anchor.xPct}%`,
+                '--loc-y': `${anchor.yPct}%`,
+                '--float-delay': `${0.35 + index * 0.12}s`,
               } as CSSProperties
             }
-            onClick={() => unlocked && onSelect(loc.id)}
+            onClick={() => unlocked && ready && onSelect(loc.id)}
           >
             <span className="loc-card-crest" aria-hidden>
               {selected ? '👑' : unlocked ? loc.icon : '🔒'}

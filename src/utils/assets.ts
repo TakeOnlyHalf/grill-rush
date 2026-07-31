@@ -18,8 +18,24 @@ export const FOOD_TRUCK_ART = publicUrl('images/ready_phase/foodtruck.webp')
 /** 준비 페이즈 장소 선택 배경 */
 export const READY_PHASE_BG = publicUrl('images/ready_phase/ready_background.webp')
 
-/** 메뉴 선택 — 나무 메뉴판 */
-export const MENU_BOARD_ART = publicUrl('images/ready_phase/menu_board.webp')
+/** 메뉴 선택 배경 */
+export const MENU_BACKGROUND_ART = publicUrl('images/ready_phase/menu_background.webp')
+
+/** 재료 마트 배경 */
+export const MART_BACKGROUND_ART = publicUrl('images/ready_phase/mart_background.webp')
+
+/** 정산(오늘의 결산) 보드 배경 */
+export const TODAY_CALC_BG = publicUrl('images/ready_phase/today_calc.webp')
+
+/** 정산 — 순손익 아이콘 */
+export const NET_LOSS_ICON = publicUrl('images/ready_phase/net-loss.webp')
+export const NET_NEUTRAL_ICON = publicUrl('images/ready_phase/net-neutral.webp')
+export const NET_PROFIT_ICON = publicUrl('images/ready_phase/net-profit.webp')
+
+/** 야간 성장 — 트럭 관리실 보드 */
+export const TRUCK_UPGRADE_NIGHT_BG = publicUrl(
+  'images/ready_phase/truck_upgrade_night.webp',
+)
 
 /** 영업 페이즈 — 트럭 창문 안쪽에서 바라본 인테리어 프레임 (창문 부분은 알파 투명) */
 export const OPEN_TRUCK_INTERIOR_ART = publicUrl('images/open_phase/foodtruck_interior_transparent.webp')
@@ -29,7 +45,13 @@ export const CRITICAL_IMAGE_URLS = [
   TITLE_DAY_ART,
   READY_PHASE_BG,
   FOOD_TRUCK_ART,
-  MENU_BOARD_ART,
+  MENU_BACKGROUND_ART,
+  MART_BACKGROUND_ART,
+  TODAY_CALC_BG,
+  NET_LOSS_ICON,
+  NET_NEUTRAL_ICON,
+  NET_PROFIT_ICON,
+  TRUCK_UPGRADE_NIGHT_BG,
   DAY_STREET_BG,
   OPEN_TRUCK_INTERIOR_ART,
 ] as const

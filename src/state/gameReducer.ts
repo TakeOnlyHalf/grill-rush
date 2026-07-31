@@ -1,5 +1,4 @@
 import locations from '../data/locations.json'
-import ingredientsData from '../data/ingredients.json'
 import {
   ActionTypes,
   DAILY_TRUCK_COST,
@@ -7,17 +6,11 @@ import {
   OPEN_DURATION_SEC,
 } from './actions'
 import { createInitialState } from './initialState'
-import {
-  calcDailyProfit,
-  calcSatisfaction,
-  getMenuById,
-  getRequiredIngredientIds,
-  resolveEnding,
-} from './formulas'
+import { calcDailyProfit, getRequiredIngredientIds, resolveEnding } from './formulas'
 import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
-import { satisfactionToStars } from '../utils/reviewGenerator'
-import type { GameAction, GameState, GrillQuality, Order } from '../types/game'
+import type { GameAction, GameState } from '../types/game'
+import { collectPreparedIngredient, serveOrder } from './orderFulfillment'
 
 const MAX_QUEUE = 9
 
@@ -129,79 +122,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
-    case ActionTypes.COLLECT_INGREDIENT: {
+    case ActionTypes.COLLECT_COOKED_INGREDIENT: {
       if (state.phase !== 'open') return state
-      const { ingredientId, result } = action.payload
-
-      // raw/danger/burnt — 서빙 불가, 재료만 날림 (낭비 비용에 반영)
-      if (result !== 'good' && result !== 'perfect') {
-        const ingredient = ingredientsData.find((i) => i.id === ingredientId)
-        const wasteCost = ingredient?.unitCost ?? 0
-        if (wasteCost <= 0) return state
-        return {
-          ...state,
-          dailyCosts: { ...state.dailyCosts, waste: state.dailyCosts.waste + wasteCost },
-        }
-      }
-
-      const pool: Record<string, GrillQuality[]> = {}
-      for (const key of Object.keys(state.collectedIngredients)) {
-        pool[key] = [...state.collectedIngredients[key]]
-      }
-      pool[ingredientId] = [...(pool[ingredientId] ?? []), result]
-
-      // 맨 앞 주문부터 순서대로만 서빙한다 — 앞 손님의 재료가 안 모였으면
-      // 뒤 손님 재료가 준비돼 있어도 새치기로 서빙하지 않고 그대로 대기시킨다 (엄격한 FIFO)
-      let dailySales = state.dailySales
-      let dailyTips = state.dailyTips
-      let dailyServed = state.dailyServed
-      let dailyReviews = state.dailyReviews
-      let lastServe = state.lastServe
-      const removedCustomerIds = new Set<string>()
-      const remainingOrders: Order[] = []
-
-      for (let idx = 0; idx < state.orders.length; idx += 1) {
-        const order = state.orders[idx]
-        const menu = getMenuById(order.menuId)
-        const customer = state.customers.find((c) => c.id === order.customerId)
-        if (!menu || !customer) continue
-
-        const canComplete = menu.ingredients.every((ing) => (pool[ing]?.length ?? 0) >= 1)
-        if (!canComplete) {
-          // 이 주문(맨 앞)이 막히면 뒤 주문은 이번 틱에 확인조차 하지 않고 그대로 남겨둔다
-          remainingOrders.push(...state.orders.slice(idx))
-          break
-        }
-
-        const qualities: GrillQuality[] = menu.ingredients.map((ing) => pool[ing].shift()!)
-        const price = state.menuPrices[menu.id] ?? menu.basePrice
-        const patienceRatio = customer.patience / customer.maxPatience
-        const satisfaction = calcSatisfaction({ price, cost: menu.cost, patienceRatio, qualities })
-        const stars = satisfactionToStars(satisfaction)
-        const tip = Math.random() < customer.tipChance ? Math.round(price * 0.1) : 0
-
-        dailySales += price
-        dailyTips += tip
-        dailyServed += 1
-        dailyReviews = [...dailyReviews, stars]
-        lastServe = { id: order.id, menuName: menu.name, stars, tip, price }
-        removedCustomerIds.add(customer.id)
-      }
-
-      return {
-        ...state,
-        collectedIngredients: pool,
-        customers: removedCustomerIds.size
-          ? state.customers.filter((c) => !removedCustomerIds.has(c.id))
-          : state.customers,
-        orders: remainingOrders,
-        dailySales,
-        dailyTips,
-        dailyServed,
-        dailyReviews,
-        lastServe,
-      }
+      return collectPreparedIngredient(state, action.payload)
     }
+
+    case ActionTypes.SERVE_ORDER:
+      return serveOrder(state, action.payload.orderId, action.payload.customerId)
 
     case ActionTypes.START_OPEN: {
       if (state.phase !== 'prep') return state
@@ -214,8 +141,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         time: 0,
         customers: [],
         orders: [],
-        collectedIngredients: {},
-        lastServe: null,
+        preparedIngredients: [],
+        nextPreparedIngredientId: 1,
+        lastServeFeedback: null,
+        lastCustomerLeaveFeedback: null,
         dailySales: 0,
         dailyTips: 0,
         dailyServed: 0,
@@ -239,22 +168,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return endOpenDay(state, nextTime)
       }
 
-      // patience 소진 → 이탈 처리 (해당 주문도 함께 제거)
+      // patience 소진 → 이탈 처리
       let dailyLeft = state.dailyLeft
-      const leftCustomerIds = new Set<string>()
+      const expiredCustomers = state.customers.filter((customer) => customer.patience - dt <= 0)
       const customers = state.customers
         .map((c) => ({ ...c, patience: c.patience - dt }))
         .filter((c) => {
           if (c.patience > 0) return true
           dailyLeft += 1
-          leftCustomerIds.add(c.id)
           return false
         })
-      const orders = leftCustomerIds.size
-        ? state.orders.filter((o) => !leftCustomerIds.has(o.customerId))
-        : state.orders
 
-      // 스폰 주기마다 새 손님 + 주문 추가 (최대 대기 인원 제한)
+      // 스폰 주기마다 새 손님 추가 (최대 대기 인원 제한)
       const spawnCtx: SpawnContext = {
         locationId: state.location,
         weather: state.weather,
@@ -266,20 +191,35 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const interval = getSpawnIntervalSec(spawnCtx)
       const crossedInterval =
         Math.floor(state.time / interval) !== Math.floor(nextTime / interval)
-
-      let nextOrders = orders
       if (crossedInterval && customers.length < MAX_QUEUE) {
         const spawned = spawnCustomer(spawnCtx)
-        if (spawned) {
-          customers.push(spawned)
-          nextOrders = [
-            ...orders,
-            { id: `o_${spawned.id}`, customerId: spawned.id, menuId: spawned.orderMenuId, status: 'queued' },
-          ]
-        }
+        if (spawned) customers.push(spawned)
+      }
+      const customerIds = new Set(customers.map((customer) => customer.id))
+      const orders = state.orders.filter((order) => customerIds.has(order.customerId))
+      for (const customer of customers) {
+        if (orders.some((order) => order.customerId === customer.id)) continue
+        orders.push({
+          id: `order-${customer.id}`,
+          customerId: customer.id,
+          menuId: customer.orderMenuId,
+          status: 'queued',
+        })
       }
 
-      return { ...state, time: nextTime, customers, orders: nextOrders, dailyLeft }
+      return {
+        ...state,
+        time: nextTime,
+        customers,
+        orders,
+        dailyLeft,
+        lastCustomerLeaveFeedback: expiredCustomers.length > 0
+          ? {
+              id: (state.lastCustomerLeaveFeedback?.id ?? 0) + 1,
+              customerName: expiredCustomers[0].typeName,
+            }
+          : state.lastCustomerLeaveFeedback,
+      }
     }
 
     case ActionTypes.END_OPEN: {
@@ -360,8 +300,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ingredients: {},
         customers: [],
         orders: [],
-        collectedIngredients: {},
-        lastServe: null,
+        preparedIngredients: [],
+        nextPreparedIngredientId: 1,
+        lastServeFeedback: null,
+        lastCustomerLeaveFeedback: null,
         dailySales: 0,
         dailyTips: 0,
         dailyServed: 0,
@@ -403,6 +345,10 @@ function endOpenDay(state: GameState, time: number): GameState {
     ...state,
     phase: 'settle',
     time,
+    customers: [],
+    orders: [],
+    preparedIngredients: [],
+    nextPreparedIngredientId: 1,
     dailyCosts: {
       ...state.dailyCosts,
       waste,
