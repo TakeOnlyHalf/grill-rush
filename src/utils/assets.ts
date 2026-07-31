@@ -49,6 +49,8 @@ export const PREP_LOBBY_MART = publicUrl('images/ready_phase/select_mart.webp')
 export const PREP_LOBBY_UPGRADE = publicUrl(
   'images/ready_phase/select_truckupgrade.webp',
 )
+/** 영업 페이즈 — 트럭 창문 안쪽에서 바라본 인테리어 프레임 (창문 부분은 알파 투명) */
+export const OPEN_TRUCK_INTERIOR_ART = publicUrl('images/open_phase/foodtruck_interior_transparent.webp')
 
 /** 앱 부트 시 미리 받아둘 핵심 이미지 (탭 전환 시 깜빡임 방지) */
 export const CRITICAL_IMAGE_URLS = [
@@ -68,6 +70,7 @@ export const CRITICAL_IMAGE_URLS = [
   PREP_LOBBY_MART,
   PREP_LOBBY_UPGRADE,
   DAY_STREET_BG,
+  OPEN_TRUCK_INTERIOR_ART,
 ] as const
 
 /**

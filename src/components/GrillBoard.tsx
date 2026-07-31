@@ -19,6 +19,7 @@ export interface GrillBoardProps {
   initialSlots: GrillSlot[]
   ingredients: GrillIngredient[]
   inventory: Record<string, number>
+  neededIngredientIds?: string[]
   onUseIngredient?: (ingredientId: string) => void
   onCollect?: (item: CollectedGrillItem) => void
   onSlotsChange?: (slots: GrillSlot[]) => void
@@ -30,6 +31,7 @@ export default function GrillBoard({
   initialSlots,
   ingredients,
   inventory,
+  neededIngredientIds = [],
   onUseIngredient,
   onCollect,
   onSlotsChange,
@@ -37,7 +39,7 @@ export default function GrillBoard({
   initialFeedback,
 }: GrillBoardProps) {
   const sceneRef = useRef<GrillBoardSceneHandle | null>(null)
-  const initialRef = useRef({ initialSlots, ingredients, inventory, initialFeedback })
+  const initialRef = useRef({ initialSlots, ingredients, inventory, neededIngredientIds, initialFeedback })
   const announcementTimerRef = useRef<number | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const callbacksRef = useRef({ onUseIngredient, onCollect, onSlotsChange })
@@ -46,6 +48,10 @@ export default function GrillBoard({
   useEffect(() => {
     sceneRef.current?.updateInventory(inventory)
   }, [inventory])
+
+  useEffect(() => {
+    sceneRef.current?.updateNeededIngredients(neededIngredientIds)
+  }, [neededIngredientIds])
 
   useEffect(() => {
     if (initialFeedback) sceneRef.current?.showFeedback(initialFeedback)
@@ -75,6 +81,7 @@ export default function GrillBoard({
       slots: initial.initialSlots,
       ingredients: initial.ingredients,
       inventory: initial.inventory,
+      neededIngredientIds: initial.neededIngredientIds,
       initialFeedback: initial.initialFeedback,
       onUseIngredient: (ingredientId) =>
         callbacksRef.current.onUseIngredient?.(ingredientId),

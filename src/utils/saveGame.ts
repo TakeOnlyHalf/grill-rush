@@ -60,23 +60,35 @@ function isValidSave(value: Partial<GameState>): value is GameState {
 
 /** 영업 중 세이브는 준비 페이즈로 되돌려 안전하게 재개 */
 function sanitizeLoaded(state: GameState): GameState {
+  const hydrated: GameState = {
+    ...state,
+    // Open-phase state is not autosaved, so stale prepared ingredients must never cross sessions.
+    preparedIngredients: [],
+    nextPreparedIngredientId: 1,
+    lastServeFeedback: state.lastServeFeedback ?? null,
+    lastCustomerLeaveFeedback: state.lastCustomerLeaveFeedback ?? null,
+  }
   if (state.phase === 'open') {
     return {
-      ...state,
+      ...hydrated,
       phase: 'prep',
       time: 0,
       customers: [],
       orders: [],
+      preparedIngredients: [],
+      nextPreparedIngredientId: 1,
+      lastServeFeedback: null,
+      lastCustomerLeaveFeedback: null,
     }
   }
   if (state.phase === 'title' || state.phase === 'ending' || state.phase === 'story') {
     return {
-      ...state,
+      ...hydrated,
       phase: 'prep',
       endingId: null,
     }
   }
-  return state
+  return hydrated
 }
 
 /** 자동 저장 대상 페이즈 */

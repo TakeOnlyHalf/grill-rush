@@ -33,7 +33,7 @@ const meta = {
     docs: {
       description: {
         component:
-          '영업 화면과 동일한 PixiJS 그릴 및 재료 트레이. 실제 재고와 재료별 조리 시간을 사용합니다.',
+          '영업 화면과 동일한 PixiJS 그릴 및 재료 트레이. 트레이를 한 번 클릭하면 첫 빈 슬롯에 즉시 투입됩니다.',
       },
     },
   },
@@ -55,6 +55,7 @@ export const DefaultGrill: Story = {
   args: {
     initialSlots: createIdleGrillSlots(),
     inventory: defaultInventory,
+    neededIngredientIds: ['egg', 'bacon'],
   },
 }
 
