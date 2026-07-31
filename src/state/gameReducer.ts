@@ -269,7 +269,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case ActionTypes.BUY_UPGRADE: {
-      if (state.phase !== 'night') return state
+      if (state.phase !== 'night' && state.phase !== 'prep') return state
       const { upgradeId, cost } = action.payload
       if (state.upgrades.includes(upgradeId)) return state
       if (state.cash < cost) return state

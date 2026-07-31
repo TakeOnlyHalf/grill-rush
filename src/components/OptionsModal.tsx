@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import TitleMenuButton from '../ui/TitleMenuButton'
+import { setBgmEnabled, subscribeBgmEnabled } from '../audio/bgm'
 import { loadSettings, saveSettings, type GameSettings } from '../utils/settings'
 
 interface OptionsModalProps {
@@ -7,7 +8,7 @@ interface OptionsModalProps {
   onClose: () => void
 }
 
-/** 타이틀/공통 옵션 모달 — 사운드 연동은 이후 Howler 연결 */
+/** 타이틀/공통 옵션 모달 */
 export default function OptionsModal({ open, onClose }: OptionsModalProps) {
   const titleId = useId()
   const [settings, setSettings] = useState<GameSettings>(() => loadSettings())
@@ -15,6 +16,12 @@ export default function OptionsModal({ open, onClose }: OptionsModalProps) {
   useEffect(() => {
     if (open) setSettings(loadSettings())
   }, [open])
+
+  useEffect(() => {
+    return subscribeBgmEnabled((bgm) => {
+      setSettings((prev) => ({ ...prev, bgm }))
+    })
+  }, [])
 
   useEffect(() => {
     if (!open) return undefined
@@ -31,6 +38,7 @@ export default function OptionsModal({ open, onClose }: OptionsModalProps) {
     const next = { ...settings, ...patch }
     setSettings(next)
     saveSettings(next)
+    if (typeof patch.bgm === 'boolean') setBgmEnabled(patch.bgm)
   }
 
   return (
@@ -65,7 +73,9 @@ export default function OptionsModal({ open, onClose }: OptionsModalProps) {
             </label>
           </li>
         </ul>
-        <p className="options-hint">사운드 엔진 연동 전 — 설정만 저장됩니다.</p>
+        <p className="options-hint">
+          BGM은 화면별로 자동 전환됩니다. (첫 클릭 이후 재생)
+        </p>
         <div className="modal-actions">
           <TitleMenuButton variant="chalk" onClick={onClose}>
             닫기

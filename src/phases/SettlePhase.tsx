@@ -9,6 +9,7 @@ import {
   NET_PROFIT_ICON,
   TODAY_CALC_BG,
 } from '../utils/assets'
+import { forceUnlockBgm } from '../audio/bgm'
 
 function netProfitIcon(profit: number): string {
   if (profit < 0) return NET_LOSS_ICON
@@ -170,7 +171,10 @@ export default function SettlePhase() {
         <button
           type="button"
           className="settle-cta"
-          onClick={() => dispatch({ type: ActionTypes.CONFIRM_SETTLE })}
+          onClick={() => {
+            forceUnlockBgm('store')
+            dispatch({ type: ActionTypes.CONFIRM_SETTLE })
+          }}
         >
           성장 화면으로 →
         </button>
