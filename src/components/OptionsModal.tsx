@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import TitleMenuButton from '../ui/TitleMenuButton'
-import { setBgmEnabled } from '../audio/bgm'
+import { setBgmEnabled, subscribeBgmEnabled } from '../audio/bgm'
 import { loadSettings, saveSettings, type GameSettings } from '../utils/settings'
 
 interface OptionsModalProps {
@@ -16,6 +16,12 @@ export default function OptionsModal({ open, onClose }: OptionsModalProps) {
   useEffect(() => {
     if (open) setSettings(loadSettings())
   }, [open])
+
+  useEffect(() => {
+    return subscribeBgmEnabled((bgm) => {
+      setSettings((prev) => ({ ...prev, bgm }))
+    })
+  }, [])
 
   useEffect(() => {
     if (!open) return undefined

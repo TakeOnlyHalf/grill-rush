@@ -4,8 +4,15 @@ import { loadSettings } from '../utils/settings'
 
 export type BgmId = 'title' | 'lobby' | 'store' | 'cooking' | 'none'
 
-const VOLUME = 0.42
 const FADE_MS = 350
+const DEFAULT_VOLUME = 0.42
+
+function clampVolume(v: number): number {
+  if (!Number.isFinite(v)) return DEFAULT_VOLUME
+  return Math.min(1, Math.max(0, v))
+}
+
+let volume = clampVolume(loadSettings().bgmVolume)
 
 function sources(baseName: string): string[] {
   return [
@@ -41,7 +48,7 @@ function getHowl(key: TrackKey): Howl {
   howl = new Howl({
     src: sources(FILE[key]),
     loop: true,
-    volume: VOLUME,
+    volume,
     html5: false,
     preload: true,
   })
@@ -124,13 +131,13 @@ function pauseHowl(key: TrackKey, fade: boolean) {
 
   if (!howl.playing()) {
     howl.pause()
-    howl.volume(VOLUME)
+    howl.volume(volume)
     return
   }
 
   if (!fade) {
     howl.pause()
-    howl.volume(VOLUME)
+    howl.volume(volume)
     return
   }
 
@@ -141,7 +148,7 @@ function pauseHowl(key: TrackKey, fade: boolean) {
       stopTimers.delete(key)
       captureSeek(key)
       howl.pause()
-      howl.volume(VOLUME)
+      howl.volume(volume)
     }, FADE_MS),
   )
 }
@@ -153,7 +160,7 @@ function playHowlResume(key: TrackKey): boolean {
   howl.mute(false)
 
   if (howl.playing()) {
-    if (howl.volume() < VOLUME * 0.8) howl.volume(VOLUME)
+    if (howl.volume() < volume * 0.8) howl.volume(volume)
     return true
   }
 
@@ -170,7 +177,7 @@ function playHowlResume(key: TrackKey): boolean {
   // play 직후에도 한 번 더 보정
   howl.once('play', seekNow)
 
-  howl.fade(0, VOLUME, FADE_MS)
+  howl.fade(0, volume, FADE_MS)
   return true
 }
 
@@ -179,7 +186,7 @@ function ensurePlaying(key: TrackKey): boolean {
   const howl = getHowl(key)
   howl.mute(false)
   if (howl.playing()) {
-    if (howl.volume() < VOLUME * 0.8) howl.volume(VOLUME)
+    if (howl.volume() < volume * 0.8) howl.volume(volume)
     return true
   }
   return playHowlResume(key)
@@ -252,8 +259,23 @@ export function requestBgm(id: BgmId): void {
   scheduleApply()
 }
 
+type BgmEnabledListener = (on: boolean) => void
+const enabledListeners = new Set<BgmEnabledListener>()
+
+function notifyEnabled() {
+  for (const fn of enabledListeners) fn(enabled)
+}
+
+export function subscribeBgmEnabled(fn: BgmEnabledListener): () => void {
+  enabledListeners.add(fn)
+  return () => {
+    enabledListeners.delete(fn)
+  }
+}
+
 export function setBgmEnabled(on: boolean): void {
   enabled = on
+  notifyEnabled()
   if (!on) {
     if (activeKey) pauseHowl(activeKey, true)
     return
@@ -263,6 +285,34 @@ export function setBgmEnabled(on: boolean): void {
 
 export function isBgmEnabled(): boolean {
   return enabled
+}
+
+type BgmVolumeListener = (v: number) => void
+const volumeListeners = new Set<BgmVolumeListener>()
+
+function notifyVolume() {
+  for (const fn of volumeListeners) fn(volume)
+}
+
+export function subscribeBgmVolume(fn: BgmVolumeListener): () => void {
+  volumeListeners.add(fn)
+  return () => {
+    volumeListeners.delete(fn)
+  }
+}
+
+export function getBgmVolume(): number {
+  return volume
+}
+
+/** BGM 볼륨 0~1. 재생 중이면 즉시 반영. */
+export function setBgmVolume(v: number): void {
+  volume = clampVolume(v)
+  notifyVolume()
+  for (const howl of howls.values()) {
+    if (howl.playing()) howl.volume(volume)
+    else howl.volume(volume)
+  }
 }
 
 /**

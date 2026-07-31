@@ -8,6 +8,7 @@ import SettlePhase from './phases/SettlePhase'
 import NightPhase from './phases/NightPhase'
 import EndingPhase from './phases/EndingPhase'
 import BgmController from './audio/BgmController'
+import BgmMuteToggle from './components/BgmMuteToggle'
 import './styles/game.css'
 
 /**
@@ -49,6 +50,7 @@ function AppShell() {
   return (
     <div className={bleed ? 'app-shell app-shell--bleed' : 'app-shell'}>
       <PhaseRouter />
+      <BgmMuteToggle />
     </div>
   )
 }
