@@ -3,13 +3,13 @@ import { ActionTypes } from '../state/actions'
 import { useGame } from '../state/GameContext'
 import { getOrderFulfillment } from '../state/orderFulfillment'
 
-/** 대기열 표시 — TODO: patience 게이지, 이탈 연출 */
+/** 대기열 표시 — 손님별 주문 카드, 재료가 갖춰지면 클릭해서 서빙 */
 export default function CustomerQueue() {
   const { state, dispatch } = useGame()
 
   return (
-    <div className="panel">
-      <h3>대기열</h3>
+    <div className="queue-strip-panel">
+      <h3 className="queue-strip-title">대기 주문 {state.customers.length}</h3>
       {state.customers.length === 0 ? (
         <p className="muted">손님이 아직 없습니다.</p>
       ) : (

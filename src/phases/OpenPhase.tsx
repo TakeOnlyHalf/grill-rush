@@ -3,18 +3,15 @@ import Hud from '../components/Hud'
 import StreetView from '../components/StreetView'
 import CustomerQueue from '../components/CustomerQueue'
 import CookingMinigame from '../components/CookingMinigame'
+import ServeResult from '../components/ServeResult'
 import { useGame } from '../state/GameContext'
 import { ActionTypes, OPEN_DURATION_SEC } from '../state/actions'
 
-/**
- * 영업 페이즈 — 핵심 게임플레이 자리
- * TODO: 그릴 게이지, 서빙 연동
- */
+/** 영업 페이즈 — 손님 스폰/대기열/조리/서빙 루프 */
 export default function OpenPhase() {
   const { state, dispatch } = useGame()
   const progress = Math.min(100, (state.time / OPEN_DURATION_SEC) * 100)
 
-  // 베이스: 1초 틱으로 시간만 진행 (실제 로직은 이후 교체)
   useEffect(() => {
     const id = setInterval(() => {
       dispatch({ type: ActionTypes.TICK_OPEN, payload: { dt: 1 } })
@@ -36,8 +33,12 @@ export default function OpenPhase() {
         </p>
       </header>
 
-      <StreetView />
-      <CustomerQueue />
+      <ServeResult />
+
+      <div className="street-block">
+        <StreetView />
+        <CustomerQueue />
+      </div>
       <CookingMinigame />
 
       <footer className="phase-footer">

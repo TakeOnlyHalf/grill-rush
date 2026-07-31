@@ -54,6 +54,8 @@ export interface ServeFeedback {
   menuId: MenuId
   menuName: string
   amount: number
+  stars: number
+  tip: number
 }
 
 export interface CustomerLeaveFeedback {

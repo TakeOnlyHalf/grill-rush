@@ -12,7 +12,7 @@ import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/
 import type { GameAction, GameState } from '../types/game'
 import { collectPreparedIngredient, serveOrder } from './orderFulfillment'
 
-const MAX_QUEUE = 8
+const MAX_QUEUE = 9
 
 export type { GameState, GameAction }
 
@@ -185,6 +185,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         weather: state.weather,
         activeMenus: state.activeMenus,
         fame: state.fame,
+        day: state.day,
+        time: state.time,
       }
       const interval = getSpawnIntervalSec(spawnCtx)
       const crossedInterval =
@@ -239,9 +241,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         (state.dailyCosts.waste ?? 0) -
         (state.dailyCosts.truck ?? 0)
 
+      const reviewAvg = avgReviews(state.dailyReviews)
+      const fameDelta = state.dailyReviews.length ? Math.round((reviewAvg - 3) * 4) : 0
+
       return {
         ...state,
         cash: state.cash + openDayDelta,
+        fame: Math.max(0, state.fame + fameDelta),
+        reviewAvg: state.dailyReviews.length ? reviewAvg : state.reviewAvg,
         phase: 'night',
         history: [
           ...state.history,
@@ -253,7 +260,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             profit,
             served: state.dailyServed,
             left: state.dailyLeft,
-            reviewAvg: avgReviews(state.dailyReviews),
+            reviewAvg,
             weather: state.weather,
             location: state.location,
           },
@@ -333,7 +340,7 @@ function avgReviews(reviews: number[]): number {
 }
 
 function endOpenDay(state: GameState, time: number): GameState {
-  const waste = 0
+  const waste = state.dailyCosts.waste
   return {
     ...state,
     phase: 'settle',
