@@ -1,7 +1,7 @@
 ﻿import locations from '../data/locations.json'
 import menus from '../data/menus.json'
 import { DAILY_TRUCK_COST, OPEN_DURATION_SEC } from './actions'
-import type { DailyCosts, EndingId, GrillQuality, LocationId, MenuId, WeatherId } from '../types/game'
+import type { DailyCosts, EndingId, LocationId, MenuId, PreparedQuality, WeatherId } from '../types/game'
 
 /** 가격 대비 만족도 배율 */
 export function getPriceFactor(price: number, cost: number): number {
@@ -11,7 +11,7 @@ export function getPriceFactor(price: number, cost: number): number {
   return 0.5
 }
 
-const QUALITY_FACTOR: Record<GrillQuality, number> = { good: 0.75, perfect: 1 }
+const QUALITY_FACTOR: Record<PreparedQuality, number> = { 1: 0.4, 2: 0.75, 3: 1 }
 
 /** 서빙 만족도(0~1) — 가격 대비 · 대기 여유 · 그릴 품질 평균을 종합 */
 export function calcSatisfaction({
@@ -23,7 +23,7 @@ export function calcSatisfaction({
   price: number
   cost: number
   patienceRatio: number
-  qualities: GrillQuality[]
+  qualities: PreparedQuality[]
 }): number {
   const priceFactor = getPriceFactor(price, cost) / 1.3
   const avgQuality = qualities.length

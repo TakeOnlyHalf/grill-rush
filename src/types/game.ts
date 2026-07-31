@@ -42,9 +42,6 @@ export type CookResult = 'raw' | 'good' | 'perfect' | 'danger' | 'burnt'
 export type PreparedCookResult = Exclude<CookResult, 'raw' | 'burnt'>
 export type PreparedQuality = 1 | 2 | 3
 
-/** 그릴에서 회수한 재료 중 서빙 가능한 품질(raw/danger/burnt는 폐기) */
-export type GrillQuality = Extract<CookResult, 'good' | 'perfect'>
-
 export interface PreparedIngredient {
   id: string
   ingredientId: IngredientId
@@ -57,6 +54,8 @@ export interface ServeFeedback {
   menuId: MenuId
   menuName: string
   amount: number
+  stars: number
+  tip: number
 }
 
 export interface CustomerLeaveFeedback {

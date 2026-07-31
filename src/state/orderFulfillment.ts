@@ -8,6 +8,8 @@ import type {
   PreparedIngredient,
   PreparedQuality,
 } from '../types/game'
+import { calcSatisfaction } from './formulas'
+import { satisfactionToStars } from '../utils/reviewGenerator'
 
 const assemblyIngredientIds = new Set(
   ingredientData.filter((ingredient) => ingredient.grillSec === 0).map((ingredient) => ingredient.id),
@@ -107,7 +109,10 @@ export function serveOrder(state: GameState, orderId: string, customerId: string
   if (!hasPreparedIngredients(state.preparedIngredients, grilledCounts)) return state
   if (!hasInventory(state.ingredients, assemblyCounts)) return state
 
-  const preparedIngredients = consumePrepared(state.preparedIngredients, grilledCounts)
+  const { remaining: preparedIngredients, consumed } = consumePrepared(
+    state.preparedIngredients,
+    grilledCounts,
+  )
   const ingredients = { ...state.ingredients }
 
   // 조립 재료만 이 시점에 차감한다. 그릴 재료는 올릴 때 이미 USE_INGREDIENT로 차감됐다.
@@ -115,7 +120,17 @@ export function serveOrder(state: GameState, orderId: string, customerId: string
     ingredients[ingredientId] = (ingredients[ingredientId] ?? 0) - count
   }
 
-  const amount = state.menuPrices[menu.id] ?? 0
+  const amount = state.menuPrices[menu.id] ?? menu.basePrice
+  const patienceRatio = customer.patience / customer.maxPatience
+  const satisfaction = calcSatisfaction({
+    price: amount,
+    cost: menu.cost,
+    patienceRatio,
+    qualities: consumed.map((item) => item.quality),
+  })
+  const stars = satisfactionToStars(satisfaction)
+  const tip = Math.random() < customer.tipChance ? Math.round(amount * 0.1) : 0
+
   return {
     ...state,
     ingredients,
@@ -123,12 +138,16 @@ export function serveOrder(state: GameState, orderId: string, customerId: string
     customers: state.customers.filter((candidate) => candidate.id !== customerId),
     orders: state.orders.filter((candidate) => candidate.id !== orderId),
     dailySales: state.dailySales + amount,
+    dailyTips: state.dailyTips + tip,
     dailyServed: state.dailyServed + 1,
+    dailyReviews: [...state.dailyReviews, stars],
     lastServeFeedback: {
       id: (state.lastServeFeedback?.id ?? 0) + 1,
       menuId: menu.id,
       menuName: menu.name,
       amount,
+      stars,
+      tip,
     },
   }
 }
@@ -163,12 +182,15 @@ function hasInventory(
 function consumePrepared(
   preparedIngredients: PreparedIngredient[],
   required: Map<string, number>,
-): PreparedIngredient[] {
+): { remaining: PreparedIngredient[]; consumed: PreparedIngredient[] } {
   const remainingCounts = new Map(required)
-  return preparedIngredients.filter((item) => {
-    const remaining = remainingCounts.get(item.ingredientId) ?? 0
-    if (remaining <= 0) return true
-    remainingCounts.set(item.ingredientId, remaining - 1)
+  const consumed: PreparedIngredient[] = []
+  const remaining = preparedIngredients.filter((item) => {
+    const left = remainingCounts.get(item.ingredientId) ?? 0
+    if (left <= 0) return true
+    remainingCounts.set(item.ingredientId, left - 1)
+    consumed.push(item)
     return false
   })
+  return { remaining, consumed }
 }
