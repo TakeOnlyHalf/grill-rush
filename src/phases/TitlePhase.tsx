@@ -5,6 +5,7 @@ import TitleMenuButton from '../ui/TitleMenuButton'
 import OptionsModal from '../components/OptionsModal'
 import { hasSave, loadGame } from '../utils/saveGame'
 import { TITLE_DAY_ART, preloadCriticalAssets } from '../utils/assets'
+import { forceUnlockBgm, resetBgmDayProgress } from '../audio/bgm'
 
 /**
  * 타이틀 화면 — public/images/title_day.webp 풀블리드 히어로
@@ -25,6 +26,7 @@ export default function TitlePhase() {
       setCanContinue(false)
       return
     }
+    forceUnlockBgm(saved.day >= 2 ? 'lobby' : 'store')
     dispatch({ type: ActionTypes.LOAD_GAME, payload: saved })
   }, [dispatch])
 
@@ -34,6 +36,9 @@ export default function TitlePhase() {
       const ok = window.confirm('기존 저장 데이터가 삭제됩니다. 처음부터 시작할까요?')
       if (!ok) return
     }
+    // Day 1 준비(장소·메뉴·마트)는 store BGM
+    resetBgmDayProgress()
+    forceUnlockBgm('store')
     setCanContinue(false)
     setBusy(true)
     try {

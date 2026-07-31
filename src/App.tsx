@@ -7,6 +7,7 @@ import OpenPhase from './phases/OpenPhase'
 import SettlePhase from './phases/SettlePhase'
 import NightPhase from './phases/NightPhase'
 import EndingPhase from './phases/EndingPhase'
+import BgmController from './audio/BgmController'
 import './styles/game.css'
 
 /**
@@ -56,6 +57,7 @@ export default function App() {
   return (
     <GameProvider>
       <GameViewport>
+        <BgmController />
         <AppShell />
       </GameViewport>
     </GameProvider>

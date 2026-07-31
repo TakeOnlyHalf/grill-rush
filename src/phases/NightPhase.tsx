@@ -5,6 +5,7 @@ import { getWeatherEmoji } from '../utils/weather'
 import { TRUCK_UPGRADE_NIGHT_BG } from '../utils/assets'
 import upgradesData from '../data/upgrades.json'
 import events from '../data/events.json'
+import { forceUnlockBgm } from '../audio/bgm'
 
 type UpgradeCategory =
   | 'all'
@@ -345,9 +346,11 @@ export default function NightPhase({
           className="night-next"
           onClick={() => {
             if (mode === 'prep') {
+              forceUnlockBgm('lobby')
               onBack?.()
               return
             }
+            forceUnlockBgm(isLastDay ? 'title' : 'lobby')
             dispatch({ type: ActionTypes.NEXT_DAY })
           }}
         >

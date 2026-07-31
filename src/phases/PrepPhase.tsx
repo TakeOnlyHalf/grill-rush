@@ -17,6 +17,7 @@ import {
 import { getWeatherLabel } from '../utils/weather'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
 import { READY_PHASE_BG, preloadCriticalAssets } from '../utils/assets'
+import { requestBgm, forceUnlockBgm, resetBgmDayProgress } from '../audio/bgm'
 
 type PrepStep = 'lobby' | 'location' | 'menu' | 'market' | 'upgrade'
 
@@ -86,6 +87,7 @@ export default function PrepPhase() {
   const mapRef = useRef<CityMapHandle | null>(null)
 
   useEffect(() => {
+    resetBgmDayProgress()
     setStep(state.day >= 2 ? 'lobby' : 'location')
     setLocationPicked(false)
     setLocationConfirmed(false)
@@ -97,6 +99,17 @@ export default function PrepPhase() {
   useEffect(() => {
     void preloadCriticalAssets()
   }, [])
+
+  useEffect(() => {
+    // Day 1: 장소→메뉴→마트 전 구간 store (같은 곡 유지)
+    // Day 2+: 로비만 lobby, 마을에서 들어간 모든 장소는 store
+    if (!isFreePrep) {
+      requestBgm('store')
+      return
+    }
+    if (step === 'lobby') requestBgm('lobby')
+    else requestBgm('store')
+  }, [step, isFreePrep, state.day])
 
   useEffect(() => {
     if (!mapReady) return undefined
@@ -122,13 +135,22 @@ export default function PrepPhase() {
     if (!locationPicked || !canAffordRent) return
     dispatch({ type: ActionTypes.CONFIRM_LOCATION })
     setLocationConfirmed(true)
-    setStep(isFreePrep ? 'lobby' : 'menu')
+    if (isFreePrep) {
+      forceUnlockBgm('lobby')
+      setStep('lobby')
+    } else {
+      // Day1: 이미 store — 재시작하지 않음
+      forceUnlockBgm('store')
+      setStep('menu')
+    }
   }
 
   const handleOpenLobbyDestination = (destination: PrepLobbyDestination) => {
     if (destination === 'location') {
       setLocationPicked(locationConfirmed)
     }
+    // 마을에서 들어가는 모든 장소 → store
+    forceUnlockBgm('store')
     setStep(destination)
   }
 
@@ -143,13 +165,24 @@ export default function PrepPhase() {
         ingredientsReady={ingredientsReady}
         canStart={canStart}
         onOpen={handleOpenLobbyDestination}
-        onStart={() => dispatch({ type: ActionTypes.START_OPEN })}
+        onStart={() => {
+          forceUnlockBgm('cooking')
+          dispatch({ type: ActionTypes.START_OPEN })
+        }}
       />
     )
   }
 
   if (step === 'upgrade') {
-    return <NightPhase mode="prep" onBack={() => setStep('lobby')} />
+    return (
+      <NightPhase
+        mode="prep"
+        onBack={() => {
+          forceUnlockBgm('lobby')
+          setStep('lobby')
+        }}
+      />
+    )
   }
 
   return (
@@ -273,7 +306,10 @@ export default function PrepPhase() {
                   <button
                     type="button"
                     className="prep-btn prep-btn--menu"
-                    onClick={() => setStep(isFreePrep ? 'lobby' : 'location')}
+                    onClick={() => {
+                      forceUnlockBgm(isFreePrep ? 'lobby' : 'store')
+                      setStep(isFreePrep ? 'lobby' : 'location')
+                    }}
                   >
                     {isFreePrep ? '← 준비 로비' : '← 장소'}
                   </button>
@@ -281,7 +317,10 @@ export default function PrepPhase() {
                     type="button"
                     className="prep-btn prep-btn--start"
                     disabled={!menuReady}
-                    onClick={() => setStep(isFreePrep ? 'lobby' : 'market')}
+                    onClick={() => {
+                      forceUnlockBgm(isFreePrep ? 'lobby' : 'store')
+                      setStep(isFreePrep ? 'lobby' : 'market')
+                    }}
                   >
                     {isFreePrep ? '선택 완료 →' : '다음: 마트 →'}
                   </button>
@@ -291,7 +330,10 @@ export default function PrepPhase() {
                   <button
                     type="button"
                     className="prep-btn prep-btn--menu"
-                    onClick={() => setStep(isFreePrep ? 'lobby' : 'menu')}
+                    onClick={() => {
+                      forceUnlockBgm(isFreePrep ? 'lobby' : 'store')
+                      setStep(isFreePrep ? 'lobby' : 'menu')
+                    }}
                   >
                     {isFreePrep ? '← 준비 로비' : '← 메뉴'}
                   </button>
@@ -301,9 +343,11 @@ export default function PrepPhase() {
                     disabled={!menuReady}
                     onClick={() => {
                       if (isFreePrep) {
+                        forceUnlockBgm('lobby')
                         setStep('lobby')
                         return
                       }
+                      forceUnlockBgm('cooking')
                       dispatch({ type: ActionTypes.START_OPEN })
                     }}
                   >

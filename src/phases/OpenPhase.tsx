@@ -5,6 +5,7 @@ import CustomerQueue from '../components/CustomerQueue'
 import CookingMinigame from '../components/CookingMinigame'
 import { useGame } from '../state/GameContext'
 import { ActionTypes, OPEN_DURATION_SEC } from '../state/actions'
+import { forceUnlockBgm } from '../audio/bgm'
 
 /**
  * 영업 페이즈 — 핵심 게임플레이 자리
@@ -44,7 +45,10 @@ export default function OpenPhase() {
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={() => dispatch({ type: ActionTypes.END_OPEN })}
+          onClick={() => {
+            forceUnlockBgm('store')
+            dispatch({ type: ActionTypes.END_OPEN })
+          }}
         >
           영업 조기 종료 (디버그)
         </button>
