@@ -35,6 +35,7 @@ export default function CookingMinigame() {
       <h3>그릴</h3>
       <p className="muted">재료를 선택해 올리고 적절한 판정 구간에서 회수하세요.</p>
       <GrillBoard
+        fillHeight
         initialSlots={initialSlots}
         ingredients={grillIngredients}
         inventory={state.ingredients}

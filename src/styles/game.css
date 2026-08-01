@@ -849,6 +849,10 @@ body:has(.phase-prep-supply) {
   background: #4890d0;
 }
 
+body:has(.phase-open) {
+  overflow: hidden;
+}
+
 .phase-prep-full {
   position: relative;
   width: 100%;
@@ -1758,7 +1762,63 @@ body:has(.phase-prep-supply) {
   border: 0;
 }
 
-/* Open */
+/* Open — full-bleed landscape layout (no page scroll) */
+.phase-open {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 2.5rem 0.35rem;
+  gap: 0.3rem;
+  overflow: hidden;
+}
+
+.phase-header--open {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.phase-header--open h2 {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.phase-header-progress {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.phase-header-progress .time-bar {
+  margin-top: 0;
+}
+
+.phase-header-progress .time-label {
+  margin: 0.25rem 0 0;
+}
+
+.phase-open .phase-footer {
+  display: none;
+}
+
+.phase-open .cooking-area {
+  width: 100%;
+  padding: 0.3rem 0.9rem;
+}
+
+.phase-open .cooking-area h3 {
+  margin-bottom: 0.1rem;
+}
+
+.phase-open .cooking-area p.muted {
+  margin: 0 0 0.15rem;
+  font-size: 0.78rem;
+}
+
+.phase-open .cooking-area .grill-board-wrap {
+  width: 100%;
+  height: 288px;
+}
+
 .grill-board-wrap {
   position: relative;
 }
@@ -1767,9 +1827,9 @@ body:has(.phase-prep-supply) {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  min-height: 2.75rem;
-  margin-top: 0.65rem;
-  padding: 0.5rem 0.65rem;
+  min-height: 2.3rem;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg-panel-2);
@@ -1808,11 +1868,13 @@ body:has(.phase-prep-supply) {
 
 .queue-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fill, 240px);
+  gap: 0.5rem;
   margin: 0;
-  padding: 0;
+  padding: 0 0.15rem 0.15rem 0;
   list-style: none;
+  max-height: 100px;
+  overflow-y: auto;
 }
 
 .order-queue-card {
@@ -1956,7 +2018,7 @@ body:has(.phase-prep-supply) {
 .street-frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 2075 / 758;
+  height: 420px;
   overflow: hidden;
   background: #14100c;
 }
@@ -1975,12 +2037,12 @@ body:has(.phase-prep-supply) {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 0 0 var(--radius) var(--radius);
-  padding: 0.7rem 0.9rem 0.9rem;
+  padding: 0.5rem 0.9rem 0.55rem;
   box-shadow: var(--shadow-sm);
 }
 
 .queue-strip-title {
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.35rem;
   font-size: 0.95rem;
 }
 

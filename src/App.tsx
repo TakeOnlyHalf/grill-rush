@@ -44,6 +44,7 @@ function AppShell() {
     phase === 'title' ||
     phase === 'story' ||
     phase === 'prep' ||
+    phase === 'open' ||
     phase === 'settle' ||
     phase === 'night'
 

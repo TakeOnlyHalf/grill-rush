@@ -23,15 +23,17 @@ export default function OpenPhase() {
   return (
     <section className="phase phase-open">
       <Hud variant="open" />
-      <header className="phase-header">
+      <header className="phase-header phase-header--open">
         <h2>영업 페이즈</h2>
-        <div className="time-bar" role="progressbar" aria-valuenow={progress}>
-          <div className="time-bar-fill" style={{ width: `${progress}%` }} />
+        <div className="phase-header-progress">
+          <div className="time-bar" role="progressbar" aria-valuenow={progress}>
+            <div className="time-bar-fill" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="time-label">
+            {Math.floor(state.time)}s / {OPEN_DURATION_SEC}s · 매출{' '}
+            {state.dailySales.toLocaleString('ko-KR')}원
+          </p>
         </div>
-        <p className="time-label">
-          {Math.floor(state.time)}s / {OPEN_DURATION_SEC}s · 매출{' '}
-          {state.dailySales.toLocaleString('ko-KR')}원
-        </p>
       </header>
 
       <ServeResult />
