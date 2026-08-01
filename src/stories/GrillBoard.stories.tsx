@@ -59,6 +59,15 @@ export const DefaultGrill: Story = {
   },
 }
 
+export const ExpandedGrill: Story = {
+  name: 'Kitchen expansion · 4 slots',
+  args: {
+    initialSlots: createIdleGrillSlots(4),
+    inventory: defaultInventory,
+    neededIngredientIds: ['egg', 'bacon'],
+  },
+}
+
 export const MixedCookResults: Story = {
   name: 'Raw · Good · Perfect · Danger · Burnt',
   args: {
@@ -110,6 +119,19 @@ export const FullGrill: Story = {
       slotAt(0, 'egg', 0.25),
       slotAt(1, 'bacon', 0.72),
       slotAt(2, 'corn', 0.93),
+    ],
+    inventory: defaultInventory,
+  },
+}
+
+export const FullExpandedGrill: Story = {
+  name: 'Kitchen expansion · all 4 slots active',
+  args: {
+    initialSlots: [
+      slotAt(0, 'egg', 0.25),
+      slotAt(1, 'bacon', 0.55),
+      slotAt(2, 'corn', 0.72),
+      slotAt(3, 'steak', 0.93),
     ],
     inventory: defaultInventory,
   },

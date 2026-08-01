@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useGame } from '../state/GameContext'
 import { createIdleGrillSlots } from '../grill/grillSlots'
+import { getGrillSlotCount } from '../grill/grillUpgrades'
 import { grillIngredients } from '../grill/grillIngredients'
 import GrillBoard from './GrillBoard'
 import { ActionTypes } from '../state/actions'
@@ -16,7 +17,11 @@ const resultLabels = { good: '좋음', perfect: '완벽', danger: '아슬아슬'
  */
 export default function CookingMinigame() {
   const { state, dispatch } = useGame()
-  const initialSlots = useMemo(createIdleGrillSlots, [])
+  const grillSlotCount = getGrillSlotCount(state.upgrades)
+  const initialSlots = useMemo(
+    () => createIdleGrillSlots(grillSlotCount),
+    [grillSlotCount],
+  )
   const neededIngredientIds = useMemo(() => {
     const needed = new Set<string>()
     for (const order of state.orders) {

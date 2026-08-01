@@ -6,6 +6,7 @@ import { TRUCK_UPGRADE_NIGHT_BG } from '../utils/assets'
 import upgradesData from '../data/upgrades.json'
 import events from '../data/events.json'
 import { forceUnlockBgm } from '../audio/bgm'
+import { getGrillSlotCount } from '../grill/grillUpgrades'
 
 type UpgradeCategory =
   | 'all'
@@ -39,7 +40,7 @@ function formatWon(n: number): string {
 }
 
 function baseTruckStats(owned: string[]) {
-  const slots = 3 + (owned.includes('grill_expand') ? 1 : 0)
+  const slots = getGrillSlotCount(owned)
   const cookSpeed = owned.includes('heat_boost') ? 120 : 100
   const visitBonus = owned.includes('signboard') ? 10 : 0
   return { slots, cookSpeed, visitBonus }

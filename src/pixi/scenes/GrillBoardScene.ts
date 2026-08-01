@@ -62,8 +62,6 @@ const SLOT_TOP = 58
 const SLOT_HEIGHT = 218
 const TRAY_TOP = 292
 const TRAY_HEIGHT = 110
-const SLOT_WIDTH =
-  (GRILL_DESIGN_WIDTH - FRAME_PADDING * 2 - SLOT_GAP * 2) / 3
 
 const resultLabels: Record<CookResult, string> = {
   raw: 'RAW · 덜 익음',
@@ -101,6 +99,11 @@ export function createGrillBoardScene(
   const feedbackStars = createText('', 20, colors.gold.value, '700')
   const feedbackDetail = createText('', 14, colors.cream.value, '600')
   let slots = cloneSlots(options.slots)
+  const slotWidth =
+    (GRILL_DESIGN_WIDTH -
+      FRAME_PADDING * 2 -
+      SLOT_GAP * Math.max(0, slots.length - 1)) /
+    Math.max(1, slots.length)
   let inventory = { ...options.inventory }
   let neededIngredientIds = new Set(options.neededIngredientIds ?? [])
   const now = options.now ?? Date.now
@@ -148,24 +151,24 @@ export function createGrillBoardScene(
       gauge: new Graphics(),
       steam: createText('♨  ♨', 18, colors.cream.value, '700'),
     }
-    slotRoot.x = FRAME_PADDING + index * (SLOT_WIDTH + SLOT_GAP)
+    slotRoot.x = FRAME_PADDING + index * (slotWidth + SLOT_GAP)
     slotRoot.y = SLOT_TOP
-    slotRoot.hitArea = new Rectangle(0, 0, SLOT_WIDTH, SLOT_HEIGHT)
+    slotRoot.hitArea = new Rectangle(0, 0, slotWidth, SLOT_HEIGHT)
     slotRoot.eventMode = 'static'
     slotRoot.on('pointertap', () => handleSlotTap(index))
     view.number.x = 15
     view.number.y = 12
     view.food.anchor.set(0.5)
-    view.food.x = SLOT_WIDTH / 2
+    view.food.x = slotWidth / 2
     view.food.y = 86
     view.steam.anchor.set(0.5)
-    view.steam.x = SLOT_WIDTH / 2
+    view.steam.x = slotWidth / 2
     view.state.x = 18
     view.state.y = 145
     view.ingredient.x = 18
     view.ingredient.y = 169
     view.timer.anchor.set(1, 0)
-    view.timer.x = SLOT_WIDTH - 18
+    view.timer.x = slotWidth - 18
     view.timer.y = 169
     slotRoot.addChild(
       view.surface,
@@ -361,14 +364,14 @@ export function createGrillBoardScene(
     const pulse = reduceMotion ? 0.5 : (Math.sin(time / 90) + 1) / 2
 
     view.surface.clear()
-    view.surface.roundRect(0, 0, SLOT_WIDTH, SLOT_HEIGHT, 15)
+    view.surface.roundRect(0, 0, slotWidth, SLOT_HEIGHT, 15)
     view.surface.fill(colors.text.value)
     view.surface.stroke({ color: stateColor, width: result === 'perfect' ? 5 : 3 })
-    view.surface.roundRect(6, 6, SLOT_WIDTH - 12, SLOT_HEIGHT - 12, 11)
+    view.surface.roundRect(6, 6, slotWidth - 12, SLOT_HEIGHT - 12, 11)
     view.surface.fill(colors.bgPanel.value)
-    view.surface.roundRect(14, 40, SLOT_WIDTH - 28, 93, 10)
+    view.surface.roundRect(14, 40, slotWidth - 28, 93, 10)
     view.surface.fill({ color: colors.woodDeep.value, alpha: 0.42 })
-    for (let x = 28; x < SLOT_WIDTH - 18; x += 22) {
+    for (let x = 28; x < slotWidth - 18; x += 22) {
       view.surface.roundRect(x, 49, 4, 72, 2)
       view.surface.fill({ color: colors.text.value, alpha: 0.27 })
     }
@@ -397,7 +400,7 @@ export function createGrillBoardScene(
       : `${Math.max(0, Math.ceil((slot.cookDurationMs * (1 - progress)) / 1_000))}s`
     view.root.cursor = slot.status === 'idle' ? 'default' : 'pointer'
 
-    drawGauge(view.gauge, progress, slot.status !== 'idle', stateColor)
+    drawGauge(view.gauge, progress, slot.status !== 'idle', stateColor, slotWidth)
   }
 
   function renderFeedback(time: number) {
@@ -528,10 +531,16 @@ function drawChrome(graphics: Graphics) {
   graphics.stroke({ color: colors.border.value, width: 2 })
 }
 
-function drawGauge(graphics: Graphics, progress: number, active: boolean, color: string) {
+function drawGauge(
+  graphics: Graphics,
+  progress: number,
+  active: boolean,
+  color: string,
+  slotWidth: number,
+) {
   const x = 18
   const y = SLOT_HEIGHT - 20
-  const width = SLOT_WIDTH - 36
+  const width = slotWidth - 36
   graphics.clear()
   graphics.roundRect(x, y, width, 9, 5)
   graphics.fill(colors.border.value)
