@@ -25,6 +25,8 @@ export interface GrillBoardProps {
   onSlotsChange?: (slots: GrillSlot[]) => void
   height?: number
   initialFeedback?: CookResult
+  /** true면 종횡비를 고정하지 않고 부모가 정한 높이를 그대로 채운다 (씬은 letterbox로 중앙 정렬). */
+  fillHeight?: boolean
 }
 
 export default function GrillBoard({
@@ -37,6 +39,7 @@ export default function GrillBoard({
   onSlotsChange,
   height = 350,
   initialFeedback,
+  fillHeight = false,
 }: GrillBoardProps) {
   const sceneRef = useRef<GrillBoardSceneHandle | null>(null)
   const initialRef = useRef({ initialSlots, ingredients, inventory, neededIngredientIds, initialFeedback })
@@ -98,12 +101,16 @@ export default function GrillBoard({
   return (
     <div
       className="grill-board-wrap"
-      style={{ aspectRatio: `${GRILL_DESIGN_WIDTH} / ${GRILL_DESIGN_HEIGHT}` }}
+      style={
+        fillHeight
+          ? undefined
+          : { aspectRatio: `${GRILL_DESIGN_WIDTH} / ${GRILL_DESIGN_HEIGHT}` }
+      }
     >
       <PixiStage
         className="grill-board-pixi"
         height={height}
-        background={colors.bg.value}
+        background={fillHeight ? colors.bgPanel.value : colors.bg.value}
         fillParent
         setup={setup}
       />
