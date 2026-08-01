@@ -2504,8 +2504,8 @@ body:has(.phase-prep-supply) {
 }
 
 .prep-lobby-building--mart {
-  left: 15.5%;
-  top: -2%;
+  left: 14%;
+  top: 12%;
   width: 24%;
   height: 35%;
   z-index: 3;
@@ -2519,16 +2519,22 @@ body:has(.phase-prep-supply) {
   z-index: 3;
 }
 
+.prep-lobby-building--upgrade .prep-lobby-building__label {
+  left: 0;
+  right: auto;
+  bottom: 8%;
+}
+
 .prep-lobby-building--menu {
-  left: 16.5%;
-  top: 42%;
+  left: 14%;
+  top: 43%;
   width: 25%;
   height: 40%;
   z-index: 5;
 }
 
 .prep-lobby-building--location {
-  left: 56.5%;
+  left: 57%;
   top: 44%;
   width: 24%;
   height: 36%;
@@ -2580,8 +2586,8 @@ body:has(.phase-prep-supply) {
 
 .prep-lobby-truck {
   position: absolute;
-  left: 41%;
-  top: 42%;
+  left: 42%;
+  top: 36%;
   width: 16%;
   height: 24%;
   z-index: 4;
