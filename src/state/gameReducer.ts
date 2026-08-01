@@ -6,7 +6,12 @@ import {
   OPEN_DURATION_SEC,
 } from './actions'
 import { createInitialState } from './initialState'
-import { calcDailyProfit, getRequiredIngredientIds, resolveEnding } from './formulas'
+import {
+  calcDailyProfit,
+  getRequiredIngredientIds,
+  hasRequiredIngredients,
+  resolveEnding,
+} from './formulas'
 import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
 import type { GameAction, GameState } from '../types/game'
@@ -133,6 +138,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case ActionTypes.START_OPEN: {
       if (state.phase !== 'prep') return state
       if (state.activeMenus.length === 0) return state
+      if (!hasRequiredIngredients(state.activeMenus, state.ingredients)) return state
 
       const loc = locations.find((l) => l.id === state.location)
       return {
