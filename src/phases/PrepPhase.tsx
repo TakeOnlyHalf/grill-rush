@@ -12,7 +12,7 @@ import { ActionTypes } from '../state/actions'
 import {
   estimateCustomers,
   getLocationById,
-  getRequiredIngredientIds,
+  hasRequiredIngredients,
 } from '../state/formulas'
 import { getWeatherLabel } from '../utils/weather'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
@@ -71,10 +71,7 @@ export default function PrepPhase() {
   const loc = getLocationById(state.location)
   const estimated = estimateCustomers(state.location, state.weather, state.fame)
   const menuReady = state.activeMenus.length > 0
-  const requiredIngredients = getRequiredIngredientIds(state.activeMenus)
-  const ingredientsReady =
-    requiredIngredients.length > 0 &&
-    requiredIngredients.every((id) => (state.ingredients[id] ?? 0) > 0)
+  const ingredientsReady = hasRequiredIngredients(state.activeMenus, state.ingredients)
   const isFreePrep = state.day >= 2
   const [step, setStep] = useState<PrepStep>(
     isFreePrep ? 'lobby' : 'location',
@@ -157,6 +154,11 @@ export default function PrepPhase() {
   const canStart = isFreePrep
     ? menuReady && ingredientsReady && locationConfirmed
     : menuReady
+  const marketCta = !ingredientsReady
+    ? '필수 재료 준비 필요'
+    : isFreePrep
+      ? '구매 완료 →'
+      : '▶ 영업 시작'
 
   if (step === 'lobby') {
     return (
@@ -340,7 +342,12 @@ export default function PrepPhase() {
                   <button
                     type="button"
                     className="prep-btn prep-btn--start"
-                    disabled={!menuReady}
+                    disabled={!ingredientsReady}
+                    title={
+                      ingredientsReady
+                        ? '필수 재료 준비 완료'
+                        : '선택한 메뉴의 필수 재료를 각각 1개 이상 구매하세요.'
+                    }
                     onClick={() => {
                       if (isFreePrep) {
                         forceUnlockBgm('lobby')
@@ -351,7 +358,7 @@ export default function PrepPhase() {
                       dispatch({ type: ActionTypes.START_OPEN })
                     }}
                   >
-                    {isFreePrep ? '구매 완료 →' : '▶ 영업 시작'}
+                    {marketCta}
                   </button>
                 </>
               )}
