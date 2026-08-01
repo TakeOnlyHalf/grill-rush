@@ -27,8 +27,12 @@ export interface CollectedGrillItem {
 
 export const GRILL_SLOT_COUNT = 3
 
-export function createIdleGrillSlots(): GrillSlot[] {
-  return Array.from({ length: GRILL_SLOT_COUNT }, (_, index) => ({
+export function createIdleGrillSlots(slotCount = GRILL_SLOT_COUNT): GrillSlot[] {
+  if (!Number.isSafeInteger(slotCount) || slotCount < 1) {
+    throw new RangeError('Grill slot count must be a positive integer')
+  }
+
+  return Array.from({ length: slotCount }, (_, index) => ({
     id: `grill-${index + 1}`,
     status: 'idle',
     ingredientId: null,
