@@ -2416,7 +2416,7 @@ body:has(.phase-prep-supply) {
   inset: 0 0 auto;
   height: 7.2%;
   display: grid;
-  grid-template-columns: 9rem minmax(9rem, 1.5fr) repeat(5, minmax(7rem, auto));
+  grid-template-columns: auto minmax(9rem, 1.5fr) repeat(5, minmax(7rem, auto));
   align-items: center;
   gap: 0.15rem;
   box-sizing: border-box;
@@ -2445,16 +2445,23 @@ body:has(.phase-prep-supply) {
 .prep-lobby-hud__brand {
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 72%;
-  border: 2px solid #2f1c11;
-  border-radius: 8px;
-  color: #f6bd55;
-  background: #51301c;
-  font-size: 0.86rem;
-  line-height: 1;
-  letter-spacing: 0.05em;
-  text-shadow: 0 2px 0 #6b2f18;
+  justify-content: flex-start;
+  align-self: center;
+  height: clamp(2.4rem, 5.8vh, 3.35rem);
+  width: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.prep-lobby-hud__brand img {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .prep-lobby-hud__title {

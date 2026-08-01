@@ -3,6 +3,7 @@ import { getLocationById } from '../state/formulas'
 import { getWeatherEmoji, getWeatherLabel } from '../utils/weather'
 import {
   FOOD_TRUCK_ART,
+  GAME_LOGO,
   PREP_LOBBY_BG,
   PREP_LOBBY_LOCATION,
   PREP_LOBBY_MART,
@@ -50,7 +51,9 @@ export default function PrepLobby({
       <img className="prep-lobby__bg" src={PREP_LOBBY_BG} alt="" draggable={false} />
 
       <header className="prep-lobby-hud">
-        <strong className="prep-lobby-hud__brand">GRILL RUSH</strong>
+        <strong className="prep-lobby-hud__brand">
+          <img src={GAME_LOGO} alt="Grill Rush" draggable={false} />
+        </strong>
         <strong className="prep-lobby-hud__title">마을 준비</strong>
         <span>📅 Day {state.day}</span>
         <span>🪙 ₩{state.cash.toLocaleString('ko-KR')}</span>

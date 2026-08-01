@@ -37,6 +37,9 @@ export const TRUCK_UPGRADE_NIGHT_BG = publicUrl(
   'images/ready_phase/truck_upgrade_night.webp',
 )
 
+/** 게임 로고 (로비 HUD 등) */
+export const GAME_LOGO = publicUrl('images/logo.webp')
+
 /** Day 2+ 자유 준비 로비 */
 export const PREP_LOBBY_BG = publicUrl('images/ready_phase/loby_background.webp')
 export const PREP_LOBBY_MENU = publicUrl(
@@ -64,6 +67,7 @@ export const CRITICAL_IMAGE_URLS = [
   NET_NEUTRAL_ICON,
   NET_PROFIT_ICON,
   TRUCK_UPGRADE_NIGHT_BG,
+  GAME_LOGO,
   PREP_LOBBY_BG,
   PREP_LOBBY_MENU,
   PREP_LOBBY_LOCATION,
