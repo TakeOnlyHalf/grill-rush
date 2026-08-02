@@ -11,7 +11,7 @@ import { PIXI_COLORS } from '../colors'
 import { OPEN_TRUCK_INTERIOR_ART, STREET_BG_BY_LOCATION } from '../../utils/assets'
 import { createCustomerSprite } from '../sprites/customerSprite'
 import { loadCharacterPortraits, type CharacterKey } from '../sprites/characterPortraits'
-import { pickRandomGuestCharacter } from '../sprites/customerRegistry'
+import { pickStablePortrait } from '../../utils/portraitSprite'
 
 export interface StreetSceneCustomer {
   /** 손님 고유 id — 리사이즈 등으로 다시 그릴 때도 같은 손님이 같은 캐릭터로 유지되도록 하는 키 */
@@ -217,9 +217,8 @@ export function createStreetScene(
     const badgeBaseY = win.h * 0.94
     const badgeR = Math.min(12, step * 0.28)
 
-    // 손님별로 캐릭터를 한 번만 뽑고, 이후엔(리사이즈 등) 같은 손님이면 재사용한다.
-    // 새로 뽑을 때만 바로 옆 슬롯과 겹치지 않게 고른다.
-    let leftNeighborKey: CharacterKey | undefined
+    // 손님별로 캐릭터를 손님 id 기반으로 안정적으로 고른다 — 대기 카드(CustomerQueue)와
+    // 동일한 pickStablePortrait를 써서 같은 손님이 거리뷰·대기 카드에서 같은 얼굴로 보이게 한다.
     const slots: Container[] = []
 
     visible.forEach((customer, i) => {
@@ -228,11 +227,10 @@ export function createStreetScene(
 
       let guestKey = guestByCustomerId.get(customer.id)
       if (!guestKey && portraits) {
-        guestKey = pickRandomGuestCharacter(customer.type, leftNeighborKey)
+        guestKey = pickStablePortrait(customer.type, customer.id)
         if (guestKey) guestByCustomerId.set(customer.id, guestKey)
       }
       const guestTexture = guestKey && portraits ? portraits[guestKey] : undefined
-      leftNeighborKey = guestKey
 
       const slot = new Container()
       slot.x = cx

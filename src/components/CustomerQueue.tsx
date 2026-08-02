@@ -48,33 +48,35 @@ export default function CustomerQueue() {
             return (
               <li key={c.id} className={`order-queue-card${fulfillment.canServe ? ' is-serveable' : ''}`}>
                 <span className="order-queue-badge">{index + 1}</span>
-                {portraitKey && avatarSheetUrl && (
-                  <span
-                    className="order-queue-portrait"
-                    aria-hidden
-                    style={{
-                      backgroundImage: `url(${avatarSheetUrl})`,
-                      backgroundPosition: getAvatarBackgroundPosition(portraitKey),
-                      backgroundSize: AVATAR_BACKGROUND_SIZE,
+                <div className="order-queue-top-row">
+                  {portraitKey && avatarSheetUrl && (
+                    <span
+                      className="order-queue-portrait"
+                      aria-hidden
+                      style={{
+                        backgroundImage: `url(${avatarSheetUrl})`,
+                        backgroundPosition: getAvatarBackgroundPosition(portraitKey),
+                        backgroundSize: AVATAR_BACKGROUND_SIZE,
+                      }}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="order-combination"
+                    disabled={!fulfillment.canServe || !order}
+                    title={fulfillment.canServe ? '서빙 가능 · 클릭해서 제공' : `필요 재료: ${ingredientSummary}`}
+                    onClick={() => {
+                      if (!order) return
+                      dispatch({ type: ActionTypes.SERVE_ORDER, payload: { orderId: order.id, customerId: c.id } })
                     }}
-                  />
-                )}
-                <button
-                  type="button"
-                  className="order-combination"
-                  disabled={!fulfillment.canServe || !order}
-                  title={fulfillment.canServe ? '서빙 가능 · 클릭해서 제공' : `필요 재료: ${ingredientSummary}`}
-                  onClick={() => {
-                    if (!order) return
-                    dispatch({ type: ActionTypes.SERVE_ORDER, payload: { orderId: order.id, customerId: c.id } })
-                  }}
-                >
-                  <span className="order-queue-menu-icon" aria-hidden>{menu?.icon ?? '🍽️'}</span>
-                  <span className="visually-hidden">
-                    {c.typeName} → {c.orderName}
-                    {fulfillment.canServe ? ' · 서빙 가능' : ` · 필요 재료: ${ingredientSummary}`}
-                  </span>
-                </button>
+                  >
+                    <span className="order-queue-menu-icon" aria-hidden>{menu?.icon ?? '🍽️'}</span>
+                    <span className="visually-hidden">
+                      {c.typeName} → {c.orderName}
+                      {fulfillment.canServe ? ' · 서빙 가능' : ` · 필요 재료: ${ingredientSummary}`}
+                    </span>
+                  </button>
+                </div>
                 <div className={`patience-bar ${patienceState}`}>
                   <div className={patienceState} style={{ width: `${patiencePct}%` }} />
                 </div>
