@@ -99,16 +99,14 @@ export default function GrillBoard({
   }, [announceResult])
 
   return (
-    <div
-      className="grill-board-wrap"
-      style={
-        fillHeight
-          ? undefined
-          : { aspectRatio: `${GRILL_DESIGN_WIDTH} / ${GRILL_DESIGN_HEIGHT}` }
-      }
-    >
+    <>
       <PixiStage
-        className="grill-board-pixi"
+        className="grill-board-wrap"
+        style={
+          fillHeight
+            ? undefined
+            : { height: 'auto', aspectRatio: `${GRILL_DESIGN_WIDTH} / ${GRILL_DESIGN_HEIGHT}` }
+        }
         height={height}
         background={fillHeight ? colors.bgPanel.value : colors.bg.value}
         fillParent
@@ -117,6 +115,6 @@ export default function GrillBoard({
       <div className="visually-hidden" role="status" aria-live="assertive" aria-atomic="true">
         {announcement}
       </div>
-    </div>
+    </>
   )
 }

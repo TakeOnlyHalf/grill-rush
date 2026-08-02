@@ -1,11 +1,29 @@
+import { useEffect, useState } from 'react'
 import menus from '../data/menus.json'
 import { ActionTypes } from '../state/actions'
 import { useGame } from '../state/GameContext'
 import { getOrderFulfillment } from '../state/orderFulfillment'
+import {
+  AVATAR_BACKGROUND_SIZE,
+  getAvatarBackgroundPosition,
+  loadAvatarSheetDataUrl,
+  pickStablePortrait,
+} from '../utils/portraitSprite'
 
-/** 대기열 표시 — 손님별 주문 카드, 재료가 갖춰지면 클릭해서 서빙 */
+/** 대기열 표시 — 손님별 주문 카드(초상화+메뉴 아이콘+인내심 타이머), 재료가 갖춰지면 클릭해서 서빙 */
 export default function CustomerQueue() {
   const { state, dispatch } = useGame()
+  const [avatarSheetUrl, setAvatarSheetUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    loadAvatarSheetDataUrl().then((url) => {
+      if (!cancelled) setAvatarSheetUrl(url)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <div className="queue-strip-panel">
@@ -14,48 +32,55 @@ export default function CustomerQueue() {
         <p className="muted">손님이 아직 없습니다.</p>
       ) : (
         <ul className="queue-list">
-          {state.customers.map((c) => {
+          {state.customers.map((c, index) => {
             const order = state.orders.find((candidate) => candidate.customerId === c.id)
             const menu = menus.find((candidate) => candidate.id === order?.menuId)
             const fulfillment = order
               ? getOrderFulfillment(state, order.id)
               : { canServe: false, ingredients: [] }
+            const patiencePct = (c.patience / c.maxPatience) * 100
+            const patienceState = patiencePct < 30 ? 'is-danger' : patiencePct < 60 ? 'is-warning' : ''
+            const portraitKey = pickStablePortrait(c.type, c.id)
+            const ingredientSummary = fulfillment.ingredients
+              .map((ingredient) => `${ingredient.name} ${ingredient.prepared}/${ingredient.required}`)
+              .join(', ')
+
             return (
-            <li key={c.id} className={`order-queue-card${fulfillment.canServe ? ' is-serveable' : ''}`}>
-              <div className="order-customer">
-                <span>{c.icon}</span>
-                <strong>{c.typeName}</strong>
-                <span>→ {menu?.icon} {c.orderName}</span>
-              </div>
-              <button
-                type="button"
-                className="order-combination"
-                disabled={!fulfillment.canServe || !order}
-                onClick={() => {
-                  if (!order) return
-                  dispatch({ type: ActionTypes.SERVE_ORDER, payload: { orderId: order.id, customerId: c.id } })
-                }}
-              >
-                <span className="order-combination-label">
-                  {fulfillment.canServe ? '서빙 가능 · 클릭해서 제공' : '필요 재료'}
-                </span>
-                <span className="order-ingredients">
-                  {fulfillment.ingredients.map((ingredient) => (
-                    <span key={ingredient.ingredientId}>
-                      {ingredient.icon} {ingredient.name} <b>{ingredient.prepared}/{ingredient.required}</b>
-                    </span>
-                  ))}
-                </span>
-              </button>
-              <div className="patience-bar">
-                <div
-                  style={{
-                    width: `${(c.patience / c.maxPatience) * 100}%`,
+              <li key={c.id} className={`order-queue-card${fulfillment.canServe ? ' is-serveable' : ''}`}>
+                <span className="order-queue-badge">{index + 1}</span>
+                {portraitKey && avatarSheetUrl && (
+                  <span
+                    className="order-queue-portrait"
+                    aria-hidden
+                    style={{
+                      backgroundImage: `url(${avatarSheetUrl})`,
+                      backgroundPosition: getAvatarBackgroundPosition(portraitKey),
+                      backgroundSize: AVATAR_BACKGROUND_SIZE,
+                    }}
+                  />
+                )}
+                <button
+                  type="button"
+                  className="order-combination"
+                  disabled={!fulfillment.canServe || !order}
+                  title={fulfillment.canServe ? '서빙 가능 · 클릭해서 제공' : `필요 재료: ${ingredientSummary}`}
+                  onClick={() => {
+                    if (!order) return
+                    dispatch({ type: ActionTypes.SERVE_ORDER, payload: { orderId: order.id, customerId: c.id } })
                   }}
-                />
-              </div>
-            </li>
-          )})}
+                >
+                  <span className="order-queue-menu-icon" aria-hidden>{menu?.icon ?? '🍽️'}</span>
+                  <span className="visually-hidden">
+                    {c.typeName} → {c.orderName}
+                    {fulfillment.canServe ? ' · 서빙 가능' : ` · 필요 재료: ${ingredientSummary}`}
+                  </span>
+                </button>
+                <div className={`patience-bar ${patienceState}`}>
+                  <div className={patienceState} style={{ width: `${patiencePct}%` }} />
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
       {state.lastCustomerLeaveFeedback ? (

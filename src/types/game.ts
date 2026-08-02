@@ -122,6 +122,7 @@ export type GameAction =
       type: 'COLLECT_COOKED_INGREDIENT'
       payload: { ingredientId: IngredientId; cookResult: CookResult }
     }
+  | { type: 'DISCARD_PREPARED_INGREDIENT'; payload: { preparedId: string } }
   | { type: 'SERVE_ORDER'; payload: { orderId: string; customerId: string } }
   | { type: 'START_OPEN' }
   | { type: 'TICK_OPEN'; payload?: { dt?: number } }
