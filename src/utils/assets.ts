@@ -60,6 +60,8 @@ export const STREET_BG_BY_LOCATION: Partial<Record<string, string>> = {
   office: publicUrl('images/open_phase/street_bg_office.webp'),
   campus: publicUrl('images/open_phase/street_bg_campus.webp'),
   park: publicUrl('images/open_phase/street_bg_park.webp'),
+  night_market: publicUrl('images/open_phase/street_bg_night_market.webp'),
+  festival: publicUrl('images/open_phase/street_bg_festival.webp'),
 }
 
 /** 앱 부트 시 미리 받아둘 핵심 이미지 (탭 전환 시 깜빡임 방지) */
