@@ -262,13 +262,25 @@ export default function PrepPhase() {
           </div>
 
           <footer className="prep-bottom-bar">
+            {isFreePrep && (
+              <button
+                type="button"
+                className="prep-btn prep-btn--menu"
+                onClick={() => {
+                  forceUnlockBgm('lobby')
+                  setStep('lobby')
+                }}
+              >
+                ← 준비 로비
+              </button>
+            )}
             <button
               type="button"
               className="prep-btn prep-btn--start prep-btn--cta"
               disabled={!locationPicked || !canAffordRent}
               onClick={handleConfirmLocation}
             >
-              다음: 메뉴 선택 →
+              {isFreePrep ? '선택 완료 →' : '다음: 메뉴 선택 →'}
             </button>
           </footer>
         </div>

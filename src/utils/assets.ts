@@ -36,6 +36,13 @@ export const NET_PROFIT_ICON = publicUrl('images/ready_phase/net-profit.webp')
 export const TRUCK_UPGRADE_NIGHT_BG = publicUrl(
   'images/ready_phase/truck_upgrade_night.webp',
 )
+/** 준비(주간) — 트럭 관리실 보드 */
+export const TRUCK_UPGRADE_DAY_BG = publicUrl(
+  'images/ready_phase/truck_upgrade_day.webp',
+)
+
+/** 게임 로고 (로비 HUD 등) */
+export const GAME_LOGO = publicUrl('images/logo.webp')
 
 /** Day 2+ 자유 준비 로비 */
 export const PREP_LOBBY_BG = publicUrl('images/ready_phase/loby_background.webp')
@@ -49,6 +56,10 @@ export const PREP_LOBBY_MART = publicUrl('images/ready_phase/select_mart.webp')
 export const PREP_LOBBY_UPGRADE = publicUrl(
   'images/ready_phase/select_truckupgrade.webp',
 )
+/** Day 2+ 로비 UI 프레임 (헤더 / 체크리스트 / 하단 네비) */
+export const PREP_LOBBY_HUD = publicUrl('images/ready_phase/loby_hud.webp')
+export const PREP_LOBBY_PANEL = publicUrl('images/ready_phase/loby_panel.webp')
+export const PREP_LOBBY_NAV = publicUrl('images/ready_phase/loby_nav.webp')
 /** 영업 페이즈 — 트럭 창문 안쪽에서 바라본 인테리어 프레임 (창문 부분은 알파 투명) */
 export const OPEN_TRUCK_INTERIOR_ART = publicUrl('images/open_phase/foodtruck_interior_transparent.webp')
 
@@ -76,11 +87,16 @@ export const CRITICAL_IMAGE_URLS = [
   NET_NEUTRAL_ICON,
   NET_PROFIT_ICON,
   TRUCK_UPGRADE_NIGHT_BG,
+  TRUCK_UPGRADE_DAY_BG,
+  GAME_LOGO,
   PREP_LOBBY_BG,
   PREP_LOBBY_MENU,
   PREP_LOBBY_LOCATION,
   PREP_LOBBY_MART,
   PREP_LOBBY_UPGRADE,
+  PREP_LOBBY_HUD,
+  PREP_LOBBY_PANEL,
+  PREP_LOBBY_NAV,
   DAY_STREET_BG,
   OPEN_TRUCK_INTERIOR_ART,
   ...(Object.values(STREET_BG_BY_LOCATION).filter(Boolean) as string[]),

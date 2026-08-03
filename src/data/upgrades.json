@@ -60,5 +60,25 @@
     "detail": "재료 한도 +20",
     "cost": 60000,
     "effect": { "ingredientCapBonus": 20 }
+  },
+  {
+    "id": "scroll_test_a",
+    "name": "테스트 업그레이드 A",
+    "category": "kitchen",
+    "icon": "🧪",
+    "description": "스크롤 확인용 임시 항목",
+    "detail": "스크롤 확인용 (나중에 삭제)",
+    "cost": 10000,
+    "effect": {}
+  },
+  {
+    "id": "scroll_test_b",
+    "name": "테스트 업그레이드 B",
+    "category": "promo",
+    "icon": "🧪",
+    "description": "스크롤 확인용 임시 항목",
+    "detail": "스크롤 확인용 (나중에 삭제)",
+    "cost": 10000,
+    "effect": {}
   }
 ]

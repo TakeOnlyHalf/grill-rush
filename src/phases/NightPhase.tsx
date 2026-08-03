@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
 import { getWeatherEmoji } from '../utils/weather'
-import { TRUCK_UPGRADE_NIGHT_BG } from '../utils/assets'
+import { TRUCK_UPGRADE_DAY_BG, TRUCK_UPGRADE_NIGHT_BG } from '../utils/assets'
 import upgradesData from '../data/upgrades.json'
 import events from '../data/events.json'
 import { forceUnlockBgm } from '../audio/bgm'
@@ -52,7 +52,7 @@ function previewStats(owned: string[], planned: string[]) {
 }
 
 /**
- * 야간 / 성장 — truck_upgrade_night.webp 보드 위 오버레이
+ * 야간 / 성장 — truck_upgrade_*.webp 보드 위 오버레이
  */
 interface NightPhaseProps {
   mode?: 'night' | 'prep'
@@ -137,7 +137,7 @@ export default function NightPhase({
     <section className="phase phase-night" aria-label="트럭 관리실">
       <img
         className="night-bg"
-        src={TRUCK_UPGRADE_NIGHT_BG}
+        src={mode === 'prep' ? TRUCK_UPGRADE_DAY_BG : TRUCK_UPGRADE_NIGHT_BG}
         alt=""
         draggable={false}
       />
@@ -297,16 +297,22 @@ export default function NightPhase({
         </div>
 
         <div className="night-checkout">
-          <p>
-            선택 <strong>{plannedItems.length}</strong>개 · 총{' '}
-            <strong className="is-cost">{formatWon(planCost)}</strong>
-          </p>
-          <p>
-            구매 후{' '}
-            <strong className={balanceAfter < 0 ? 'is-cost' : 'is-ok'}>
-              {formatWon(balanceAfter)}
-            </strong>
-          </p>
+          <ul className="night-checkout__rows" aria-label="구매 요약">
+            <li>
+              <span>선택</span>
+              <strong>{plannedItems.length}개</strong>
+            </li>
+            <li>
+              <span>총비용</span>
+              <strong className="is-cost">{formatWon(planCost)}</strong>
+            </li>
+            <li>
+              <span>구매후 잔액</span>
+              <strong className={balanceAfter < 0 ? 'is-cost' : 'is-ok'}>
+                {formatWon(balanceAfter)}
+              </strong>
+            </li>
+          </ul>
           <button
             type="button"
             className="night-buy"
@@ -335,7 +341,12 @@ export default function NightPhase({
         <div className="night-forecast__event">
           {tomorrowEvent ? (
             <p>
-              예고 이벤트: {tomorrowEvent.name}. {tomorrowEvent.description}
+              <strong className="night-forecast__event-name">
+                예고 이벤트: {tomorrowEvent.name}
+              </strong>
+              <span className="night-forecast__event-desc">
+                {tomorrowEvent.description}
+              </span>
             </p>
           ) : (
             <p>예정된 스크립트 이벤트 없음</p>
