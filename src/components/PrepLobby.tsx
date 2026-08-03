@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useGame } from '../state/GameContext'
 import { getLocationById } from '../state/formulas'
 import { getWeatherEmoji, getWeatherLabel } from '../utils/weather'
@@ -5,11 +6,16 @@ import {
   FOOD_TRUCK_ART,
   GAME_LOGO,
   PREP_LOBBY_BG,
+  PREP_LOBBY_HUD,
   PREP_LOBBY_LOCATION,
   PREP_LOBBY_MART,
   PREP_LOBBY_MENU,
+  PREP_LOBBY_NAV,
+  PREP_LOBBY_PANEL,
   PREP_LOBBY_UPGRADE,
 } from '../utils/assets'
+import BgmMuteToggle from './BgmMuteToggle'
+import OptionsModal from './OptionsModal'
 
 export type PrepLobbyDestination = 'menu' | 'location' | 'market' | 'upgrade'
 
@@ -21,15 +27,13 @@ interface PrepLobbyProps {
   onStart: () => void
 }
 
-const DESTINATIONS: {
-  id: PrepLobbyDestination
+const NAV_BUTTONS: {
+  id: 'weather' | 'wholesale' | 'branch2'
   label: string
-  icon: string
 }[] = [
-  { id: 'menu', label: '메뉴 연구소', icon: '📕' },
-  { id: 'location', label: '장소 예약소', icon: '🗺️' },
-  { id: 'market', label: '재료 마트', icon: '🧺' },
-  { id: 'upgrade', label: '트럭 관리실', icon: '🔧' },
+  { id: 'weather', label: '날씨 예보' },
+  { id: 'wholesale', label: '도매시장' },
+  { id: 'branch2', label: '2호점 관리' },
 ]
 
 /**
@@ -43,37 +47,70 @@ export default function PrepLobby({
   onStart,
 }: PrepLobbyProps) {
   const { state } = useGame()
+  const [optionsOpen, setOptionsOpen] = useState(false)
   const loc = getLocationById(state.location)
   const menuReady = state.activeMenus.length > 0
+  const ingredientCount = Object.values(state.ingredients).reduce(
+    (a, b) => a + b,
+    0,
+  )
 
   return (
     <section className="prep-lobby" aria-label="마을 준비 로비">
       <img className="prep-lobby__bg" src={PREP_LOBBY_BG} alt="" draggable={false} />
 
       <header className="prep-lobby-hud">
-        <strong className="prep-lobby-hud__brand">
+        <img
+          className="prep-lobby-hud__frame"
+          src={PREP_LOBBY_HUD}
+          alt=""
+          draggable={false}
+        />
+        <div className="prep-lobby-hud__plaque">
           <img src={GAME_LOGO} alt="Grill Rush" draggable={false} />
-        </strong>
-        <strong className="prep-lobby-hud__title">마을 준비</strong>
-        <span>📅 Day {state.day}</span>
-        <span>🪙 ₩{state.cash.toLocaleString('ko-KR')}</span>
-        <span>⭐ 명성 {state.fame}</span>
-        <span>
-          {getWeatherEmoji(state.weather)} {getWeatherLabel(state.weather)}
-        </span>
-        <span>⌛ 준비 시간</span>
+          <strong>마을 준비</strong>
+        </div>
+        <div className="prep-lobby-hud__stats">
+          <span>📅 Day {state.day}</span>
+          <span>🪙 ₩{state.cash.toLocaleString('ko-KR')}</span>
+          <span>⭐ 명성 {state.fame}</span>
+          <span>
+            {getWeatherEmoji(state.weather)} {getWeatherLabel(state.weather)}
+          </span>
+          <span>⌛ 준비 시간</span>
+        </div>
+        <div className="prep-lobby-hud__utils">
+          <button
+            type="button"
+            className="prep-lobby-hud__util prep-lobby-hud__util--options"
+            onClick={() => setOptionsOpen((open) => !open)}
+            aria-label={optionsOpen ? '옵션 닫기' : '옵션 열기'}
+            aria-pressed={optionsOpen}
+            title="옵션"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="prep-lobby-hud__util-icon">
+              <path
+                fill="currentColor"
+                d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.2 7.2 0 0 0-1.62-.94l-.36-2.54A.48.48 0 0 0 14 2h-4a.48.48 0 0 0-.48.41l-.36 2.54c-.58.23-1.12.54-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.65 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.77 14.52a.49.49 0 0 0-.12.61l1.92 3.32c.13.22.4.31.63.22l2.39-.96c.5.4 1.04.72 1.62.94l.36 2.54c.05.24.24.41.48.41h4c.24 0 .44-.17.48-.41l.36-2.54c.58-.22 1.12-.54 1.62-.94l2.39.96c.23.09.5 0 .63-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"
+              />
+            </svg>
+          </button>
+          <BgmMuteToggle variant="hud" />
+        </div>
       </header>
 
       <button
         type="button"
-        className="prep-lobby-building prep-lobby-building--mart"
+        className={`prep-lobby-building prep-lobby-building--mart${
+          ingredientsReady ? '' : ' is-pending'
+        }`}
         onClick={() => onOpen('market')}
         aria-label="재료 마트 열기"
       >
         <img src={PREP_LOBBY_MART} alt="" draggable={false} />
         <span className="prep-lobby-building__label">
           <strong>재료 마트</strong>
-          <small>보유 재료 {Object.values(state.ingredients).reduce((a, b) => a + b, 0)}개</small>
+          <small>보유 재료 {ingredientCount}개</small>
         </span>
       </button>
 
@@ -92,7 +129,9 @@ export default function PrepLobby({
 
       <button
         type="button"
-        className="prep-lobby-building prep-lobby-building--menu"
+        className={`prep-lobby-building prep-lobby-building--menu${
+          menuReady ? '' : ' is-pending'
+        }`}
         onClick={() => onOpen('menu')}
         aria-label="메뉴 연구소 열기"
       >
@@ -105,7 +144,9 @@ export default function PrepLobby({
 
       <button
         type="button"
-        className="prep-lobby-building prep-lobby-building--location"
+        className={`prep-lobby-building prep-lobby-building--location${
+          locationConfirmed ? '' : ' is-pending'
+        }`}
         onClick={() => onOpen('location')}
         aria-label="장소 예약소 열기"
       >
@@ -122,6 +163,12 @@ export default function PrepLobby({
       </div>
 
       <aside className="prep-lobby-checklist" aria-label="오늘의 준비">
+        <img
+          className="prep-lobby-checklist__frame"
+          src={PREP_LOBBY_PANEL}
+          alt=""
+          draggable={false}
+        />
         <h2>오늘의 준비</h2>
         <ul>
           <li className={menuReady ? 'is-done' : ''}>
@@ -150,20 +197,48 @@ export default function PrepLobby({
           <span>예상 고정비</span>
           <strong>₩{(loc?.rentCost ?? 0).toLocaleString('ko-KR')}</strong>
         </div>
-        <button type="button" disabled={!canStart} onClick={onStart}>
-          영업 시작 →
+        <button
+          type="button"
+          className={`prep-lobby-checklist__start${canStart ? ' is-ready' : ' is-locked'}`}
+          disabled={!canStart}
+          onClick={onStart}
+        >
+          {canStart ? '영업 시작 →' : '영업 불가'}
         </button>
-        {!canStart && <p>필수 준비를 먼저 완료하세요.</p>}
+        {!canStart && (
+          <p className="prep-lobby-checklist__hint">
+            필수 준비를 먼저 완료하세요.
+          </p>
+        )}
       </aside>
 
       <nav className="prep-lobby-nav" aria-label="준비 메뉴 바로가기">
-        {DESTINATIONS.map((item) => (
-          <button key={item.id} type="button" onClick={() => onOpen(item.id)}>
-            <span>{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
+        <img
+          className="prep-lobby-nav__frame"
+          src={PREP_LOBBY_NAV}
+          alt=""
+          draggable={false}
+        />
+        <div className="prep-lobby-nav__buttons">
+          {NAV_BUTTONS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`prep-lobby-nav__btn prep-lobby-nav__btn--${item.id} is-locked`}
+              disabled
+              title="업그레이드로 해금됩니다"
+              aria-label={`${item.label} (잠김)`}
+            >
+              <span className="prep-lobby-nav__lock" aria-hidden>
+                🔒
+              </span>
+              <span className="prep-lobby-nav__btn-label">{item.label}</span>
+            </button>
+          ))}
+        </div>
       </nav>
+
+      <OptionsModal open={optionsOpen} onClose={() => setOptionsOpen(false)} />
     </section>
   )
 }

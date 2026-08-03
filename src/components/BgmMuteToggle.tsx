@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import {
   forceUnlockBgm,
   getBgmVolume,
@@ -10,14 +10,62 @@ import {
 } from '../audio/bgm'
 import { loadSettings, saveSettings } from '../utils/settings'
 
-export default function BgmMuteToggle() {
+interface BgmMuteToggleProps {
+  /** floating: 좌하단 / hud: 로비 HUD 슬롯용 (볼륨 UI·로직은 동일) */
+  variant?: 'floating' | 'hud'
+}
+
+export default function BgmMuteToggle({ variant = 'floating' }: BgmMuteToggleProps) {
   const [on, setOn] = useState(() => isBgmEnabled())
   const [vol, setVol] = useState(() => getBgmVolume())
+  const [open, setOpen] = useState(false)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dragging = useRef(false)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => subscribeBgmEnabled(setOn), [])
   useEffect(() => subscribeBgmVolume(setVol), [])
 
-  const toggle = () => {
+  useEffect(
+    () => () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      if (leaveTimer.current) clearTimeout(leaveTimer.current)
+    },
+    [],
+  )
+
+  const clearLeave = () => {
+    if (leaveTimer.current) {
+      clearTimeout(leaveTimer.current)
+      leaveTimer.current = null
+    }
+  }
+
+  const showPanel = () => {
+    clearLeave()
+    setOpen(true)
+  }
+
+  const hidePanelSoon = () => {
+    if (dragging.current) return
+    clearLeave()
+    leaveTimer.current = setTimeout(() => {
+      if (dragging.current) return
+      setOpen(false)
+    }, 80)
+  }
+
+  const persistVolume = (nextVol: number, bgmOn: boolean) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      saveSettings({ ...loadSettings(), bgm: bgmOn, bgmVolume: nextVol })
+    }, 120)
+  }
+
+  const toggle = (e: MouseEvent<HTMLButtonElement>) => {
+    // 클릭 포커스가 남아 패널이 고착되지 않게
+    e.currentTarget.blur()
     const next = !on
     setOn(next)
     setBgmEnabled(next)
@@ -29,22 +77,36 @@ export default function BgmMuteToggle() {
     const next = Math.min(1, Math.max(0, raw))
     setVol(next)
     setBgmVolume(next)
-    const settings = loadSettings()
-    if (!settings.bgm && next > 0) {
+
+    if (!on && next > 0) {
       setOn(true)
       setBgmEnabled(true)
-      saveSettings({ ...settings, bgm: true, bgmVolume: next })
+      persistVolume(next, true)
       forceUnlockBgm()
       return
     }
-    saveSettings({ ...settings, bgmVolume: next })
+    persistVolume(next, on)
+  }
+
+  const endDrag = () => {
+    if (!dragging.current) return
+    dragging.current = false
+    const root = rootRef.current
+    if (root && !root.matches(':hover')) hidePanelSoon()
   }
 
   const showMuted = !on || vol <= 0.001
 
   return (
-    <div className={`bgm-mute-control${showMuted ? ' bgm-mute-control--muted' : ''}`}>
-      <div className="bgm-mute-control__popover" aria-hidden={false}>
+    <div
+      ref={rootRef}
+      className={`bgm-mute-control bgm-mute-control--${variant}${
+        showMuted ? ' bgm-mute-control--muted' : ''
+      }${open ? ' is-open' : ''}`}
+      onPointerEnter={showPanel}
+      onPointerLeave={hidePanelSoon}
+    >
+      <div className="bgm-mute-control__popover" onPointerEnter={showPanel}>
         <input
           type="range"
           className="bgm-mute-control__slider"
@@ -53,14 +115,30 @@ export default function BgmMuteToggle() {
           step={1}
           value={Math.round(vol * 100)}
           aria-label="BGM 볼륨"
+          tabIndex={open ? 0 : -1}
           onChange={(e) => onVolumeInput(Number(e.target.value) / 100)}
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => {
+            e.stopPropagation()
+            dragging.current = true
+            showPanel()
+            const onUp = () => {
+              window.removeEventListener('pointerup', onUp)
+              window.removeEventListener('pointercancel', onUp)
+              endDrag()
+            }
+            window.addEventListener('pointerup', onUp)
+            window.addEventListener('pointercancel', onUp)
+          }}
         />
       </div>
       <button
         type="button"
         className={`bgm-mute-toggle${showMuted ? ' bgm-mute-toggle--muted' : ''}`}
         onClick={toggle}
+        onMouseDown={(e) => {
+          // 마우스 클릭으로 포커스 잡히지 않게 (키보드 Tab은 유지)
+          e.preventDefault()
+        }}
         aria-label={showMuted ? 'BGM 켜기' : 'BGM 음소거'}
         aria-pressed={showMuted}
         title={showMuted ? 'BGM 켜기' : 'BGM 끄기'}

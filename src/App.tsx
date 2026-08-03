@@ -50,7 +50,7 @@ function AppShell() {
   return (
     <div className={bleed ? 'app-shell app-shell--bleed' : 'app-shell'}>
       <PhaseRouter />
-      <BgmMuteToggle />
+      <BgmMuteToggle variant="floating" />
     </div>
   )
 }

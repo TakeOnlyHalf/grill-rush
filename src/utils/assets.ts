@@ -56,6 +56,10 @@ export const PREP_LOBBY_MART = publicUrl('images/ready_phase/select_mart.webp')
 export const PREP_LOBBY_UPGRADE = publicUrl(
   'images/ready_phase/select_truckupgrade.webp',
 )
+/** Day 2+ 로비 UI 프레임 (헤더 / 체크리스트 / 하단 네비) */
+export const PREP_LOBBY_HUD = publicUrl('images/ready_phase/loby_hud.webp')
+export const PREP_LOBBY_PANEL = publicUrl('images/ready_phase/loby_panel.webp')
+export const PREP_LOBBY_NAV = publicUrl('images/ready_phase/loby_nav.webp')
 /** 영업 페이즈 — 트럭 창문 안쪽에서 바라본 인테리어 프레임 (창문 부분은 알파 투명) */
 export const OPEN_TRUCK_INTERIOR_ART = publicUrl('images/open_phase/foodtruck_interior_transparent.webp')
 
@@ -78,6 +82,9 @@ export const CRITICAL_IMAGE_URLS = [
   PREP_LOBBY_LOCATION,
   PREP_LOBBY_MART,
   PREP_LOBBY_UPGRADE,
+  PREP_LOBBY_HUD,
+  PREP_LOBBY_PANEL,
+  PREP_LOBBY_NAV,
   DAY_STREET_BG,
   OPEN_TRUCK_INTERIOR_ART,
 ] as const

@@ -305,13 +305,35 @@ export function getBgmVolume(): number {
   return volume
 }
 
+function applyVolumeToHowl(howl: Howl) {
+  // 진행 중인 fade interval이 volume()과 싸우면 소리가 일그러짐 → 먼저 취소
+  const internal = howl as Howl & {
+    _sounds?: Array<{ _interval?: ReturnType<typeof setInterval> | null }>
+  }
+  const sounds = internal._sounds
+  if (sounds) {
+    for (const sound of sounds) {
+      if (sound._interval != null) {
+        clearInterval(sound._interval)
+        sound._interval = null
+      }
+    }
+  }
+  howl.volume(volume)
+}
+
 /** BGM 볼륨 0~1. 재생 중이면 즉시 반영. */
 export function setBgmVolume(v: number): void {
   volume = clampVolume(v)
   notifyVolume()
-  for (const howl of howls.values()) {
-    if (howl.playing()) howl.volume(volume)
-    else howl.volume(volume)
+  // 활성 트랙만 fade 취소 후 볼륨 적용 (슬라이더 ↔ fade 충돌 방지)
+  if (activeKey) {
+    const howl = howls.get(activeKey)
+    if (howl) applyVolumeToHowl(howl)
+  }
+  for (const [key, howl] of howls) {
+    if (key === activeKey) continue
+    if (!howl.playing()) howl.volume(volume)
   }
 }
 
