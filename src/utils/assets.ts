@@ -36,6 +36,10 @@ export const NET_PROFIT_ICON = publicUrl('images/ready_phase/net-profit.webp')
 export const TRUCK_UPGRADE_NIGHT_BG = publicUrl(
   'images/ready_phase/truck_upgrade_night.webp',
 )
+/** 준비(주간) — 트럭 관리실 보드 */
+export const TRUCK_UPGRADE_DAY_BG = publicUrl(
+  'images/ready_phase/truck_upgrade_day.webp',
+)
 
 /** 게임 로고 (로비 HUD 등) */
 export const GAME_LOGO = publicUrl('images/logo.webp')
@@ -67,6 +71,7 @@ export const CRITICAL_IMAGE_URLS = [
   NET_NEUTRAL_ICON,
   NET_PROFIT_ICON,
   TRUCK_UPGRADE_NIGHT_BG,
+  TRUCK_UPGRADE_DAY_BG,
   GAME_LOGO,
   PREP_LOBBY_BG,
   PREP_LOBBY_MENU,
