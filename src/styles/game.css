@@ -2167,12 +2167,12 @@ body:has(.phase-prep-supply) {
 
 .settle-day {
   position: absolute;
-  left: 50%;
-  top: 13.4%;
+  left: 51.5%;
+  top: 10.5%;
   transform: translateX(-50%);
   margin: 0;
   padding: 0;
-  font-size: clamp(0.72rem, 1.35vw, 0.95rem);
+  font-size: clamp(0.95rem, 1.9vw, 1.35rem);
   font-weight: 700;
   letter-spacing: 0.02em;
   color: #f3e6d2;
@@ -2182,7 +2182,7 @@ body:has(.phase-prep-supply) {
 
 .settle-summary__val {
   position: absolute;
-  top: 24.5%;
+  top: 23%;
   margin: 0;
   font-size: clamp(1.05rem, 2.1vw, 1.55rem);
   font-weight: 800;
@@ -2191,17 +2191,17 @@ body:has(.phase-prep-supply) {
 }
 
 .settle-summary__val--sales {
-  left: 29.5%;
+  left: 27.5%;
   transform: translateX(-50%);
 }
 
 .settle-summary__val--guests {
-  left: 50%;
+  left: 51%;
   transform: translateX(-50%);
 }
 
 .settle-summary__val--review {
-  left: 70.5%;
+  left: 74%;
   transform: translateX(-50%);
 }
 
@@ -2237,7 +2237,7 @@ body:has(.phase-prep-supply) {
 
 .settle-cost-total {
   position: absolute;
-  left: 42%;
+  left: 54%;
   top: 61.5%;
   transform: translateX(-100%);
   margin: 0;
@@ -2249,7 +2249,7 @@ body:has(.phase-prep-supply) {
 .settle-profit {
   position: absolute;
   left: 61.5%;
-  top: 36.5%;
+  top: 42%;
   width: 20%;
   text-align: center;
   display: flex;
@@ -2258,7 +2258,7 @@ body:has(.phase-prep-supply) {
 }
 
 .settle-profit__icon {
-  width: clamp(4.2rem, 8.5vw, 6.5rem);
+  width: clamp(8.2rem, 8.5vw, 6.5rem);
   height: auto;
   margin: 0 0 0.35rem;
   object-fit: contain;
@@ -2267,8 +2267,8 @@ body:has(.phase-prep-supply) {
 }
 
 .settle-profit__value {
-  margin: 0;
-  font-size: clamp(1.35rem, 2.8vw, 2.15rem);
+  margin: 1rem 0 0;
+  font-size: clamp(1.5rem, 3.1vw, 2.4rem);
   font-weight: 900;
   letter-spacing: -0.03em;
   color: #2a1c12;
@@ -2285,7 +2285,7 @@ body:has(.phase-prep-supply) {
 
 .settle-profit__caption {
   margin: 0.85em 0 0;
-  font-size: clamp(0.68rem, 1.15vw, 0.82rem);
+  font-size: clamp(0.82rem, 1.4vw, 1rem);
   font-weight: 600;
   color: #6a5644;
   line-height: 1.35;
@@ -2301,14 +2301,25 @@ body:has(.phase-prep-supply) {
 
 .settle-feedback__meta {
   margin: 0 0 0.45rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
   text-align: center;
   font-size: clamp(0.72rem, 1.25vw, 0.9rem);
   font-weight: 700;
   color: #4a3a2c;
 }
 
+.settle-feedback__dot {
+  flex: 0 0 auto;
+  opacity: 0.75;
+  font-weight: 800;
+}
+
 .settle-feedback__empty {
-  margin: 0.6rem 0 0;
+  margin: 1.5rem 0 0;
   text-align: center;
   font-size: clamp(0.78rem, 1.3vw, 0.95rem);
   font-weight: 600;

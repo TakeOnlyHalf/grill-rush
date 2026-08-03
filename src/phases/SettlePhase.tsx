@@ -146,8 +146,17 @@ export default function SettlePhase() {
 
         <div className="settle-feedback" aria-label="오늘의 손님 평가">
           <p className="settle-feedback__meta">
-            손님 {state.dailyServed}명 · 이탈 {state.dailyLeft}명 · 리뷰{' '}
-            {reviewAvg == null ? '—' : `★${reviewAvg.toFixed(1)}`}
+            <span>손님 {state.dailyServed}명</span>
+            <span className="settle-feedback__dot" aria-hidden="true">
+              ·
+            </span>
+            <span>이탈 {state.dailyLeft}명</span>
+            <span className="settle-feedback__dot" aria-hidden="true">
+              ·
+            </span>
+            <span>
+              리뷰 {reviewAvg == null ? '—' : `★${reviewAvg.toFixed(1)}`}
+            </span>
           </p>
           {reviewSnippets.length === 0 ? (
             <p className="settle-feedback__empty">
