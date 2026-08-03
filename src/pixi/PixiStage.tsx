@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode, type TransitionEventHandler } from 'react'
+import { useEffect, useRef, type CSSProperties, type ReactNode, type TransitionEventHandler } from 'react'
 import { Application } from 'pixi.js'
 import { colors } from '../ui/tokens'
 
@@ -19,6 +19,8 @@ export type PixiSetup = (app: Application) => void | (() => void)
 
 export interface PixiStageProps {
   className?: string
+  /** 호스트 div의 기본 크기 스타일(fillParent 여부에 따른 width/height) 위에 덮어쓴다. */
+  style?: CSSProperties
   width?: number
   height?: number
   background?: string
@@ -38,6 +40,7 @@ export interface PixiStageProps {
  */
 export default function PixiStage({
   className,
+  style,
   width = 640,
   height = 180,
   background = colors.bgPanel2.value,
@@ -145,11 +148,12 @@ export default function PixiStage({
       ref={hostRef}
       className={className}
       onTransitionEnd={onTransitionEnd}
-      style={
-        fillParent
+      style={{
+        ...(fillParent
           ? { width: '100%', height: '100%', overflow: 'hidden' }
-          : { width: '100%', height, overflow: 'hidden' }
-      }
+          : { width: '100%', height, overflow: 'hidden' }),
+        ...style,
+      }}
     />
   )
 }

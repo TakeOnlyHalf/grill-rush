@@ -1,7 +1,10 @@
-import { useGameState } from '../state/GameContext'
+import { useState } from 'react'
+import { useGame } from '../state/GameContext'
 import { getWeatherEmoji, getWeatherLabel } from '../utils/weather'
-import { OPEN_DURATION_SEC } from '../state/actions'
+import { ActionTypes, OPEN_DURATION_SEC } from '../state/actions'
 import { isRushHour } from '../state/formulas'
+import { forceUnlockBgm } from '../audio/bgm'
+import OptionsModal from './OptionsModal'
 
 export interface HudProps {
   variant?: 'default' | 'open'
@@ -9,34 +12,80 @@ export interface HudProps {
 
 /** 상단 HUD */
 export default function Hud({ variant = 'default' }: HudProps) {
-  const state = useGameState()
+  const { state, dispatch } = useGame()
+  const [optionsOpen, setOptionsOpen] = useState(false)
   const rush = variant === 'open' && isRushHour(state.location, state.time)
+  const timeLeft = Math.max(0, OPEN_DURATION_SEC - Math.floor(state.time))
 
   return (
-    <div className="hud">
-      <span>
-        Day {state.day}/{state.maxDays}
-      </span>
-      <span className="hud-cash">₩{state.cash.toLocaleString('ko-KR')}</span>
-      <span>명성 {state.fame}</span>
-      <span>
-        {getWeatherEmoji(state.weather)} {getWeatherLabel(state.weather)}
-      </span>
-      {variant === 'open' && (
-        <span>
-          재료 {Object.values(state.ingredients).reduce((a, b) => a + b, 0)}
+    <div className={`hud${variant === 'open' ? ' hud--open' : ''}`}>
+      <div className="hud-chips">
+        <span className="hud-chip">
+          <span className="hud-chip-icon" aria-hidden>📅</span>
+          Day {state.day}/{state.maxDays}
         </span>
-      )}
-      {variant === 'open' && (
-        <span className="hud-cash">매출 ₩{state.dailySales.toLocaleString('ko-KR')}</span>
-      )}
-      {variant === 'open' && <span>대기 {state.customers.length}명</span>}
-      {rush && <span className="hud-rush">🔥 러시아워</span>}
-      {variant === 'open' && (
-        <span className="hud-time">
-          {Math.max(0, OPEN_DURATION_SEC - Math.floor(state.time))}s
+        <span className="hud-chip hud-chip--gold">
+          <span className="hud-chip-icon" aria-hidden>🪙</span>
+          ₩{state.cash.toLocaleString('ko-KR')}
         </span>
-      )}
+        <span className="hud-chip">
+          <span className="hud-chip-icon" aria-hidden>⭐</span>
+          명성 {state.fame}
+        </span>
+        <span className="hud-chip">
+          <span className="hud-chip-icon" aria-hidden>{getWeatherEmoji(state.weather)}</span>
+          {getWeatherLabel(state.weather)}
+        </span>
+        {variant === 'open' && (
+          <span className="hud-chip hud-chip--gold">
+            <span className="hud-chip-icon" aria-hidden>💰</span>
+            매출 ₩{state.dailySales.toLocaleString('ko-KR')}
+          </span>
+        )}
+        {variant === 'open' && (
+          <span className="hud-chip">
+            <span className="hud-chip-icon" aria-hidden>👥</span>
+            대기 {state.customers.length}명
+          </span>
+        )}
+        {rush && (
+          <span className="hud-chip hud-chip--rush">
+            <span className="hud-chip-icon" aria-hidden>🔥</span>
+            러시아워
+          </span>
+        )}
+        {variant === 'open' && (
+          <span className="hud-chip hud-chip--time">
+            <span className="hud-chip-icon" aria-hidden>⏱</span>
+            {timeLeft}s
+          </span>
+        )}
+      </div>
+
+      <div className="hud-actions">
+        <button
+          type="button"
+          className="hud-icon-btn"
+          aria-label="설정"
+          onClick={() => setOptionsOpen(true)}
+        >
+          ⚙️
+        </button>
+        {variant === 'open' && (
+          <button
+            type="button"
+            className="hud-end-btn"
+            onClick={() => {
+              forceUnlockBgm('store')
+              dispatch({ type: ActionTypes.END_OPEN })
+            }}
+          >
+            영업 종료
+          </button>
+        )}
+      </div>
+
+      <OptionsModal open={optionsOpen} onClose={() => setOptionsOpen(false)} />
     </div>
   )
 }

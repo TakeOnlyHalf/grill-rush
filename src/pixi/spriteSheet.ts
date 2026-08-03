@@ -21,15 +21,11 @@ const DEFAULT_CHROMA_KEY: Required<ChromaKeyOptions> = {
   tolerance: 140,
 }
 
-/**
- * 이미지 URL을 rows x cols 그리드로 잘라 Texture[row][col] 배열로 반환한다.
- * chromaKey가 켜져 있으면(기본값) 지정 색상에 가까운 픽셀을 투명 처리해
- * 그린스크린으로 제작된 스프라이트시트를 바로 사용할 수 있게 한다.
- */
-export async function loadGridSpriteSheet(
+/** 이미지를 로드해 크로마키를 적용한 캔버스를 반환한다 (Pixi Texture와 DOM data URL이 공유하는 전처리 단계). */
+async function loadChromaKeyedCanvas(
   url: string,
-  { rows, cols, chromaKey = DEFAULT_CHROMA_KEY }: GridSpriteSheetOptions,
-): Promise<Texture[][]> {
+  chromaKey: ChromaKeyOptions | false = DEFAULT_CHROMA_KEY,
+): Promise<HTMLCanvasElement> {
   const image = new Image()
   image.src = url
   await image.decode()
@@ -48,6 +44,31 @@ export async function loadGridSpriteSheet(
     })
   }
 
+  return canvas
+}
+
+/**
+ * 크로마키를 적용한 스프라이트시트를 PNG data URL로 반환한다.
+ * DOM(<img>/CSS background)에서 재사용할 때 쓴다 — Pixi 없이도 동일한 배경 제거 로직을 공유한다.
+ */
+export async function loadChromaKeyedDataUrl(
+  url: string,
+  chromaKey: ChromaKeyOptions | false = DEFAULT_CHROMA_KEY,
+): Promise<string> {
+  const canvas = await loadChromaKeyedCanvas(url, chromaKey)
+  return canvas.toDataURL('image/png')
+}
+
+/**
+ * 이미지 URL을 rows x cols 그리드로 잘라 Texture[row][col] 배열로 반환한다.
+ * chromaKey가 켜져 있으면(기본값) 지정 색상에 가까운 픽셀을 투명 처리해
+ * 그린스크린으로 제작된 스프라이트시트를 바로 사용할 수 있게 한다.
+ */
+export async function loadGridSpriteSheet(
+  url: string,
+  { rows, cols, chromaKey = DEFAULT_CHROMA_KEY }: GridSpriteSheetOptions,
+): Promise<Texture[][]> {
+  const canvas = await loadChromaKeyedCanvas(url, chromaKey)
   const baseTexture = Texture.from(canvas)
   const frameW = canvas.width / cols
   const frameH = canvas.height / rows

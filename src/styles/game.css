@@ -285,36 +285,102 @@ body {
 
 .hud {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
-  padding: 0.65rem 0.9rem;
-  background: var(--bg-panel-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 0.9rem;
+  gap: 0.4rem 0.75rem;
+  padding: 0.5rem 0.6rem 0.5rem 0.85rem;
+  background: #211a15;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  color: #f5ece0;
+  font-size: 0.85rem;
   box-shadow: var(--shadow-sm);
 }
 
-.hud-cash,
-.hud-time {
+.hud-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.hud-chip-icon {
+  font-size: 0.95em;
+  line-height: 1;
+}
+
+.hud-chip--gold {
+  background: color-mix(in srgb, var(--gold) 32%, transparent);
+  color: #ffe9b8;
   font-weight: 700;
 }
 
-.hud-cash {
-  color: var(--text);
-  background: color-mix(in srgb, var(--gold) 42%, var(--cream));
-  border: 1px solid color-mix(in srgb, var(--gold) 55%, var(--border));
-  border-radius: var(--radius-sm);
-  padding: 0.1rem 0.45rem;
-}
-
-.hud-time {
-  color: var(--accent);
-}
-
-.hud-rush {
+.hud-chip--rush {
+  background: color-mix(in srgb, var(--danger) 38%, transparent);
+  color: #ffd6cf;
   font-weight: 700;
-  color: var(--danger);
+}
+
+.hud-chip--time {
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  color: #ffe1c8;
+  font-weight: 700;
+}
+
+.hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+}
+
+.hud-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.hud-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.hud-end-btn {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: #fff8f6;
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hud-end-btn:hover {
+  filter: brightness(1.08);
 }
 
 .serve-toast {
@@ -847,6 +913,10 @@ body:has(.phase-prep-full),
 body:has(.phase-prep-supply) {
   overflow: hidden;
   background: #4890d0;
+}
+
+body:has(.phase-open) {
+  overflow: hidden;
 }
 
 .phase-prep-full {
@@ -1758,106 +1828,430 @@ body:has(.phase-prep-supply) {
   border: 0;
 }
 
-/* Open */
+/* Open — full-bleed landscape layout (no page scroll) */
+.phase-open {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 2.5rem;
+  gap: 0.3rem;
+  overflow: hidden;
+}
+
+.phase-open .cooking-area {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.4rem;
+}
+
 .grill-board-wrap {
   position: relative;
 }
 
-.prepared-counter {
+.grill-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.grill-slot-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
-  min-height: 2.75rem;
-  margin-top: 0.65rem;
-  padding: 0.5rem 0.65rem;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  font: inherit;
+  color: var(--text);
+}
+
+.grill-slot-card--idle {
+  border-style: dashed;
+  color: var(--muted);
+  cursor: default;
+}
+
+.grill-slot-plus {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.grill-slot-hint {
+  font-size: 0.68rem;
+}
+
+.grill-slot-card--cooking {
+  cursor: pointer;
+}
+
+.grill-slot-card--cooking:hover {
+  border-color: var(--accent-2);
+}
+
+.grill-slot-timer {
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--ok) calc(var(--grill-progress, 0) * 360deg), var(--cream) 0deg);
+  transition: background 0.15s linear;
+}
+
+.grill-slot-timer-icon {
+  width: 76%;
+  height: 76%;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--cream);
+  font-size: 1.25rem;
+}
+
+.grill-slot-card--perfect .grill-slot-timer {
+  background: conic-gradient(var(--gold) calc(var(--grill-progress, 0) * 360deg), var(--cream) 0deg);
+}
+
+.grill-slot-card--danger .grill-slot-timer {
+  background: conic-gradient(var(--warning) calc(var(--grill-progress, 0) * 360deg), var(--cream) 0deg);
+}
+
+.grill-slot-card--burnt {
+  border-color: var(--danger);
+}
+
+.grill-slot-card--burnt .grill-slot-timer {
+  background: var(--danger);
+}
+
+.grill-slot-card--locked {
+  background: var(--disabled);
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.grill-slot-lock-icon {
+  font-size: 1.1rem;
+}
+
+.grill-slot-locked-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.cooking-columns {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  height: 100%;
+}
+
+.cooking-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-panel-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--bg-panel-2);
+  padding: 0.4rem 0.55rem;
 }
 
-.prepared-counter > strong {
-  flex: 0 0 auto;
+.cooking-col--stock,
+.cooking-col--plated {
+  flex: 1 1 0;
 }
 
-.prepared-counter ul {
+.cooking-col--grill {
+  flex: 1.5 1 0;
+  background: transparent;
+  border: none;
+  padding: 0.3rem 0 0;
+}
+
+.cooking-col-title {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.prepared-item {
-  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.45rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--cream);
-  font-size: 0.8rem;
+  gap: 0.35rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
-.prepared-item small {
+.info-tip {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-tip-trigger {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+
+.info-tip-bubble {
+  position: absolute;
+  top: 130%;
+  left: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 260px;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 400;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s;
+  pointer-events: none;
+}
+
+.info-tip-trigger:hover + .info-tip-bubble,
+.info-tip-trigger:focus-visible + .info-tip-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.cooking-col-empty {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.ingredient-grid,
+.plated-grid {
+  display: grid;
+  align-content: flex-start;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: min-content;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0 0.1rem 0.1rem 0;
+  list-style: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ingredient-grid > li,
+.plated-grid > li {
+  display: flex;
+}
+
+.ingredient-chip,
+.plated-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  width: 100%;
+  padding: 0.3rem 0.15rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--cream);
+  font: inherit;
+  appearance: none;
+  cursor: pointer;
+}
+
+.ingredient-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ingredient-chip:not(:disabled):hover,
+.plated-item:not(.plated-item--empty):hover {
+  filter: brightness(0.98);
+  border-color: var(--accent-2);
+}
+
+.ingredient-chip-icon,
+.plated-item-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.ingredient-chip-count {
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--muted);
 }
 
-.prepared-item--perfect { border-color: var(--ok); }
-.prepared-item--danger { border-color: var(--warning); }
+.plated-item-label {
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.plated-item--perfect {
+  border-color: var(--ok);
+}
+
+.plated-item--danger {
+  border-color: var(--warning);
+}
+
+.plated-item.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-2) 22%, var(--cream));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.plated-item--empty {
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.6;
+  cursor: default;
+}
+
+.plated-actions {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  flex: 0 0 auto;
+}
+
+.plated-action-btn {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.3rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #fff8f6;
+  cursor: pointer;
+}
+
+.plated-action-btn:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.plated-action-btn:disabled {
+  background: var(--disabled);
+  color: var(--muted);
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+
+.plated-action-btn--serve {
+  background: var(--ok);
+}
+
+.plated-action-btn--discard {
+  background: var(--danger);
+}
 
 .queue-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.55rem;
+  grid-template-columns: repeat(9, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 0.45rem;
   margin: 0;
   padding: 0;
   list-style: none;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .order-queue-card {
-  padding: 0.6rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+  padding: 0.35rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-panel-2);
 }
 
-.order-customer {
+.order-queue-badge {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.3rem;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: rgba(20, 14, 10, 0.6);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.order-queue-top-row {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-bottom: 0.45rem;
-  font-size: 0.85rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0.3rem;
+}
+
+.order-queue-portrait {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background-color: var(--cream);
+  background-repeat: no-repeat;
 }
 
 .order-combination {
-  width: 100%;
-  padding: 0.45rem;
+  display: grid;
+  place-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.3rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  color: var(--text);
   background: var(--cream);
   font: inherit;
-  text-align: left;
+  cursor: default;
+}
+
+.order-combination:not(:disabled) {
+  cursor: pointer;
 }
 
 .order-combination:disabled {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
-.order-combination-label {
-  display: block;
-  margin-bottom: 0.3rem;
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.order-ingredients {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem 0.55rem;
-  font-size: 0.75rem;
+.order-queue-menu-icon {
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 .order-queue-card.is-serveable {
@@ -1867,13 +2261,8 @@ body:has(.phase-prep-supply) {
 }
 
 .order-queue-card.is-serveable .order-combination {
-  cursor: pointer;
   border-color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 15%, var(--cream));
-}
-
-.order-queue-card.is-serveable .order-combination-label {
-  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 18%, var(--cream));
 }
 
 @keyframes serveable-pulse {
@@ -1882,15 +2271,30 @@ body:has(.phase-prep-supply) {
 }
 
 .leave-feedback {
-  margin-top: 0.5rem;
-  color: var(--danger);
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 50%;
+  min-width: 11rem;
+  padding: 0.5rem 0.9rem;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  white-space: nowrap;
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-md);
   font-size: 0.8rem;
-  animation: leave-feedback 1.6s both;
+  font-weight: 600;
+  animation: leave-feedback 1.8s both;
 }
 
 @keyframes leave-feedback {
-  0%, 100% { opacity: 0; }
-  15%, 75% { opacity: 1; }
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  15%, 75% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -58%) scale(0.96); }
 }
 
 .serve-feedback {
@@ -1956,7 +2360,7 @@ body:has(.phase-prep-supply) {
 .street-frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 2075 / 758;
+  height: 420px;
   overflow: hidden;
   background: #14100c;
 }
@@ -1972,15 +2376,20 @@ body:has(.phase-prep-supply) {
 }
 
 .queue-strip-panel {
+  position: relative;
+  height: 150px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 0 0 var(--radius) var(--radius);
-  padding: 0.7rem 0.9rem 0.9rem;
+  padding: 0.5rem 0.9rem 0.55rem;
   box-shadow: var(--shadow-sm);
 }
 
 .queue-strip-title {
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.35rem;
   font-size: 0.95rem;
 }
 
@@ -2070,7 +2479,6 @@ body:has(.phase-prep-supply) {
   height: 6px;
   background: var(--cream);
   border-radius: 4px;
-  margin-top: 0.35rem;
   overflow: hidden;
 }
 

@@ -8,10 +8,10 @@ import {
   type Texture,
 } from 'pixi.js'
 import { PIXI_COLORS } from '../colors'
-import { OPEN_TRUCK_INTERIOR_ART } from '../../utils/assets'
+import { OPEN_TRUCK_INTERIOR_ART, STREET_BG_BY_LOCATION } from '../../utils/assets'
 import { createCustomerSprite } from '../sprites/customerSprite'
 import { loadCharacterPortraits, type CharacterKey } from '../sprites/characterPortraits'
-import { pickRandomGuestCharacter } from '../sprites/customerRegistry'
+import { pickStablePortrait } from '../../utils/portraitSprite'
 
 export interface StreetSceneCustomer {
   /** 손님 고유 id — 리사이즈 등으로 다시 그릴 때도 같은 손님이 같은 캐릭터로 유지되도록 하는 키 */
@@ -24,6 +24,8 @@ export interface StreetSceneState {
   /** 대기열 손님 목록, 대기 순서대로(맨 앞이 가장 오래 기다린 손님) */
   customers?: StreetSceneCustomer[]
   locationLabel?: string
+  /** locations.json의 장소 id — STREET_BG_BY_LOCATION에 등록된 배경을 창밖에 그린다 */
+  locationId?: string
 }
 
 export interface StreetSceneHandle {
@@ -41,7 +43,7 @@ const WINDOW = { x: 190, y: 72, w: 1696, h: 546 }
 const WINDOW_CORNER_RADIUS = 55
 
 /** 맨 앞(0번) 손님은 카운터에 붙어있는 것처럼 크게 확대하고, 하반신은 창 아래로 잘려 나가게 한다 */
-const FRONT_VISIBLE_FRACTION = 0.58
+const FRONT_VISIBLE_FRACTION = 0.54
 const FRONT_TOP_MARGIN_RATIO = 0.02
 
 /** 영업 페이즈 거리 뷰 씬 — 트럭 창문 안쪽에서 바라본 시점 (인테리어 프레임 + 창 밖 손님 대기열) */
@@ -52,8 +54,10 @@ export function createStreetScene(
   const root = new Container()
   app.stage.addChild(root)
 
-  // 창 밖 풍경(하늘/바닥) + 대기 손님 — 창문 모양으로 마스킹된다
+  // 창 밖 풍경(장소별 배경 이미지, 없으면 플랫 컬러 하늘/바닥) + 대기 손님 — 창문 모양으로 마스킹된다
   const windowLayer = new Container()
+  const bg = new Sprite()
+  bg.visible = false
   const sky = new Graphics()
   const crowdLayer = new Container()
   const label = new Text({
@@ -65,7 +69,7 @@ export function createStreetScene(
     },
   })
   const labelBg = new Graphics()
-  windowLayer.addChild(sky, crowdLayer, labelBg, label)
+  windowLayer.addChild(bg, sky, crowdLayer, labelBg, label)
 
   const windowMask = new Graphics()
   windowLayer.mask = windowMask
@@ -78,6 +82,7 @@ export function createStreetScene(
 
   let customers = initial.customers ?? []
   let locationLabel = initial.locationLabel ?? ''
+  let locationId = initial.locationId ?? ''
   let destroyed = false
 
   // 캐릭터 시트는 한 장뿐이라 씬당 한 번만 로드해 재사용한다.
@@ -85,6 +90,42 @@ export function createStreetScene(
   // 손님 id별로 캐릭터를 한 번만 뽑아 고정한다 — 리사이즈 등으로 재배치돼도
   // 같은 손님이 계속 같은 얼굴을 유지하고, 대기열에서 빠지면 항목도 같이 정리된다.
   const guestByCustomerId = new Map<string, CharacterKey>()
+
+  // 장소별 배경 텍스처 캐시 — 같은 장소로 돌아왔을 때 다시 로드하지 않는다.
+  const bgTextureCache = new Map<string, Texture>()
+  let bgLoadToken = 0
+
+  /** locationId에 맞는 배경을 적용한다. 등록된 이미지가 없으면 플랫 컬러(sky)로 대체. */
+  function applyLocationBg() {
+    const url = STREET_BG_BY_LOCATION[locationId]
+    if (!url) {
+      bg.visible = false
+      sky.visible = true
+      layout()
+      return
+    }
+
+    const cached = bgTextureCache.get(locationId)
+    if (cached) {
+      bg.texture = cached
+      bg.visible = true
+      sky.visible = false
+      layout()
+      return
+    }
+
+    const token = ++bgLoadToken
+    Assets.load(url).then((tex: Texture) => {
+      if (destroyed || token !== bgLoadToken) return
+      bgTextureCache.set(locationId, tex)
+      bg.texture = tex
+      bg.visible = true
+      sky.visible = false
+      layout()
+    })
+  }
+
+  applyLocationBg()
 
   loadCharacterPortraits().then((loaded) => {
     if (destroyed) return
@@ -128,14 +169,21 @@ export function createStreetScene(
     windowMask.roundRect(win.x, win.y, win.w, win.h, win.radius)
     windowMask.fill(0xffffff)
 
+    if (bg.visible && bg.texture.width > 0) {
+      bg.width = win.w
+      bg.height = win.h
+    }
+
     sky.clear()
-    sky.rect(0, 0, win.w, win.h * 0.68)
-    sky.fill(PIXI_COLORS.skyTop)
-    sky.rect(0, win.h * 0.68, win.w, win.h * 0.32)
-    sky.fill(PIXI_COLORS.ground)
-    sky.moveTo(0, win.h * 0.68)
-    sky.lineTo(win.w, win.h * 0.68)
-    sky.stroke({ width: 2, color: PIXI_COLORS.groundLine })
+    if (sky.visible) {
+      sky.rect(0, 0, win.w, win.h * 0.68)
+      sky.fill(PIXI_COLORS.skyTop)
+      sky.rect(0, win.h * 0.68, win.w, win.h * 0.32)
+      sky.fill(PIXI_COLORS.ground)
+      sky.moveTo(0, win.h * 0.68)
+      sky.lineTo(win.w, win.h * 0.68)
+      sky.stroke({ width: 2, color: PIXI_COLORS.groundLine })
+    }
 
     labelBg.clear()
     if (locationLabel) {
@@ -165,13 +213,12 @@ export function createStreetScene(
     // 대기열이 늘어날수록 오른쪽으로 채워지도록 한다 (MAX_CROWD 기준으로 폭을 나눔).
     const step = usable / MAX_CROWD
     const backBaseY = win.h * 0.9
-    const backGuestHeight = win.h * 0.68
+    const backGuestHeight = win.h * 0.74
     const badgeBaseY = win.h * 0.94
     const badgeR = Math.min(12, step * 0.28)
 
-    // 손님별로 캐릭터를 한 번만 뽑고, 이후엔(리사이즈 등) 같은 손님이면 재사용한다.
-    // 새로 뽑을 때만 바로 옆 슬롯과 겹치지 않게 고른다.
-    let leftNeighborKey: CharacterKey | undefined
+    // 손님별로 캐릭터를 손님 id 기반으로 안정적으로 고른다 — 대기 카드(CustomerQueue)와
+    // 동일한 pickStablePortrait를 써서 같은 손님이 거리뷰·대기 카드에서 같은 얼굴로 보이게 한다.
     const slots: Container[] = []
 
     visible.forEach((customer, i) => {
@@ -180,11 +227,10 @@ export function createStreetScene(
 
       let guestKey = guestByCustomerId.get(customer.id)
       if (!guestKey && portraits) {
-        guestKey = pickRandomGuestCharacter(customer.type, leftNeighborKey)
+        guestKey = pickStablePortrait(customer.type, customer.id)
         if (guestKey) guestByCustomerId.set(customer.id, guestKey)
       }
       const guestTexture = guestKey && portraits ? portraits[guestKey] : undefined
-      leftNeighborKey = guestKey
 
       const slot = new Container()
       slot.x = cx
@@ -262,6 +308,10 @@ export function createStreetScene(
     }
     if (typeof next.locationLabel === 'string') {
       locationLabel = next.locationLabel
+    }
+    if (typeof next.locationId === 'string' && next.locationId !== locationId) {
+      locationId = next.locationId
+      applyLocationBg()
     }
     layout()
   }

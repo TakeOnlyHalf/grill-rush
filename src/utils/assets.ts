@@ -52,6 +52,18 @@ export const PREP_LOBBY_UPGRADE = publicUrl(
 /** 영업 페이즈 — 트럭 창문 안쪽에서 바라본 인테리어 프레임 (창문 부분은 알파 투명) */
 export const OPEN_TRUCK_INTERIOR_ART = publicUrl('images/open_phase/foodtruck_interior_transparent.webp')
 
+/**
+ * 영업 페이즈 — 장소별 창밖 배경. 아직 그리지 않은 장소는 항목을 비워두면
+ * StreetScene이 기존 플랫 컬러(하늘/바닥)로 대체해 그린다.
+ */
+export const STREET_BG_BY_LOCATION: Partial<Record<string, string>> = {
+  office: publicUrl('images/open_phase/street_bg_office.webp'),
+  campus: publicUrl('images/open_phase/street_bg_campus.webp'),
+  park: publicUrl('images/open_phase/street_bg_park.webp'),
+  night_market: publicUrl('images/open_phase/street_bg_night_market.webp'),
+  festival: publicUrl('images/open_phase/street_bg_festival.webp'),
+}
+
 /** 앱 부트 시 미리 받아둘 핵심 이미지 (탭 전환 시 깜빡임 방지) */
 export const CRITICAL_IMAGE_URLS = [
   TITLE_DAY_ART,
@@ -71,6 +83,7 @@ export const CRITICAL_IMAGE_URLS = [
   PREP_LOBBY_UPGRADE,
   DAY_STREET_BG,
   OPEN_TRUCK_INTERIOR_ART,
+  ...(Object.values(STREET_BG_BY_LOCATION).filter(Boolean) as string[]),
 ] as const
 
 /**

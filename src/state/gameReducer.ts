@@ -1,4 +1,5 @@
 import locations from '../data/locations.json'
+import ingredientData from '../data/ingredients.json'
 import {
   ActionTypes,
   DAILY_TRUCK_COST,
@@ -130,6 +131,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case ActionTypes.COLLECT_COOKED_INGREDIENT: {
       if (state.phase !== 'open') return state
       return collectPreparedIngredient(state, action.payload)
+    }
+
+    case ActionTypes.DISCARD_PREPARED_INGREDIENT: {
+      if (state.phase !== 'open') return state
+      const target = state.preparedIngredients.find((item) => item.id === action.payload.preparedId)
+      if (!target) return state
+      const wasteCost = ingredientData.find((ingredient) => ingredient.id === target.ingredientId)?.unitCost ?? 0
+      return {
+        ...state,
+        preparedIngredients: state.preparedIngredients.filter(
+          (item) => item.id !== action.payload.preparedId,
+        ),
+        dailyCosts: {
+          ...state.dailyCosts,
+          waste: state.dailyCosts.waste + wasteCost,
+        },
+      }
     }
 
     case ActionTypes.SERVE_ORDER:
