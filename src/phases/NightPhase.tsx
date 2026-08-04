@@ -6,7 +6,11 @@ import { TRUCK_UPGRADE_DAY_BG, TRUCK_UPGRADE_NIGHT_BG } from '../utils/assets'
 import upgradesData from '../data/upgrades.json'
 import events from '../data/events.json'
 import { forceUnlockBgm } from '../audio/bgm'
-import { getGrillSlotCount } from '../grill/grillUpgrades'
+import {
+  getDisplayedGrillExpansionUpgrade,
+  getGrillSlotCount,
+  GRILL_EXPANSION_UPGRADE_IDS,
+} from '../grill/grillUpgrades'
 
 type UpgradeCategory =
   | 'all'
@@ -25,6 +29,9 @@ type UpgradeDef = (typeof upgradesData)[number] & {
 }
 
 const upgrades = upgradesData as UpgradeDef[]
+const grillExpansionUpgradeIdSet = new Set<string>(GRILL_EXPANSION_UPGRADE_IDS)
+const maxGrillExpansionId =
+  GRILL_EXPANSION_UPGRADE_IDS[GRILL_EXPANSION_UPGRADE_IDS.length - 1]
 
 const CATEGORIES: { id: UpgradeCategory; label: string; icon: string }[] = [
   { id: 'all', label: '전체', icon: '▦' },
@@ -78,13 +85,15 @@ export default function NightPhase({
   const current = baseTruckStats(owned)
   const preview = previewStats(owned, planned)
 
-  const filtered = useMemo(
-    () =>
-      category === 'all'
-        ? upgrades
-        : upgrades.filter((u) => u.category === category),
-    [category],
-  )
+  const filtered = useMemo(() => {
+    const displayedGrillExpansion = getDisplayedGrillExpansionUpgrade(owned)
+    return upgrades.filter(
+      (upgrade) =>
+        (category === 'all' || upgrade.category === category) &&
+        (!grillExpansionUpgradeIdSet.has(upgrade.id) ||
+          upgrade.id === displayedGrillExpansion?.id),
+    )
+  }, [category, owned])
 
   const plannedItems = planned
     .map((id) => upgrades.find((u) => u.id === id))
@@ -116,7 +125,7 @@ export default function NightPhase({
     for (const up of plannedItems) {
       dispatch({
         type: ActionTypes.BUY_UPGRADE,
-        payload: { upgradeId: up.id, cost: up.cost },
+        payload: { upgradeId: up.id },
       })
     }
     setPlanned([])
@@ -218,6 +227,7 @@ export default function NightPhase({
             const isOwned = owned.includes(up.id)
             const locked = isLocked(up)
             const selected = planned.includes(up.id)
+            const isMaxExpansion = isOwned && up.id === maxGrillExpansionId
             return (
               <button
                 key={up.id}
@@ -242,7 +252,7 @@ export default function NightPhase({
                 ) : (
                   <>
                     <span className="night-card__cost">
-                      {isOwned ? '보유 중' : formatWon(up.cost)}
+                      {isMaxExpansion ? '최대 확장' : isOwned ? '보유 중' : formatWon(up.cost)}
                     </span>
                     <span className="night-card__detail">
                       {up.detail ?? up.description}

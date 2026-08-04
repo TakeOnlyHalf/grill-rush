@@ -128,7 +128,7 @@ export type GameAction =
   | { type: 'TICK_OPEN'; payload?: { dt?: number } }
   | { type: 'END_OPEN' }
   | { type: 'CONFIRM_SETTLE' }
-  | { type: 'BUY_UPGRADE'; payload: { upgradeId: UpgradeId; cost: number } }
+  | { type: 'BUY_UPGRADE'; payload: { upgradeId: UpgradeId } }
   | { type: 'NEXT_DAY' }
   | { type: 'SHOW_ENDING'; payload?: EndingId }
   | { type: 'RESTART' }

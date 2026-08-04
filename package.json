@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run --project unit",
     "preview": "vite preview",
     "deploy": "npm run build && gh-pages -d dist -t true",
     "storybook": "storybook dev -p 6006",

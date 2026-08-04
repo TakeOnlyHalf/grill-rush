@@ -1,5 +1,6 @@
 import locations from '../data/locations.json'
 import ingredientData from '../data/ingredients.json'
+import upgradesData from '../data/upgrades.json'
 import {
   ActionTypes,
   DAILY_TRUCK_COST,
@@ -294,12 +295,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case ActionTypes.BUY_UPGRADE: {
       if (state.phase !== 'night' && state.phase !== 'prep') return state
-      const { upgradeId, cost } = action.payload
+      const { upgradeId } = action.payload
+      const upgrade = upgradesData.find((item) => item.id === upgradeId)
+      if (!upgrade) return state
       if (state.upgrades.includes(upgradeId)) return state
-      if (state.cash < cost) return state
+      const requiredUpgradeId =
+        'requires' in upgrade && typeof upgrade.requires === 'string'
+          ? upgrade.requires
+          : null
+      if (requiredUpgradeId && !state.upgrades.includes(requiredUpgradeId)) return state
+      if (!Number.isSafeInteger(upgrade.cost) || upgrade.cost < 0) return state
+      if (state.cash < upgrade.cost) return state
       return {
         ...state,
-        cash: state.cash - cost,
+        cash: state.cash - upgrade.cost,
         upgrades: [...state.upgrades, upgradeId],
       }
     }

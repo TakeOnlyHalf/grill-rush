@@ -2048,8 +2048,12 @@ body:has(.phase-open) {
 }
 
 .grill-slot-locked-label {
-  font-size: 0.68rem;
+  max-width: 95%;
+  font-size: 0.62rem;
   font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .cooking-columns {

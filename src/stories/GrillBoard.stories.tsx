@@ -60,9 +60,27 @@ export const DefaultGrill: Story = {
 }
 
 export const ExpandedGrill: Story = {
-  name: 'Kitchen expansion · 4 slots',
+  name: '주방 확장 Lv.1 · 4슬롯',
   args: {
     initialSlots: createIdleGrillSlots(4),
+    inventory: defaultInventory,
+    neededIngredientIds: ['egg', 'bacon'],
+  },
+}
+
+export const LevelTwoExpansion: Story = {
+  name: '주방 확장 Lv.2 · 5슬롯',
+  args: {
+    initialSlots: createIdleGrillSlots(5),
+    inventory: defaultInventory,
+    neededIngredientIds: ['egg', 'bacon'],
+  },
+}
+
+export const LevelThreeExpansion: Story = {
+  name: '주방 확장 Lv.3 · 6슬롯',
+  args: {
+    initialSlots: createIdleGrillSlots(6),
     inventory: defaultInventory,
     neededIngredientIds: ['egg', 'bacon'],
   },
@@ -125,13 +143,42 @@ export const FullGrill: Story = {
 }
 
 export const FullExpandedGrill: Story = {
-  name: 'Kitchen expansion · all 4 slots active',
+  name: '주방 확장 Lv.1 · 4슬롯 모두 사용 중',
   args: {
     initialSlots: [
       slotAt(0, 'egg', 0.25),
       slotAt(1, 'bacon', 0.55),
       slotAt(2, 'corn', 0.72),
       slotAt(3, 'steak', 0.93),
+    ],
+    inventory: defaultInventory,
+  },
+}
+
+export const FullLevelTwoExpansion: Story = {
+  name: '주방 확장 Lv.2 · 5슬롯 모두 사용 중',
+  args: {
+    initialSlots: [
+      slotAt(0, 'egg', 0.25),
+      slotAt(1, 'bacon', 0.42),
+      slotAt(2, 'corn', 0.58),
+      slotAt(3, 'patty', 0.72),
+      slotAt(4, 'steak', 0.93),
+    ],
+    inventory: defaultInventory,
+  },
+}
+
+export const FullLevelThreeExpansion: Story = {
+  name: '주방 확장 Lv.3 · 6슬롯 모두 사용 중',
+  args: {
+    initialSlots: [
+      slotAt(0, 'egg', 0.2),
+      slotAt(1, 'bacon', 0.35),
+      slotAt(2, 'corn', 0.5),
+      slotAt(3, 'patty', 0.65),
+      slotAt(4, 'chicken', 0.8),
+      slotAt(5, 'steak', 0.95),
     ],
     inventory: defaultInventory,
   },

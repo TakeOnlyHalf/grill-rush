@@ -1,12 +1,14 @@
 import type { CSSProperties } from 'react'
 import ingredientData from '../data/ingredients.json'
-import upgradesData from '../data/upgrades.json'
 import { getCookProgress, getCookResult, type GrillSlot } from '../grill/grillSlots'
+import {
+  getGrillExpansionUpgradeForSlot,
+  MAX_GRILL_SLOT_COUNT,
+} from '../grill/grillUpgrades'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
-const grillExpandUpgrade = upgradesData.find((upgrade) => upgrade.id === 'grill_expand')
 /** 2행3열 고정 그리드 — 확보한 슬롯(slots.length)을 뺀 나머지를 잠금 자리로 채운다. */
-const GRID_SIZE = 6
+const GRID_SIZE = MAX_GRILL_SLOT_COUNT
 
 const resultLabel = {
   raw: '조리 중',
@@ -22,12 +24,8 @@ export interface GrillSlotsProps {
   onCollect: (slot: GrillSlot) => void
 }
 
-/** 그릴 슬롯 2행3열 — 위 3칸은 실제 조리 슬롯(원형 타이머), 아래 3칸은 미확보 슬롯(잠금) 자리만 표시. */
+/** 그릴 슬롯 2행3열 — 확보한 슬롯은 실제 조리 기능을 제공하고 나머지는 단계별 잠금 안내를 표시한다. */
 export default function GrillSlots({ slots, now, onCollect }: GrillSlotsProps) {
-  const lockedTitle = grillExpandUpgrade
-    ? `${grillExpandUpgrade.name} 필요 · ₩${grillExpandUpgrade.cost.toLocaleString('ko-KR')} (야간 업그레이드에서 구매)`
-    : '확장 슬롯'
-
   return (
     <div className="grill-slot-grid">
       {slots.map((slot) => {
@@ -76,18 +74,26 @@ export default function GrillSlots({ slots, now, onCollect }: GrillSlotsProps) {
           </button>
         )
       })}
-      {Array.from({ length: Math.max(0, GRID_SIZE - slots.length) }, (_, i) => (
-        <div
-          key={`locked-${i}`}
-          className="grill-slot-card grill-slot-card--locked"
-          title={lockedTitle}
-        >
-          <span className="grill-slot-lock-icon" aria-hidden>
-            🔒
-          </span>
-          <span className="grill-slot-locked-label">확장</span>
-        </div>
-      ))}
+      {Array.from({ length: Math.max(0, GRID_SIZE - slots.length) }, (_, i) => {
+        const slotNumber = slots.length + i + 1
+        const upgrade = getGrillExpansionUpgradeForSlot(slotNumber)
+        const lockedLabel = upgrade
+          ? `${upgrade.name} 필요 · ₩${upgrade.cost.toLocaleString('ko-KR')}`
+          : '확장 슬롯'
+
+        return (
+          <div
+            key={`locked-${slotNumber}`}
+            className="grill-slot-card grill-slot-card--locked"
+            title={`${lockedLabel} (야간 업그레이드에서 구매)`}
+          >
+            <span className="grill-slot-lock-icon" aria-hidden>
+              🔒
+            </span>
+            <span className="grill-slot-locked-label">{lockedLabel}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
