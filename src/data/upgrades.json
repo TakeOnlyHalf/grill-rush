@@ -1,12 +1,36 @@
 [
   {
     "id": "grill_expand",
-    "name": "주방 확장",
+    "name": "주방 확장 Lv.1",
     "category": "kitchen",
     "icon": "🍳",
     "description": "동시 조리 가능 +1",
     "detail": "동시 조리 슬롯 3 → 4",
+    "cost": 130000,
+    "effect": { "grillSlots": 1 }
+  },
+  {
+    "id": "grill_expand_2",
+    "name": "주방 확장 Lv.2",
+    "category": "kitchen",
+    "icon": "🍳",
+    "description": "동시 조리 가능 +1",
+    "detail": "동시 조리 슬롯 4 → 5",
+    "cost": 140000,
+    "requires": "grill_expand",
+    "requiresLabel": "주방 확장 Lv.1 필요",
+    "effect": { "grillSlots": 1 }
+  },
+  {
+    "id": "grill_expand_3",
+    "name": "주방 확장 Lv.3",
+    "category": "kitchen",
+    "icon": "🍳",
+    "description": "동시 조리 가능 +1",
+    "detail": "동시 조리 슬롯 5 → 6",
     "cost": 150000,
+    "requires": "grill_expand_2",
+    "requiresLabel": "주방 확장 Lv.2 필요",
     "effect": { "grillSlots": 1 }
   },
   {

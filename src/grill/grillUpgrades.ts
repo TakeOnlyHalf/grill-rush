@@ -1,6 +1,30 @@
 import upgradesData from '../data/upgrades.json'
 import { GRILL_SLOT_COUNT } from './grillSlots'
 
+export const MAX_GRILL_SLOT_COUNT = 6
+
+export const GRILL_EXPANSION_UPGRADE_IDS = [
+  'grill_expand',
+  'grill_expand_2',
+  'grill_expand_3',
+] as const
+
+export function getDisplayedGrillExpansionUpgrade(ownedUpgradeIds: readonly string[]) {
+  const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
+  const displayedUpgradeId =
+    GRILL_EXPANSION_UPGRADE_IDS.find((id) => !ownedUpgradeIdSet.has(id)) ??
+    GRILL_EXPANSION_UPGRADE_IDS[GRILL_EXPANSION_UPGRADE_IDS.length - 1]
+
+  return upgradesData.find((upgrade) => upgrade.id === displayedUpgradeId)
+}
+
+export function getGrillExpansionUpgradeForSlot(slotNumber: number) {
+  const upgradeId = GRILL_EXPANSION_UPGRADE_IDS[slotNumber - GRILL_SLOT_COUNT - 1]
+  return upgradeId
+    ? upgradesData.find((upgrade) => upgrade.id === upgradeId)
+    : undefined
+}
+
 export function getGrillSlotCount(ownedUpgradeIds: readonly string[]): number {
   const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
   const additionalSlots = upgradesData.reduce((total, upgrade) => {
@@ -9,12 +33,8 @@ export function getGrillSlotCount(ownedUpgradeIds: readonly string[]): number {
     }
 
     const grillSlots = upgrade.effect.grillSlots
-    return typeof grillSlots === 'number' &&
-      Number.isSafeInteger(grillSlots) &&
-      grillSlots > 0
-      ? total + grillSlots
-      : total
+    return grillSlots === 1 ? total + grillSlots : total
   }, 0)
 
-  return GRILL_SLOT_COUNT + additionalSlots
+  return Math.min(MAX_GRILL_SLOT_COUNT, GRILL_SLOT_COUNT + additionalSlots)
 }
