@@ -4,6 +4,7 @@ import {
   getCookTimeFactor,
   getDisplayedGrillExpansionUpgrade,
   getGrillSlotCount,
+  hasPerfectTimingAlarm,
 } from './grillUpgrades'
 import { grillIngredients } from './grillIngredients'
 import {
@@ -45,6 +46,13 @@ describe('getDisplayedGrillExpansionUpgrade', () => {
     [['grill_expand', 'grill_expand_2', 'grill_expand_3'], 'grill_expand_3'],
   ] as const)('shows one progressive card for %j', (owned, expected) => {
     expect(getDisplayedGrillExpansionUpgrade(owned)?.id).toBe(expected)
+  })
+})
+
+describe('data-driven grill upgrade effects', () => {
+  it('detects the perfect timing alarm by its configured effect', () => {
+    expect(hasPerfectTimingAlarm([])).toBe(false)
+    expect(hasPerfectTimingAlarm(['timer_alarm'])).toBe(true)
   })
 })
 

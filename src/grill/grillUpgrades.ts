@@ -39,6 +39,16 @@ export function getGrillSlotCount(ownedUpgradeIds: readonly string[]): number {
   return Math.min(MAX_GRILL_SLOT_COUNT, GRILL_SLOT_COUNT + additionalSlots)
 }
 
+export function hasPerfectTimingAlarm(ownedUpgradeIds: readonly string[]): boolean {
+  const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
+  return upgradesData.some(
+    (upgrade) =>
+      ownedUpgradeIdSet.has(upgrade.id) &&
+      'perfectTimingAlarm' in upgrade.effect &&
+      upgrade.effect.perfectTimingAlarm === true,
+  )
+}
+
 export function getCookTimeFactor(ownedUpgradeIds: readonly string[]): number {
   const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
 

@@ -26,6 +26,8 @@ export interface CollectedGrillItem {
 }
 
 export const GRILL_SLOT_COUNT = 3
+export const PERFECT_WINDOW_START = 0.7
+export const PERFECT_WINDOW_END = 0.9
 
 export function createIdleGrillSlots(slotCount = GRILL_SLOT_COUNT): GrillSlot[] {
   if (!Number.isSafeInteger(slotCount) || slotCount < 1) {
@@ -48,10 +50,19 @@ export function getCookProgress(slot: GrillSlot, now: number): number {
 
 export function getCookResult(progress: number): CookResult {
   if (progress > 1) return 'burnt'
-  if (progress >= 0.9) return 'danger'
-  if (progress >= 0.7) return 'perfect'
+  if (progress >= PERFECT_WINDOW_END) return 'danger'
+  if (progress >= PERFECT_WINDOW_START) return 'perfect'
   if (progress >= 0.4) return 'good'
   return 'raw'
+}
+
+/** 한 갱신 사이에 완벽 구간에 처음 진입했으며 아직 구간을 지나치지 않았는지 확인한다. */
+export function didEnterPerfectWindow(previousProgress: number, currentProgress: number): boolean {
+  return (
+    previousProgress < PERFECT_WINDOW_START &&
+    currentProgress >= PERFECT_WINDOW_START &&
+    currentProgress < PERFECT_WINDOW_END
+  )
 }
 
 export function resolveGrillSlot(slot: GrillSlot, now: number): GrillSlot {

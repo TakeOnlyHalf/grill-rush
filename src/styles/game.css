@@ -1963,6 +1963,7 @@ body:has(.phase-open) {
 }
 
 .grill-slot-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2054,6 +2055,50 @@ body:has(.phase-open) {
   line-height: 1.25;
   text-align: center;
   overflow-wrap: anywhere;
+}
+
+.grill-slot-card.is-perfect-timing-alert {
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--gold) 78%, white),
+    0 0 16px color-mix(in srgb, var(--gold) 72%, transparent);
+  animation: perfect-timing-pulse 0.34s ease-in-out 3 alternate;
+}
+
+.grill-slot-alarm-icon {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.28rem;
+  font-size: clamp(0.7rem, 1.4vw, 1rem);
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+}
+
+.grill-slot-alarm-label {
+  position: absolute;
+  left: 0.18rem;
+  right: 0.18rem;
+  bottom: 0.18rem;
+  padding: 0.1rem 0.16rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 90%, white);
+  color: #3d2600;
+  font-size: clamp(0.48rem, 1vw, 0.66rem);
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@keyframes perfect-timing-pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.025); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grill-slot-card.is-perfect-timing-alert {
+    animation: none;
+  }
 }
 
 .cooking-columns {
