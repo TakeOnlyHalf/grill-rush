@@ -6,6 +6,7 @@ import {
   MAX_GRILL_SLOT_COUNT,
 } from '../grill/grillUpgrades'
 import { GRILL_TILE_OFF_ART, GRILL_TILE_ON_ART } from '../utils/assets'
+import { INGREDIENT_FOOD_STYLE } from '../utils/foodIcons'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
 /** 2행3열 고정 그리드 — 확보한 슬롯(slots.length)을 뺀 나머지를 잠금 자리로 채운다. */
@@ -98,8 +99,12 @@ export default function GrillSlots({
               </>
             ) : null}
             <span className="grill-slot-timer">
-              <span className="grill-slot-timer-icon" aria-hidden>
-                {ingredient?.icon ?? '🍳'}
+              <span
+                className="grill-slot-timer-icon"
+                aria-hidden
+                style={ingredient ? INGREDIENT_FOOD_STYLE[ingredient.id] : undefined}
+              >
+                {ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? null : (ingredient?.icon ?? '🍳')}
               </span>
             </span>
             <span className="visually-hidden">

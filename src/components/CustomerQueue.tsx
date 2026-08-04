@@ -9,6 +9,7 @@ import {
   loadAvatarSheetDataUrl,
   pickStablePortrait,
 } from '../utils/portraitSprite'
+import { MENU_FOOD_STYLE } from '../utils/foodIcons'
 
 /** 대기열 표시 — 손님별 주문 카드(초상화+메뉴 아이콘+인내심 타이머), 재료가 갖춰지면 클릭해서 서빙 */
 export default function CustomerQueue() {
@@ -70,7 +71,13 @@ export default function CustomerQueue() {
                       dispatch({ type: ActionTypes.SERVE_ORDER, payload: { orderId: order.id, customerId: c.id } })
                     }}
                   >
-                    <span className="order-queue-menu-icon" aria-hidden>{menu?.icon ?? '🍽️'}</span>
+                    <span
+                      className={`order-queue-menu-icon${menu && MENU_FOOD_STYLE[menu.id] ? ' has-food-image' : ''}`}
+                      aria-hidden
+                      style={menu ? MENU_FOOD_STYLE[menu.id] : undefined}
+                    >
+                      {menu && MENU_FOOD_STYLE[menu.id] ? null : (menu?.icon ?? '🍽️')}
+                    </span>
                     <span className="visually-hidden">
                       {c.typeName} → {c.orderName}
                       {fulfillment.canServe ? ' · 서빙 가능' : ` · 필요 재료: ${ingredientSummary}`}

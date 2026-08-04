@@ -24,6 +24,7 @@ import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
 import { getOrderFulfillment } from '../state/orderFulfillment'
 import ingredientData from '../data/ingredients.json'
+import { INGREDIENT_FOOD_STYLE } from '../utils/foodIcons'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
 const grillIngredientById = new Map(grillIngredients.map((ingredient) => [ingredient.id, ingredient]))
@@ -178,7 +179,13 @@ export default function CookingMinigame() {
                       onClick={() => handleIngredientClick(ingredient.id)}
                       title={grillable ? `${ingredient.name} · 그릴에 올리기` : `${ingredient.name} · 조립 재료(서빙 시 자동 사용)`}
                     >
-                      <span className="ingredient-chip-icon" aria-hidden>{ingredient.icon}</span>
+                      <span
+                        className={`ingredient-chip-icon${INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
+                        aria-hidden
+                        style={INGREDIENT_FOOD_STYLE[ingredient.id]}
+                      >
+                        {INGREDIENT_FOOD_STYLE[ingredient.id] ? null : ingredient.icon}
+                      </span>
                       <span className="ingredient-chip-count">{state.ingredients[ingredient.id] ?? 0}</span>
                       <span className="visually-hidden">{ingredient.name}</span>
                     </button>
@@ -223,7 +230,13 @@ export default function CookingMinigame() {
                     onClick={() => setSelectedPreparedId(selected ? null : item.id)}
                     aria-pressed={selected}
                   >
-                    <span className="plated-item-icon" aria-hidden>{ingredient?.icon ?? '🍽️'}</span>
+                    <span
+                      className={`plated-item-icon${ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
+                      aria-hidden
+                      style={ingredient ? INGREDIENT_FOOD_STYLE[ingredient.id] : undefined}
+                    >
+                      {ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? null : (ingredient?.icon ?? '🍽️')}
+                    </span>
                     <span className="visually-hidden">{ingredient?.name ?? item.ingredientId}</span>
                     <small className="plated-item-label">{resultLabels[item.result]}</small>
                   </button>

@@ -2069,7 +2069,8 @@ body:has(.phase-open) {
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: var(--cream);
+  background-color: var(--cream);
+  background-repeat: no-repeat;
   font-size: 1.25rem;
 }
 
@@ -2317,8 +2318,19 @@ body:has(.phase-open) {
 
 .ingredient-chip-icon,
 .plated-item-icon {
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
   font-size: 1.1rem;
   line-height: 1;
+}
+
+.ingredient-chip-icon.has-food-image,
+.plated-item-icon.has-food-image {
+  border-radius: 999px;
+  background-color: var(--cream);
+  background-repeat: no-repeat;
 }
 
 .ingredient-chip-count {
@@ -2485,8 +2497,18 @@ body:has(.phase-open) {
 }
 
 .order-queue-menu-icon {
+  width: 3.4rem;
+  height: 3.4rem;
+  display: grid;
+  place-items: center;
   font-size: 1.25rem;
   line-height: 1;
+}
+
+.order-queue-menu-icon.has-food-image {
+  border-radius: 999px;
+  background-color: var(--cream);
+  background-repeat: no-repeat;
 }
 
 .order-queue-card.is-serveable {
