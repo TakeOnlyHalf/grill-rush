@@ -3,11 +3,15 @@ import { useGame } from '../state/GameContext'
 import {
   collectGrillSlot,
   createIdleGrillSlots,
-  getAutoCollectCandidate,
   placeIngredient,
   resolveGrillSlot,
   type GrillSlot,
 } from '../grill/grillSlots'
+import {
+  runAutoAssistTick,
+  startAutoAssistCooldown,
+  type AutoAssistTimerState,
+} from '../grill/autoAssist'
 import {
   getAdjustedCookDurationMs,
   getAutoAssistIntervalMs,
@@ -48,6 +52,9 @@ function withObjectParticle(value: string): string {
  */
 export default function CookingMinigame() {
   const { state, dispatch } = useGame()
+  const perfectTimingAlarmEnabled = hasPerfectTimingAlarm(state.upgrades)
+  const autoAssistLevel = getAutoAssistLevel(state.upgrades)
+  const autoCollectIntervalMs = getAutoAssistIntervalMs(state.upgrades)
   const [slots, setSlots] = useState<GrillSlot[]>(() =>
     createIdleGrillSlots(getGrillSlotCount(state.upgrades)),
   )
@@ -63,48 +70,47 @@ export default function CookingMinigame() {
   const alarmStateRef = useRef<PerfectTimingAlarmState>({})
   const alertTimersRef = useRef(new Map<string, number>())
   const autoCollectFeedbackTimerRef = useRef<number | null>(null)
-  const perfectTimingAlarmEnabled = hasPerfectTimingAlarm(state.upgrades)
-  const autoAssistLevel = getAutoAssistLevel(state.upgrades)
-  const autoCollectIntervalMs = getAutoAssistIntervalMs(state.upgrades)
+  const autoAssistTimerRef = useRef<AutoAssistTimerState>(
+    startAutoAssistCooldown(autoCollectIntervalMs, Date.now()),
+  )
 
   useEffect(() => {
+    autoAssistTimerRef.current = startAutoAssistCooldown(
+      autoCollectIntervalMs,
+      Date.now(),
+    )
     const id = setInterval(() => {
       const t = Date.now()
+      const resolvedSlots = slotsRef.current.map((slot) => resolveGrillSlot(slot, t))
+      const autoAssistTick = runAutoAssistTick(
+        resolvedSlots,
+        t,
+        autoCollectIntervalMs,
+        autoAssistTimerRef.current,
+        typeof document === 'undefined' || document.visibilityState === 'visible',
+      )
+      autoAssistTimerRef.current = autoAssistTick.timer
+      slotsRef.current = autoAssistTick.slots
       setNow(t)
-      const nextSlots = slotsRef.current.map((slot) => resolveGrillSlot(slot, t))
-      slotsRef.current = nextSlots
-      setSlots(nextSlots)
-    }, 200)
-    return () => clearInterval(id)
-  }, [])
+      setSlots(autoAssistTick.slots)
 
-  useEffect(() => {
-    if (autoCollectIntervalMs === null) return
-
-    const intervalId = window.setInterval(() => {
-      const t = Date.now()
-      const candidate = getAutoCollectCandidate(slotsRef.current, t)
-      if (!candidate) return
-
-      const result = collectGrillSlot(slotsRef.current, candidate.id, t)
-      if (!result.collected || result.collected.result !== 'perfect') return
-
-      slotsRef.current = result.slots
-      setSlots(result.slots)
-      const alertTimer = alertTimersRef.current.get(candidate.id)
+      if (!autoAssistTick.collected) return
+      const alertTimer = alertTimersRef.current.get(autoAssistTick.collected.slotId)
       if (alertTimer !== undefined) window.clearTimeout(alertTimer)
-      alertTimersRef.current.delete(candidate.id)
-      setAlertingSlotIds((current) => current.filter((id) => id !== candidate.id))
+      alertTimersRef.current.delete(autoAssistTick.collected.slotId)
+      setAlertingSlotIds((current) =>
+        current.filter((id) => id !== autoAssistTick.collected?.slotId)
+      )
       dispatch({
         type: ActionTypes.COLLECT_COOKED_INGREDIENT,
         payload: {
-          ingredientId: result.collected.ingredientId,
-          cookResult: result.collected.result,
+          ingredientId: autoAssistTick.collected.ingredientId,
+          cookResult: autoAssistTick.collected.result,
         },
       })
 
-      const ingredientName = ingredientById.get(result.collected.ingredientId)?.name
-        ?? result.collected.ingredientId
+      const ingredientName = ingredientById.get(autoAssistTick.collected.ingredientId)?.name
+        ?? autoAssistTick.collected.ingredientId
       setAutoCollectFeedback((current) => ({
         id: (current?.id ?? 0) + 1,
         message: `🤖 조리 보조: ${withObjectParticle(ingredientName)} 자동 회수했습니다.`,
@@ -116,9 +122,8 @@ export default function CookingMinigame() {
         setAutoCollectFeedback(null)
         autoCollectFeedbackTimerRef.current = null
       }, AUTO_COLLECT_FEEDBACK_DURATION_MS)
-    }, autoCollectIntervalMs)
-
-    return () => window.clearInterval(intervalId)
+    }, 200)
+    return () => clearInterval(id)
   }, [autoCollectIntervalMs, dispatch])
 
   useEffect(() => {
@@ -195,7 +200,7 @@ export default function CookingMinigame() {
   }
 
   const handleCollect = (slot: GrillSlot) => {
-    const result = collectGrillSlot(slotsRef.current, slot.id, Date.now())
+    const result = collectGrillSlot(slotsRef.current, slot, Date.now())
     if (!result.collected) return
     clearSlotAlert(slot.id)
     dispatch({

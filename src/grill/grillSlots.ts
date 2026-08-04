@@ -125,30 +125,39 @@ export interface CollectGrillSlotResult {
   collected: CollectedGrillItem | null
 }
 
+export type GrillSlotIdentity = Pick<GrillSlot, 'id' | 'ingredientId' | 'startedAt'>
+
 export function collectGrillSlot(
   slots: readonly GrillSlot[],
-  slotId: string,
+  target: GrillSlotIdentity,
   now: number,
+  requiredResult?: CookResult,
 ): CollectGrillSlotResult {
-  const slot = slots.find((candidate) => candidate.id === slotId)
+  const slot = slots.find((candidate) => candidate.id === target.id)
   if (
     !slot ||
     slot.status === 'idle' ||
     slot.ingredientId === null ||
     slot.startedAt === null ||
-    slot.cookDurationMs <= 0
+    slot.cookDurationMs <= 0 ||
+    slot.ingredientId !== target.ingredientId ||
+    slot.startedAt !== target.startedAt
   ) {
     return { slots: [...slots], collected: null }
   }
 
   const progress = getCookProgress(slot, now)
   const result = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
+  if (requiredResult !== undefined && result !== requiredResult) {
+    return { slots: [...slots], collected: null }
+  }
+
   return {
     slots: slots.map((candidate) =>
-      candidate.id === slotId ? clearGrillSlot(candidate) : candidate
+      candidate.id === target.id ? clearGrillSlot(candidate) : candidate
     ),
     collected: {
-      slotId,
+      slotId: target.id,
       ingredientId: slot.ingredientId,
       result,
       progress,
