@@ -18,6 +18,7 @@ import { getWeatherLabel } from '../utils/weather'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
 import { READY_PHASE_BG, preloadCriticalAssets } from '../utils/assets'
 import { requestBgm, forceUnlockBgm, resetBgmDayProgress } from '../audio/bgm'
+import { playSfx } from '../audio/sfx'
 
 type PrepStep = 'lobby' | 'location' | 'menu' | 'market' | 'upgrade'
 
@@ -130,6 +131,7 @@ export default function PrepPhase() {
 
   const handleConfirmLocation = () => {
     if (!locationPicked || !canAffordRent) return
+    playSfx('button_primary')
     dispatch({ type: ActionTypes.CONFIRM_LOCATION })
     setLocationConfirmed(true)
     if (isFreePrep) {
@@ -267,6 +269,7 @@ export default function PrepPhase() {
                 type="button"
                 className="prep-btn prep-btn--menu"
                 onClick={() => {
+                  playSfx('button_secondary')
                   forceUnlockBgm('lobby')
                   setStep('lobby')
                 }}
@@ -321,6 +324,7 @@ export default function PrepPhase() {
                     type="button"
                     className="prep-btn prep-btn--menu"
                     onClick={() => {
+                      playSfx('button_secondary')
                       forceUnlockBgm(isFreePrep ? 'lobby' : 'store')
                       setStep(isFreePrep ? 'lobby' : 'location')
                     }}
@@ -332,6 +336,7 @@ export default function PrepPhase() {
                     className="prep-btn prep-btn--start"
                     disabled={!menuReady}
                     onClick={() => {
+                      playSfx('button_primary')
                       forceUnlockBgm(isFreePrep ? 'lobby' : 'store')
                       setStep(isFreePrep ? 'lobby' : 'market')
                     }}
@@ -345,6 +350,7 @@ export default function PrepPhase() {
                     type="button"
                     className="prep-btn prep-btn--menu"
                     onClick={() => {
+                      playSfx('button_secondary')
                       forceUnlockBgm(isFreePrep ? 'lobby' : 'store')
                       setStep(isFreePrep ? 'lobby' : 'menu')
                     }}
@@ -362,10 +368,12 @@ export default function PrepPhase() {
                     }
                     onClick={() => {
                       if (isFreePrep) {
+                        playSfx('button_primary')
                         forceUnlockBgm('lobby')
                         setStep('lobby')
                         return
                       }
+                      playSfx('business_open')
                       forceUnlockBgm('cooking')
                       dispatch({ type: ActionTypes.START_OPEN })
                     }}

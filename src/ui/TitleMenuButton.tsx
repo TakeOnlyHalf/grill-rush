@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, MouseEvent, ReactNode } from 'react'
+import { playButtonSfx } from '../audio/sfx'
 
 export type TitleMenuButtonVariant = 'wood' | 'chalk'
 export type TitleMenuButtonTone = 'primary' | 'secondary' | 'tertiary'
@@ -14,6 +15,8 @@ export interface TitleMenuButtonProps extends ButtonHTMLAttributes<HTMLButtonEle
   tone?: TitleMenuButtonTone
   /** 작은 장식 아이콘 */
   icon?: TitleMenuButtonIcon
+  /** true면 클릭 효과음 생략 */
+  muteSfx?: boolean
 }
 
 function resolveTone(
@@ -71,9 +74,19 @@ export default function TitleMenuButton({
   icon = 'none',
   type = 'button',
   className = '',
+  muteSfx = false,
+  onClick,
+  disabled,
   ...rest
 }: TitleMenuButtonProps) {
   const resolved = resolveTone(tone, variant)
+
+  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
+    if (!disabled && !muteSfx) {
+      playButtonSfx(resolved === 'primary' ? 'primary' : 'secondary')
+    }
+    onClick?.(e)
+  }
 
   return (
     <button
@@ -85,6 +98,8 @@ export default function TitleMenuButton({
       ]
         .filter(Boolean)
         .join(' ')}
+      disabled={disabled}
+      onClick={handleClick}
       {...rest}
     >
       <span className="title-menu-btn__edge" aria-hidden>

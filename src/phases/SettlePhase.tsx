@@ -10,6 +10,7 @@ import {
   TODAY_CALC_BG,
 } from '../utils/assets'
 import { forceUnlockBgm } from '../audio/bgm'
+import { playSfx } from '../audio/sfx'
 
 function netProfitIcon(profit: number): string {
   if (profit < 0) return NET_LOSS_ICON
@@ -181,6 +182,7 @@ export default function SettlePhase() {
           type="button"
           className="settle-cta"
           onClick={() => {
+            playSfx('button_primary')
             forceUnlockBgm('store')
             dispatch({ type: ActionTypes.CONFIRM_SETTLE })
           }}

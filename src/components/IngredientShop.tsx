@@ -9,6 +9,7 @@ import {
   type IngredientMarketHandle,
 } from '../pixi/scenes/IngredientMarketScene'
 import ingredients from '../data/ingredients.json'
+import { playSfx } from '../audio/sfx'
 
 /** 재료 매입 — PixiJS 마트 UI (선택 메뉴 재료만 해금) */
 export default function IngredientShop() {
@@ -48,6 +49,7 @@ export default function IngredientShop() {
       (ingredientId: string) => {
         const ing = ingredients.find((i) => i.id === ingredientId)
         if (!ing) return
+        playSfx('menu_select')
         dispatchRef.current({
           type: ActionTypes.BUY_INGREDIENT,
           payload: {

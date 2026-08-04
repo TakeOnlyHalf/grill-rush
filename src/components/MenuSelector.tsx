@@ -7,6 +7,7 @@ import {
   createMenuBoardScene,
   type MenuBoardHandle,
 } from '../pixi/scenes/MenuBoardScene'
+import { playSfx } from '../audio/sfx'
 
 /** 메뉴 선택 — PixiJS 메뉴판 UI */
 export default function MenuSelector() {
@@ -32,6 +33,7 @@ export default function MenuSelector() {
 
   const setup = useCallback((app: Application) => {
     const scene = createMenuBoardScene(app, stateRef.current, (menuId) => {
+      playSfx('menu_select')
       dispatchRef.current({
         type: ActionTypes.TOGGLE_MENU,
         payload: menuId,

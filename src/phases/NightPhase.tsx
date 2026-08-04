@@ -6,6 +6,7 @@ import { TRUCK_UPGRADE_DAY_BG, TRUCK_UPGRADE_NIGHT_BG } from '../utils/assets'
 import upgradesData from '../data/upgrades.json'
 import events from '../data/events.json'
 import { forceUnlockBgm } from '../audio/bgm'
+import { playSfx } from '../audio/sfx'
 import {
   getCookTimeFactor,
   getDisplayedGrillExpansionUpgrade,
@@ -119,6 +120,7 @@ export default function NightPhase({
 
   function togglePlan(up: UpgradeDef) {
     if (owned.includes(up.id) || isLocked(up)) return
+    playSfx('menu_select')
     setPlanned((prev) =>
       prev.includes(up.id) ? prev.filter((id) => id !== up.id) : [...prev, up.id],
     )
@@ -126,6 +128,7 @@ export default function NightPhase({
 
   function purchasePlan() {
     if (!canPurchase) return
+    playSfx('menu_select')
     for (const up of plannedItems) {
       dispatch({
         type: ActionTypes.BUY_UPGRADE,
@@ -196,7 +199,10 @@ export default function NightPhase({
                 <button
                   type="button"
                   className={`night-cat${category === c.id ? ' is-active' : ''}`}
-                  onClick={() => setCategory(c.id)}
+                  onClick={() => {
+                    playSfx('menu_select')
+                    setCategory(c.id)
+                  }}
                 >
                   <span className="night-cat__icon" aria-hidden>
                     {c.icon}
@@ -339,7 +345,10 @@ export default function NightPhase({
             type="button"
             className="night-reset"
             disabled={planned.length === 0}
-            onClick={() => setPlanned([])}
+            onClick={() => {
+              playSfx('button_secondary')
+              setPlanned([])
+            }}
           >
             선택 초기화
           </button>
@@ -371,6 +380,7 @@ export default function NightPhase({
           type="button"
           className="night-next"
           onClick={() => {
+            playSfx('button_primary')
             if (mode === 'prep') {
               forceUnlockBgm('lobby')
               onBack?.()

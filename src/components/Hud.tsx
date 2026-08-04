@@ -4,6 +4,7 @@ import { getWeatherEmoji, getWeatherLabel } from '../utils/weather'
 import { ActionTypes, OPEN_DURATION_SEC } from '../state/actions'
 import { isRushHour } from '../state/formulas'
 import { forceUnlockBgm } from '../audio/bgm'
+import { playSfx } from '../audio/sfx'
 import OptionsModal from './OptionsModal'
 
 export interface HudProps {
@@ -67,7 +68,10 @@ export default function Hud({ variant = 'default' }: HudProps) {
           type="button"
           className="hud-icon-btn"
           aria-label="설정"
-          onClick={() => setOptionsOpen(true)}
+          onClick={() => {
+            playSfx('button_secondary')
+            setOptionsOpen(true)
+          }}
         >
           ⚙️
         </button>
@@ -76,6 +80,7 @@ export default function Hud({ variant = 'default' }: HudProps) {
             type="button"
             className="hud-end-btn"
             onClick={() => {
+              playSfx('button_primary')
               forceUnlockBgm('store')
               dispatch({ type: ActionTypes.END_OPEN })
             }}

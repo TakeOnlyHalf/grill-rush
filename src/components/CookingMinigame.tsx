@@ -18,7 +18,7 @@ import {
   updatePerfectTimingAlarms,
   type PerfectTimingAlarmState,
 } from '../grill/perfectTimingAlarm'
-import { playPerfectTimingAlarm } from '../audio/sfx'
+import { playPerfectTimingAlarm, playSfx } from '../audio/sfx'
 import { grillIngredients } from '../grill/grillIngredients'
 import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
@@ -111,6 +111,7 @@ export default function CookingMinigame() {
     if (!idleSlot) return // 빈 슬롯 없음
 
     dispatch({ type: ActionTypes.USE_INGREDIENT, payload: { ingredientId } })
+    playSfx('grill_sound')
     const adjustedIngredient = {
       ...grillIngredient,
       cookDurationMs: getAdjustedCookDurationMs(
@@ -132,6 +133,7 @@ export default function CookingMinigame() {
     clearSlotAlert(slot.id)
     const t = Date.now()
     const result = slot.status === 'burnt' ? 'burnt' : getCookResult(getCookProgress(slot, t))
+    if (result !== 'burnt') playSfx('cooking_done')
     dispatch({
       type: ActionTypes.COLLECT_COOKED_INGREDIENT,
       payload: { ingredientId: slot.ingredientId, cookResult: result },
@@ -144,6 +146,7 @@ export default function CookingMinigame() {
 
   const handleServeFromPlate = () => {
     if (!selectedStillExists || !readyOrder) return
+    playSfx('serve_dish')
     dispatch({
       type: ActionTypes.SERVE_ORDER,
       payload: { orderId: readyOrder.id, customerId: readyOrder.customerId },
@@ -220,7 +223,10 @@ export default function CookingMinigame() {
                   <button
                     type="button"
                     className={`plated-item plated-item--${item.result}${selected ? ' is-selected' : ''}`}
-                    onClick={() => setSelectedPreparedId(selected ? null : item.id)}
+                    onClick={() => {
+                      playSfx('menu_select')
+                      setSelectedPreparedId(selected ? null : item.id)
+                    }}
                     aria-pressed={selected}
                   >
                     <span className="plated-item-icon" aria-hidden>{ingredient?.icon ?? '🍽️'}</span>
