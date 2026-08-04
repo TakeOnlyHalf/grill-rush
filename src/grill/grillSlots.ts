@@ -96,3 +96,62 @@ export function clearGrillSlot(slot: GrillSlot): GrillSlot {
     cookDurationMs: 0,
   }
 }
+
+export function getAutoCollectCandidate(
+  slots: readonly GrillSlot[],
+  now: number,
+): GrillSlot | null {
+  return slots
+    .filter((slot) =>
+      slot.status === 'cooking' &&
+      slot.ingredientId !== null &&
+      slot.startedAt !== null &&
+      slot.cookDurationMs > 0 &&
+      getCookResult(getCookProgress(slot, now)) === 'perfect'
+    )
+    .sort((left, right) => {
+      const leftRemainingMs =
+        (PERFECT_WINDOW_END - getCookProgress(left, now)) * left.cookDurationMs
+      const rightRemainingMs =
+        (PERFECT_WINDOW_END - getCookProgress(right, now)) * right.cookDurationMs
+      return leftRemainingMs - rightRemainingMs ||
+        (left.startedAt ?? 0) - (right.startedAt ?? 0) ||
+        left.id.localeCompare(right.id)
+    })[0] ?? null
+}
+
+export interface CollectGrillSlotResult {
+  slots: GrillSlot[]
+  collected: CollectedGrillItem | null
+}
+
+export function collectGrillSlot(
+  slots: readonly GrillSlot[],
+  slotId: string,
+  now: number,
+): CollectGrillSlotResult {
+  const slot = slots.find((candidate) => candidate.id === slotId)
+  if (
+    !slot ||
+    slot.status === 'idle' ||
+    slot.ingredientId === null ||
+    slot.startedAt === null ||
+    slot.cookDurationMs <= 0
+  ) {
+    return { slots: [...slots], collected: null }
+  }
+
+  const progress = getCookProgress(slot, now)
+  const result = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
+  return {
+    slots: slots.map((candidate) =>
+      candidate.id === slotId ? clearGrillSlot(candidate) : candidate
+    ),
+    collected: {
+      slotId,
+      ingredientId: slot.ingredientId,
+      result,
+      progress,
+    },
+  }
+}
