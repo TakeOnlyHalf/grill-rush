@@ -64,6 +64,16 @@ export const PREP_LOBBY_NAV = publicUrl('images/ready_phase/loby_nav.webp')
 export const OPEN_TRUCK_INTERIOR_ART = publicUrl('images/open_phase/foodtruck_interior_transparent.webp')
 
 /**
+ * 영업 페이즈 — 하단 조리대(재료/그릴/완성) UI 프레임.
+ * 1672x941 원본: 위쪽 얇은 선반 바(y 0~63), 투명 여백(y 64~436), 아래쪽 조리대 패널(y 437~928, 재료:그릴:완성 ≈ 1:1.85:1).
+ */
+export const OPEN_COOKING_FRAME_ART = publicUrl('images/open_phase/open-phase-layout-ui.webp')
+/** 그릴 슬롯 타일 — 대기 상태(빈 철판) */
+export const GRILL_TILE_OFF_ART = publicUrl('images/open_phase/grill-off.webp')
+/** 그릴 슬롯 타일 — 조리 중 상태(그릴 자국) */
+export const GRILL_TILE_ON_ART = publicUrl('images/open_phase/grill-on.webp')
+
+/**
  * 영업 페이즈 — 장소별 창밖 배경. 아직 그리지 않은 장소는 항목을 비워두면
  * StreetScene이 기존 플랫 컬러(하늘/바닥)로 대체해 그린다.
  */
@@ -99,6 +109,9 @@ export const CRITICAL_IMAGE_URLS = [
   PREP_LOBBY_NAV,
   DAY_STREET_BG,
   OPEN_TRUCK_INTERIOR_ART,
+  OPEN_COOKING_FRAME_ART,
+  GRILL_TILE_OFF_ART,
+  GRILL_TILE_ON_ART,
   ...(Object.values(STREET_BG_BY_LOCATION).filter(Boolean) as string[]),
 ] as const
 

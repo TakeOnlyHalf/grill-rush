@@ -1934,6 +1934,7 @@ body:has(.phase-open) {
 
 /* Open — full-bleed landscape layout (no page scroll) */
 .phase-open {
+  position: relative;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
@@ -1942,11 +1943,61 @@ body:has(.phase-open) {
   overflow: hidden;
 }
 
-.phase-open .cooking-area {
-  width: 100%;
+.debug-pause-btn {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 80;
+  padding: 0.4rem 0.7rem;
+  border: 1px dashed #ffcf6e;
+  border-radius: var(--radius-sm);
+  background: rgba(20, 14, 8, 0.78);
+  color: #ffe1a8;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.debug-pause-btn:hover {
+  background: rgba(20, 14, 8, 0.92);
+}
+
+.debug-pause-btn.is-paused {
+  border-color: var(--danger);
+  color: #ffd6cf;
+}
+
+/*
+ * open-phase-layout-ui.webp(1672x941) 전체를 한 프레임으로 사용한다.
+ * 위쪽 얇은 선반 바(0~6.8%) · 투명 구간(6.8%~46.33%, .street-view) ·
+ * 나누어지지 않은 헤더 띠(46.44%~65.14%, .queue-strip-panel) ·
+ * 재료/그릴/완성 3분할 조리대(65.14%~98.62%, .cooking-area) 순서.
+ * 세로 여백은 넘치지 않게 높이 기준으로 채우고, 가로는 종횡비에 맞춰 auto(좌우 레터박스 허용).
+ */
+.phase-open .open-frame {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0.4rem;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1672 / 941;
+  align-self: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.phase-open .cooking-area {
+  position: absolute;
+  left: 0;
+  top: 65.14%;
+  width: 100%;
+  height: 33.48%;
+  padding: 0.4rem 0.5rem 0.6rem;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .grill-board-wrap {
@@ -1972,16 +2023,16 @@ body:has(.phase-open) {
   min-width: 0;
   min-height: 0;
   padding: 0;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--radius);
-  background: var(--bg-panel);
+  background-repeat: no-repeat;
   font: inherit;
-  color: var(--text);
+  color: #fff8ec;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .grill-slot-card--idle {
-  border-style: dashed;
-  color: var(--muted);
+  color: #d8cdbf;
   cursor: default;
 }
 
@@ -1999,7 +2050,7 @@ body:has(.phase-open) {
 }
 
 .grill-slot-card--cooking:hover {
-  border-color: var(--accent-2);
+  box-shadow: inset 0 0 0 3px var(--accent-2);
 }
 
 .grill-slot-timer {
@@ -2031,7 +2082,7 @@ body:has(.phase-open) {
 }
 
 .grill-slot-card--burnt {
-  border-color: var(--danger);
+  box-shadow: inset 0 0 0 3px var(--danger);
 }
 
 .grill-slot-card--burnt .grill-slot-timer {
@@ -2039,9 +2090,9 @@ body:has(.phase-open) {
 }
 
 .grill-slot-card--locked {
-  background: var(--disabled);
   color: var(--muted);
-  opacity: 0.7;
+  opacity: 0.55;
+  filter: grayscale(0.6);
 }
 
 .grill-slot-lock-icon {
@@ -2104,30 +2155,35 @@ body:has(.phase-open) {
 .cooking-columns {
   display: flex;
   align-items: stretch;
-  gap: 0.5rem;
+  gap: 0;
   height: 100%;
+  padding: 0 0.84%;
+  box-sizing: border-box;
 }
 
 .cooking-col {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--bg-panel-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.4rem 0.55rem;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0.5rem 0.6rem;
 }
 
-.cooking-col--stock,
+/* open-phase-layout-ui.webp 하단 조리대의 재료:그릴:완성 칸 너비 비율(≈25.9 : 48 : 26.1)에 맞춘 고정폭. */
+.cooking-col--stock {
+  flex: 0 0 25.9%;
+}
+
 .cooking-col--plated {
-  flex: 1 1 0;
+  flex: 0 0 26.1%;
 }
 
 .cooking-col--grill {
-  flex: 1.5 1 0;
-  background: transparent;
-  border: none;
-  padding: 0.3rem 0 0;
+  flex: 0 0 48%;
+  padding: 0.35rem 0.4rem 0;
 }
 
 .cooking-col-title {
@@ -2135,13 +2191,20 @@ body:has(.phase-open) {
   align-items: center;
   gap: 0.35rem;
   margin: 0 0 0.35rem;
+  color: #fff3e2;
   font-size: 0.85rem;
   font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .info-tip {
   position: relative;
   display: inline-flex;
+}
+
+.cooking-col-title .info-tip-trigger {
+  border-color: #d8cdbf;
+  color: #d8cdbf;
 }
 
 .info-tip-trigger {
@@ -2192,6 +2255,7 @@ body:has(.phase-open) {
 
 .cooking-col-empty {
   margin: 0;
+  color: #d8cdbf;
   font-size: 0.75rem;
 }
 
@@ -2208,6 +2272,14 @@ body:has(.phase-open) {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+}
+
+/* 완성 프레임 아트에 그려진 접시 2개 자리에 맞춰 2열로, 세로 중앙(접시 위치)에 정렬 */
+.plated-grid {
+  grid-template-columns: repeat(2, 1fr);
+  align-content: center;
+  justify-content: center;
+  gap: 0.5rem 0.9rem;
 }
 
 .ingredient-grid > li,
@@ -2329,7 +2401,7 @@ body:has(.phase-open) {
   grid-template-columns: repeat(9, 1fr);
   grid-auto-rows: 1fr;
   gap: 0.45rem;
-  margin: 0;
+  margin: 4px 0;
   padding: 0;
   list-style: none;
   flex: 1 1 auto;
@@ -2370,11 +2442,23 @@ body:has(.phase-open) {
   flex: 1 1 auto;
   min-height: 0;
   gap: 0.3rem;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 캐릭터 이미지 / 음식 아이콘 자리 — 카드 폭 기준 정사각형(세로로 넘치지 않도록 폭 기준으로 계산 후 세로 중앙 정렬) */
+.order-queue-portrait,
+.order-combination {
+  flex: 0 0 calc(50% - 0.15rem);
+  box-sizing: border-box;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  min-height: 0;
 }
 
 .order-queue-portrait {
-  flex: 1 1 0;
-  min-width: 0;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background-color: var(--cream);
@@ -2384,8 +2468,6 @@ body:has(.phase-open) {
 .order-combination {
   display: grid;
   place-items: center;
-  flex: 1 1 0;
-  min-width: 0;
   padding: 0.3rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -2499,12 +2581,13 @@ body:has(.phase-open) {
   font-size: 0.85rem;
 }
 
-.street-block {
-  display: flex;
-  flex-direction: column;
-}
-
-.street-view {
+/* HUD 바로 아래 손님 공간이 오도록 위쪽 얇은 선반 바 자리(0~6.8%)까지 포함해서 채운다 */
+.phase-open .street-view {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 46.33%;
   border-radius: var(--radius) var(--radius) 0 0;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
@@ -2513,7 +2596,7 @@ body:has(.phase-open) {
 .street-frame {
   position: relative;
   width: 100%;
-  height: 420px;
+  height: 100%;
   overflow: hidden;
   background: #14100c;
 }
@@ -2530,20 +2613,34 @@ body:has(.phase-open) {
 
 .queue-strip-panel {
   position: relative;
-  height: 150px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 0 0 var(--radius) var(--radius);
-  padding: 0.5rem 0.9rem 0.55rem;
-  box-shadow: var(--shadow-sm);
+}
+
+/* 바닥 조리대 바 위쪽, 나누어지지 않은 헤더 띠(y 437~613, 프레임 대비 46.44%~65.14%) 위에 그대로 표출 */
+.phase-open .queue-strip-panel {
+  position: absolute;
+  left: 0;
+  top: 46.44%;
+  width: 100%;
+  height: 18.7%;
+  padding: 0.4rem 0.9rem 0.3rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .queue-strip-title {
   margin: 0 0 0.35rem;
+  color: #fff3e2;
   font-size: 0.95rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.queue-strip-panel .muted {
+  color: #d8cdbf;
 }
 
 .queue-strip {
