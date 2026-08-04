@@ -38,3 +38,40 @@ export function getGrillSlotCount(ownedUpgradeIds: readonly string[]): number {
 
   return Math.min(MAX_GRILL_SLOT_COUNT, GRILL_SLOT_COUNT + additionalSlots)
 }
+
+export function getCookTimeFactor(ownedUpgradeIds: readonly string[]): number {
+  const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
+
+  return upgradesData.reduce((factor, upgrade) => {
+    if (
+      !ownedUpgradeIdSet.has(upgrade.id) ||
+      !('cookTimeFactor' in upgrade.effect) ||
+      typeof upgrade.effect.cookTimeFactor !== 'number' ||
+      !Number.isFinite(upgrade.effect.cookTimeFactor) ||
+      upgrade.effect.cookTimeFactor <= 0
+    ) {
+      return factor
+    }
+
+    const nextFactor = factor * upgrade.effect.cookTimeFactor
+    return Number.isFinite(nextFactor) && nextFactor > 0 ? nextFactor : factor
+  }, 1)
+}
+
+export function getAdjustedCookDurationMs(
+  baseDurationMs: number,
+  ownedUpgradeIds: readonly string[],
+): number {
+  if (!Number.isSafeInteger(baseDurationMs) || baseDurationMs <= 0) {
+    throw new RangeError('Cook duration must be a positive integer')
+  }
+
+  const adjustedDurationMs = Math.round(
+    baseDurationMs * getCookTimeFactor(ownedUpgradeIds),
+  )
+  if (!Number.isSafeInteger(adjustedDurationMs) || adjustedDurationMs <= 0) {
+    throw new RangeError('Adjusted cook duration must be a positive integer')
+  }
+
+  return adjustedDurationMs
+}
