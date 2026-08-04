@@ -9,7 +9,6 @@ import { forceUnlockBgm } from '../audio/bgm'
 import {
   AUTO_ASSIST_UPGRADE_IDS,
   getAutoAssistIntervalMs,
-  getAutoAssistLevel,
   getCookTimeFactor,
   getDisplayedAutoAssistUpgrade,
   getDisplayedGrillExpansionUpgrade,
@@ -60,9 +59,8 @@ function baseTruckStats(owned: string[]) {
     Math.round((1 - getCookTimeFactor(owned)) * 100),
   )
   const visitBonus = owned.includes('signboard') ? 10 : 0
-  const autoAssistLevel = getAutoAssistLevel(owned)
   const autoCollectIntervalMs = getAutoAssistIntervalMs(owned)
-  return { slots, cookTimeReduction, visitBonus, autoAssistLevel, autoCollectIntervalMs }
+  return { slots, cookTimeReduction, visitBonus, autoCollectIntervalMs }
 }
 
 function previewStats(owned: string[], planned: string[]) {
@@ -159,11 +157,11 @@ export default function NightPhase({
   if (preview.autoCollectIntervalMs !== current.autoCollectIntervalMs) {
     const currentLabel = current.autoCollectIntervalMs === null
       ? '미보유'
-      : `${current.autoCollectIntervalMs / 1_000}초마다`
+      : `${current.autoCollectIntervalMs / 1_000}초`
     const previewLabel = preview.autoCollectIntervalMs === null
       ? '미보유'
-      : `${preview.autoCollectIntervalMs / 1_000}초마다`
-    effectLines.push(`${currentLabel} → ${previewLabel} 자동 회수`)
+      : `${preview.autoCollectIntervalMs / 1_000}초`
+    effectLines.push(`조리 보조 ${currentLabel} → ${previewLabel} 재사용 대기`)
   }
 
   return (
@@ -242,14 +240,6 @@ export default function NightPhase({
             <li>
               <span>방문 보너스</span>
               <strong>{current.visitBonus}%</strong>
-            </li>
-            <li>
-              <span>조리 보조</span>
-              <strong>
-                {current.autoCollectIntervalMs === null
-                  ? '미보유'
-                  : `Lv.${current.autoAssistLevel} · ${current.autoCollectIntervalMs / 1_000}초`}
-              </strong>
             </li>
           </ul>
         </aside>

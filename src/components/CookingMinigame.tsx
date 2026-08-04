@@ -278,7 +278,7 @@ export default function CookingMinigame() {
           </h4>
           {autoCollectIntervalMs !== null ? (
             <p className="grill-auto-assist-status">
-              조리 보조 Lv.{autoAssistLevel} · {autoCollectIntervalMs / 1_000}초마다 자동 확인
+              조리 보조 Lv.{autoAssistLevel} · 회수 후 {autoCollectIntervalMs / 1_000}초 재사용 대기
             </p>
           ) : null}
           <GrillSlots
