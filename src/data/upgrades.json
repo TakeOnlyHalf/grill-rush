@@ -65,15 +65,39 @@
   },
   {
     "id": "auto_assist",
-    "name": "조리 보조",
+    "name": "조리 보조 Lv.1",
     "category": "automation",
     "icon": "🤖",
-    "description": "가장 오래된 재료 자동 꺼내기",
-    "detail": "가장 오래된 재료 자동 꺼내기",
+    "description": "9초마다 완벽 상태 재료 자동 회수",
+    "detail": "위험 구간 직전의 완벽 재료를 9초마다 1개 회수",
     "cost": 120000,
     "requires": "grill_expand",
     "requiresLabel": "주방 확장 Lv.1 필요",
-    "effect": { "autoRemoveOldest": true }
+    "effect": { "autoCollectIntervalMs": 9000 }
+  },
+  {
+    "id": "auto_assist_2",
+    "name": "조리 보조 Lv.2",
+    "category": "automation",
+    "icon": "🤖",
+    "description": "8초마다 완벽 상태 재료 자동 회수",
+    "detail": "자동 확인 주기 9초 → 8초",
+    "cost": 130000,
+    "requires": "auto_assist",
+    "requiresLabel": "조리 보조 Lv.1 필요",
+    "effect": { "autoCollectIntervalMs": 8000 }
+  },
+  {
+    "id": "auto_assist_3",
+    "name": "조리 보조 Lv.3",
+    "category": "automation",
+    "icon": "🤖",
+    "description": "7초마다 완벽 상태 재료 자동 회수",
+    "detail": "자동 확인 주기 8초 → 7초",
+    "cost": 140000,
+    "requires": "auto_assist_2",
+    "requiresLabel": "조리 보조 Lv.2 필요",
+    "effect": { "autoCollectIntervalMs": 7000 }
   },
   {
     "id": "ingredient_storage",

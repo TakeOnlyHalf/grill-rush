@@ -81,4 +81,35 @@ describe('BUY_UPGRADE', () => {
     expect(levelTwo.cash - levelThree.cash).toBe(150_000)
     expect(getGrillSlotCount(levelThree.upgrades)).toBe(6)
   })
+
+  it('requires and charges each auto assist level in order', () => {
+    const initial = { ...nightState(), upgrades: ['grill_expand'] }
+    expect(gameReducer(initial, {
+      type: 'BUY_UPGRADE',
+      payload: { upgradeId: 'auto_assist_2' },
+    })).toBe(initial)
+
+    const levelOne = gameReducer(initial, {
+      type: 'BUY_UPGRADE',
+      payload: { upgradeId: 'auto_assist' },
+    })
+    const levelTwo = gameReducer(levelOne, {
+      type: 'BUY_UPGRADE',
+      payload: { upgradeId: 'auto_assist_2' },
+    })
+    const levelThree = gameReducer(levelTwo, {
+      type: 'BUY_UPGRADE',
+      payload: { upgradeId: 'auto_assist_3' },
+    })
+
+    expect(initial.cash - levelOne.cash).toBe(120_000)
+    expect(levelOne.cash - levelTwo.cash).toBe(130_000)
+    expect(levelTwo.cash - levelThree.cash).toBe(140_000)
+    expect(levelThree.upgrades).toEqual([
+      'grill_expand',
+      'auto_assist',
+      'auto_assist_2',
+      'auto_assist_3',
+    ])
+  })
 })
