@@ -10,8 +10,8 @@ import {
   type GrillSlot,
 } from '../grill/grillSlots'
 import {
+  getAdjustedCookDurationMs,
   getGrillSlotCount,
-  getUpgradedCookDurationMs,
   hasPerfectTimingAlarm,
 } from '../grill/grillUpgrades'
 import {
@@ -111,15 +111,19 @@ export default function CookingMinigame() {
     if (!idleSlot) return // 빈 슬롯 없음
 
     dispatch({ type: ActionTypes.USE_INGREDIENT, payload: { ingredientId } })
-    const upgradedIngredient = {
+    const adjustedIngredient = {
       ...grillIngredient,
-      cookDurationMs: getUpgradedCookDurationMs(
+      cookDurationMs: getAdjustedCookDurationMs(
         grillIngredient.cookDurationMs,
         state.upgrades,
       ),
     }
     setSlots((prev) =>
-      prev.map((slot) => (slot.id === idleSlot.id ? placeIngredient(slot, upgradedIngredient, Date.now()) : slot)),
+      prev.map((slot) =>
+        slot.id === idleSlot.id
+          ? placeIngredient(slot, adjustedIngredient, Date.now())
+          : slot,
+      ),
     )
   }
 

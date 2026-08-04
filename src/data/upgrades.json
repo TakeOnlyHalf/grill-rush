@@ -38,8 +38,8 @@
     "name": "화력 강화",
     "category": "performance",
     "icon": "🔥",
-    "description": "조리 시간 -20%",
-    "detail": "조리 시간 -20%",
+    "description": "조리 시간 20% 단축",
+    "detail": "조리 시간 20% 단축",
     "cost": 50000,
     "effect": { "cookTimeFactor": 0.8 }
   },

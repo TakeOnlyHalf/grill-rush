@@ -49,21 +49,39 @@ export function hasPerfectTimingAlarm(ownedUpgradeIds: readonly string[]): boole
   )
 }
 
-export function getGrillCookTimeFactor(ownedUpgradeIds: readonly string[]): number {
+export function getCookTimeFactor(ownedUpgradeIds: readonly string[]): number {
   const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
+
   return upgradesData.reduce((factor, upgrade) => {
-    if (!ownedUpgradeIdSet.has(upgrade.id) || !('cookTimeFactor' in upgrade.effect)) {
+    if (
+      !ownedUpgradeIdSet.has(upgrade.id) ||
+      !('cookTimeFactor' in upgrade.effect) ||
+      typeof upgrade.effect.cookTimeFactor !== 'number' ||
+      !Number.isFinite(upgrade.effect.cookTimeFactor) ||
+      upgrade.effect.cookTimeFactor <= 0
+    ) {
       return factor
     }
-    return typeof upgrade.effect.cookTimeFactor === 'number'
-      ? factor * upgrade.effect.cookTimeFactor
-      : factor
+
+    const nextFactor = factor * upgrade.effect.cookTimeFactor
+    return Number.isFinite(nextFactor) && nextFactor > 0 ? nextFactor : factor
   }, 1)
 }
 
-export function getUpgradedCookDurationMs(
+export function getAdjustedCookDurationMs(
   baseDurationMs: number,
   ownedUpgradeIds: readonly string[],
 ): number {
-  return Math.round(baseDurationMs * getGrillCookTimeFactor(ownedUpgradeIds))
+  if (!Number.isSafeInteger(baseDurationMs) || baseDurationMs <= 0) {
+    throw new RangeError('Cook duration must be a positive integer')
+  }
+
+  const adjustedDurationMs = Math.round(
+    baseDurationMs * getCookTimeFactor(ownedUpgradeIds),
+  )
+  if (!Number.isSafeInteger(adjustedDurationMs) || adjustedDurationMs <= 0) {
+    throw new RangeError('Adjusted cook duration must be a positive integer')
+  }
+
+  return adjustedDurationMs
 }
