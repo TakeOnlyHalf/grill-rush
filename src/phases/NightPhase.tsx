@@ -7,6 +7,7 @@ import upgradesData from '../data/upgrades.json'
 import events from '../data/events.json'
 import { forceUnlockBgm } from '../audio/bgm'
 import {
+  getCookTimeFactor,
   getDisplayedGrillExpansionUpgrade,
   getGrillSlotCount,
   GRILL_EXPANSION_UPGRADE_IDS,
@@ -48,9 +49,12 @@ function formatWon(n: number): string {
 
 function baseTruckStats(owned: string[]) {
   const slots = getGrillSlotCount(owned)
-  const cookSpeed = owned.includes('heat_boost') ? 120 : 100
+  const cookTimeReduction = Math.max(
+    0,
+    Math.round((1 - getCookTimeFactor(owned)) * 100),
+  )
   const visitBonus = owned.includes('signboard') ? 10 : 0
-  return { slots, cookSpeed, visitBonus }
+  return { slots, cookTimeReduction, visitBonus }
 }
 
 function previewStats(owned: string[], planned: string[]) {
@@ -132,8 +136,8 @@ export default function NightPhase({
   }
 
   const effectLines: string[] = []
-  if (preview.cookSpeed !== current.cookSpeed) {
-    effectLines.push(`조리 속도 ${current.cookSpeed}% → ${preview.cookSpeed}%`)
+  if (preview.cookTimeReduction !== current.cookTimeReduction) {
+    effectLines.push(`조리 시간 ${preview.cookTimeReduction}% 단축`)
   }
   if (preview.visitBonus !== current.visitBonus) {
     effectLines.push(`방문 보너스 ${current.visitBonus}% → ${preview.visitBonus}%`)
@@ -212,8 +216,8 @@ export default function NightPhase({
               <strong>{current.slots}</strong>
             </li>
             <li>
-              <span>조리 속도</span>
-              <strong>{current.cookSpeed}%</strong>
+              <span>조리 시간 단축</span>
+              <strong>{current.cookTimeReduction}%</strong>
             </li>
             <li>
               <span>방문 보너스</span>

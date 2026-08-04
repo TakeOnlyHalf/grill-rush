@@ -12,6 +12,23 @@ function nightState(cash = 1_000_000) {
 }
 
 describe('BUY_UPGRADE', () => {
+  it('charges 50,000 for heat boost and blocks duplicate purchases', () => {
+    const initial = nightState(100_000)
+    const purchased = gameReducer(initial, {
+      type: 'BUY_UPGRADE',
+      payload: { upgradeId: 'heat_boost' },
+    })
+
+    expect(purchased.cash).toBe(50_000)
+    expect(purchased.upgrades).toEqual(['heat_boost'])
+    expect(
+      gameReducer(purchased, {
+        type: 'BUY_UPGRADE',
+        payload: { upgradeId: 'heat_boost' },
+      }),
+    ).toBe(purchased)
+  })
+
   it('charges the JSON cost and blocks duplicate purchases', () => {
     const initial = nightState(200_000)
     const purchased = gameReducer(initial, {
