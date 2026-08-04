@@ -56,12 +56,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!state.unlockedLocations.includes(state.location)) return state
       const loc = locations.find((l) => l.id === state.location)
       const rent = loc?.rentCost ?? 0
-      const alreadyPaid = state.dailyCosts.rent ?? 0
-      const nextCash = state.cash + alreadyPaid - rent
-      if (nextCash < 0) return state
+      // 자릿세는 선택 시 기록만 하고, 현금 차감은 정산(CONFIRM_SETTLE)에서 처리
       return {
         ...state,
-        cash: nextCash,
         dailyCosts: {
           ...state.dailyCosts,
           rent,
@@ -177,7 +174,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         dailyReviews: [],
         dailyCosts: {
           ...state.dailyCosts,
-          // 자릿세는 CONFIRM_LOCATION에서 이미 차감·기록
+          // 자릿세는 CONFIRM_LOCATION에서 기록, 현금 차감은 정산에서
           rent: state.dailyCosts.rent || (loc?.rentCost ?? 0),
           truck: DAILY_TRUCK_COST,
           waste: 0,
@@ -259,10 +256,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         tips: state.dailyTips,
         costs: state.dailyCosts,
       })
-      // 재료·자릿세는 prep에서 이미 현금 차감됨
+      // 재료비는 prep에서 이미 현금 차감. 자릿세·폐기·트럭 유지비는 여기서 반영.
       const openDayDelta =
         state.dailySales +
         state.dailyTips -
+        (state.dailyCosts.rent ?? 0) -
         (state.dailyCosts.waste ?? 0) -
         (state.dailyCosts.truck ?? 0)
 

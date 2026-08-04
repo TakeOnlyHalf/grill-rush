@@ -125,12 +125,8 @@ export default function PrepPhase() {
     setLocationPicked(true)
   }
 
-  const rentCost = loc?.rentCost ?? 0
-  const rentAlreadyPaid = state.dailyCosts.rent ?? 0
-  const canAffordRent = state.cash + rentAlreadyPaid >= rentCost
-
   const handleConfirmLocation = () => {
-    if (!locationPicked || !canAffordRent) return
+    if (!locationPicked) return
     playSfx('button_primary')
     dispatch({ type: ActionTypes.CONFIRM_LOCATION })
     setLocationConfirmed(true)
@@ -238,7 +234,7 @@ export default function PrepPhase() {
               <div className="prep-hint-stats">
                 <span>{loc.description}</span>
                 <span>예상 손님 {estimated}명</span>
-                <span>자릿세 {loc.rentCost.toLocaleString('ko-KR')}원</span>
+                <span>자릿세 {loc.rentCost.toLocaleString('ko-KR')}원 (정산 시 차감)</span>
               </div>
             )}
             <span className="prep-hint-board__paw" aria-hidden="true">
@@ -280,7 +276,7 @@ export default function PrepPhase() {
             <button
               type="button"
               className="prep-btn prep-btn--start prep-btn--cta"
-              disabled={!locationPicked || !canAffordRent}
+              disabled={!locationPicked}
               onClick={handleConfirmLocation}
             >
               {isFreePrep ? '선택 완료 →' : '다음: 메뉴 선택 →'}

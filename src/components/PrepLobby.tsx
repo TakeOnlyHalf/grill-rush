@@ -207,7 +207,7 @@ export default function PrepLobby({
         </ul>
 
         <div className="prep-lobby-checklist__cost">
-          <span>예상 고정비</span>
+          <span>예상 자릿세</span>
           <strong>₩{(loc?.rentCost ?? 0).toLocaleString('ko-KR')}</strong>
         </div>
         <button
