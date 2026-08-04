@@ -9,12 +9,49 @@ export const GRILL_EXPANSION_UPGRADE_IDS = [
   'grill_expand_3',
 ] as const
 
+export const AUTO_ASSIST_UPGRADE_IDS = [
+  'auto_assist',
+  'auto_assist_2',
+  'auto_assist_3',
+] as const
+
 export function getDisplayedGrillExpansionUpgrade(ownedUpgradeIds: readonly string[]) {
   const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
   const displayedUpgradeId =
     GRILL_EXPANSION_UPGRADE_IDS.find((id) => !ownedUpgradeIdSet.has(id)) ??
     GRILL_EXPANSION_UPGRADE_IDS[GRILL_EXPANSION_UPGRADE_IDS.length - 1]
 
+  return upgradesData.find((upgrade) => upgrade.id === displayedUpgradeId)
+}
+
+export function getAutoAssistLevel(ownedUpgradeIds: readonly string[]): number {
+  const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
+  return AUTO_ASSIST_UPGRADE_IDS.reduce(
+    (level, id, index) => ownedUpgradeIdSet.has(id) ? index + 1 : level,
+    0,
+  )
+}
+
+export function getAutoAssistIntervalMs(
+  ownedUpgradeIds: readonly string[],
+): number | null {
+  const level = getAutoAssistLevel(ownedUpgradeIds)
+  if (level === 0) return null
+
+  const upgradeId = AUTO_ASSIST_UPGRADE_IDS[level - 1]
+  const upgrade = upgradesData.find((item) => item.id === upgradeId)
+  if (!upgrade || !('autoCollectIntervalMs' in upgrade.effect)) return null
+
+  const intervalMs = upgrade.effect.autoCollectIntervalMs
+  return typeof intervalMs === 'number' && Number.isSafeInteger(intervalMs) && intervalMs > 0
+    ? intervalMs
+    : null
+}
+
+export function getDisplayedAutoAssistUpgrade(ownedUpgradeIds: readonly string[]) {
+  const level = getAutoAssistLevel(ownedUpgradeIds)
+  const displayedUpgradeId =
+    AUTO_ASSIST_UPGRADE_IDS[Math.min(level, AUTO_ASSIST_UPGRADE_IDS.length - 1)]
   return upgradesData.find((upgrade) => upgrade.id === displayedUpgradeId)
 }
 

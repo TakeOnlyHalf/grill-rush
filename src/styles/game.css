@@ -2139,6 +2139,13 @@ body:has(.phase-open) {
   font-weight: 700;
 }
 
+.grill-auto-assist-status {
+  margin: -0.15rem 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-align: center;
+}
+
 .info-tip {
   position: relative;
   display: inline-flex;
@@ -2477,6 +2484,37 @@ body:has(.phase-open) {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
   15%, 75% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -58%) scale(0.96); }
+}
+
+.auto-collect-feedback {
+  pointer-events: none;
+  position: fixed;
+  z-index: 19;
+  left: 50%;
+  top: 24%;
+  max-width: min(28rem, calc(100vw - 2rem));
+  padding: 0.65rem 1rem;
+  transform: translateX(-50%);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-md);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+  animation: auto-collect-feedback 1.3s both;
+}
+
+@keyframes auto-collect-feedback {
+  0%, 100% { opacity: 0; }
+  12%, 82% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auto-collect-feedback {
+    animation: none;
+  }
 }
 
 .time-bar {

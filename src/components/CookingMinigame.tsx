@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../state/GameContext'
 import {
-  clearGrillSlot,
+  collectGrillSlot,
   createIdleGrillSlots,
-  getCookProgress,
-  getCookResult,
   placeIngredient,
   resolveGrillSlot,
   type GrillSlot,
 } from '../grill/grillSlots'
 import {
+  createAutoAssistReadyState,
+  runAutoAssistTick,
+  type AutoAssistTimerState,
+} from '../grill/autoAssist'
+import {
   getAdjustedCookDurationMs,
+  getAutoAssistIntervalMs,
+  getAutoAssistLevel,
   getGrillSlotCount,
   hasPerfectTimingAlarm,
 } from '../grill/grillUpgrades'
@@ -29,6 +34,15 @@ const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id
 const grillIngredientById = new Map(grillIngredients.map((ingredient) => [ingredient.id, ingredient]))
 const resultLabels = { good: '좋음', perfect: '완벽', danger: '아슬아슬' } as const
 const PERFECT_TIMING_ALERT_DURATION_MS = 1_000
+const AUTO_COLLECT_FEEDBACK_DURATION_MS = 1_300
+
+function withObjectParticle(value: string): string {
+  const lastCodePoint = value.codePointAt(value.length - 1)
+  if (lastCodePoint === undefined || lastCodePoint < 0xac00 || lastCodePoint > 0xd7a3) {
+    return `${value}을`
+  }
+  return `${value}${(lastCodePoint - 0xac00) % 28 === 0 ? '를' : '을'}`
+}
 
 /**
  * 조리 미니게임 컨테이너 — 재료 / 그릴 / 완성 3분할(1:1.5:1) 레이아웃.
@@ -38,25 +52,79 @@ const PERFECT_TIMING_ALERT_DURATION_MS = 1_000
  */
 export default function CookingMinigame() {
   const { state, dispatch } = useGame()
+  const perfectTimingAlarmEnabled = hasPerfectTimingAlarm(state.upgrades)
+  const autoAssistLevel = getAutoAssistLevel(state.upgrades)
+  const autoCollectIntervalMs = getAutoAssistIntervalMs(state.upgrades)
   const [slots, setSlots] = useState<GrillSlot[]>(() =>
     createIdleGrillSlots(getGrillSlotCount(state.upgrades)),
   )
+  const slotsRef = useRef(slots)
   const [now, setNow] = useState(() => Date.now())
   const [selectedPreparedId, setSelectedPreparedId] = useState<string | null>(null)
   const [alertingSlotIds, setAlertingSlotIds] = useState<string[]>([])
   const [alarmAnnouncement, setAlarmAnnouncement] = useState({ id: 0, message: '' })
+  const [autoCollectFeedback, setAutoCollectFeedback] = useState<{
+    id: number
+    message: string
+  } | null>(null)
   const alarmStateRef = useRef<PerfectTimingAlarmState>({})
   const alertTimersRef = useRef(new Map<string, number>())
-  const perfectTimingAlarmEnabled = hasPerfectTimingAlarm(state.upgrades)
+  const autoCollectFeedbackTimerRef = useRef<number | null>(null)
+  const autoAssistTimerRef = useRef<AutoAssistTimerState>(
+    createAutoAssistReadyState(autoCollectIntervalMs, Date.now()),
+  )
 
   useEffect(() => {
+    autoAssistTimerRef.current = createAutoAssistReadyState(
+      autoCollectIntervalMs,
+      Date.now(),
+    )
     const id = setInterval(() => {
       const t = Date.now()
+      const resolvedSlots = slotsRef.current.map((slot) => resolveGrillSlot(slot, t))
+      const autoAssistTick = runAutoAssistTick(
+        resolvedSlots,
+        t,
+        autoCollectIntervalMs,
+        autoAssistTimerRef.current,
+        typeof document === 'undefined' || document.visibilityState === 'visible',
+      )
+      autoAssistTimerRef.current = autoAssistTick.timer
+      slotsRef.current = autoAssistTick.slots
       setNow(t)
-      setSlots((prev) => prev.map((slot) => resolveGrillSlot(slot, t)))
+      setSlots(autoAssistTick.slots)
+
+      if (!autoAssistTick.collected) return
+      const alertTimer = alertTimersRef.current.get(autoAssistTick.collected.slotId)
+      if (alertTimer !== undefined) window.clearTimeout(alertTimer)
+      alertTimersRef.current.delete(autoAssistTick.collected.slotId)
+      setAlertingSlotIds((current) =>
+        current.filter((id) => id !== autoAssistTick.collected?.slotId)
+      )
+      dispatch({
+        type: ActionTypes.COLLECT_COOKED_INGREDIENT,
+        payload: {
+          ingredientId: autoAssistTick.collected.ingredientId,
+          cookResult: autoAssistTick.collected.result,
+        },
+      })
+
+      const ingredientName = ingredientById.get(autoAssistTick.collected.ingredientId)?.name
+        ?? autoAssistTick.collected.ingredientId
+      setAutoCollectFeedback((current) => ({
+        id: (current?.id ?? 0) + 1,
+        message: `🤖 조리 보조: ${withObjectParticle(ingredientName)} 자동 회수했습니다.`,
+      }))
+      if (autoCollectFeedbackTimerRef.current !== null) {
+        window.clearTimeout(autoCollectFeedbackTimerRef.current)
+      }
+      autoCollectFeedbackTimerRef.current = window.setTimeout(() => {
+        setAutoCollectFeedback(null)
+        autoCollectFeedbackTimerRef.current = null
+      }, AUTO_COLLECT_FEEDBACK_DURATION_MS)
     }, 200)
     return () => clearInterval(id)
-  }, [])
+  }, [autoCollectIntervalMs, dispatch])
 
   useEffect(() => {
     const update = updatePerfectTimingAlarms(
@@ -91,6 +159,10 @@ export default function CookingMinigame() {
     for (const timer of alertTimersRef.current.values()) window.clearTimeout(timer)
     alertTimersRef.current.clear()
     alarmStateRef.current = {}
+    if (autoCollectFeedbackTimerRef.current !== null) {
+      window.clearTimeout(autoCollectFeedbackTimerRef.current)
+      autoCollectFeedbackTimerRef.current = null
+    }
   }, [])
 
   const clearSlotAlert = (slotId: string) => {
@@ -107,7 +179,7 @@ export default function CookingMinigame() {
     if (owned <= 0) return
     const grillIngredient = grillIngredientById.get(ingredientId)
     if (!grillIngredient) return // 조립 재료(치즈·소스·번 등)는 그릴에 올릴 필요가 없다
-    const idleSlot = slots.find((slot) => slot.status === 'idle')
+    const idleSlot = slotsRef.current.find((slot) => slot.status === 'idle')
     if (!idleSlot) return // 빈 슬롯 없음
 
     dispatch({ type: ActionTypes.USE_INGREDIENT, payload: { ingredientId } })
@@ -118,25 +190,28 @@ export default function CookingMinigame() {
         state.upgrades,
       ),
     }
-    setSlots((prev) =>
-      prev.map((slot) =>
-        slot.id === idleSlot.id
-          ? placeIngredient(slot, adjustedIngredient, Date.now())
-          : slot,
-      ),
+    const nextSlots = slotsRef.current.map((slot) =>
+      slot.id === idleSlot.id
+        ? placeIngredient(slot, adjustedIngredient, Date.now())
+        : slot,
     )
+    slotsRef.current = nextSlots
+    setSlots(nextSlots)
   }
 
   const handleCollect = (slot: GrillSlot) => {
-    if (!slot.ingredientId) return
+    const result = collectGrillSlot(slotsRef.current, slot, Date.now())
+    if (!result.collected) return
     clearSlotAlert(slot.id)
-    const t = Date.now()
-    const result = slot.status === 'burnt' ? 'burnt' : getCookResult(getCookProgress(slot, t))
     dispatch({
       type: ActionTypes.COLLECT_COOKED_INGREDIENT,
-      payload: { ingredientId: slot.ingredientId, cookResult: result },
+      payload: {
+        ingredientId: result.collected.ingredientId,
+        cookResult: result.collected.result,
+      },
     })
-    setSlots((prev) => prev.map((s) => (s.id === slot.id ? clearGrillSlot(s) : s)))
+    slotsRef.current = result.slots
+    setSlots(result.slots)
   }
 
   const selectedStillExists = state.preparedIngredients.some((item) => item.id === selectedPreparedId)
@@ -201,6 +276,11 @@ export default function CookingMinigame() {
               </span>
             </span>
           </h4>
+          {autoCollectIntervalMs !== null ? (
+            <p className="grill-auto-assist-status">
+              조리 보조 Lv.{autoAssistLevel} · 회수 후 {autoCollectIntervalMs / 1_000}초 재사용 대기
+            </p>
+          ) : null}
           <GrillSlots
             slots={slots}
             now={now}
@@ -266,6 +346,17 @@ export default function CookingMinigame() {
           <strong>주문 완료</strong>
           <span>{state.lastServeFeedback.menuName}</span>
           <b>+₩{state.lastServeFeedback.amount.toLocaleString('ko-KR')}</b>
+        </div>
+      ) : null}
+      {autoCollectFeedback ? (
+        <div
+          key={autoCollectFeedback.id}
+          className="auto-collect-feedback"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {autoCollectFeedback.message}
         </div>
       ) : null}
       <div
