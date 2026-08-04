@@ -58,10 +58,10 @@
     "name": "타이머 알람",
     "category": "convenience",
     "icon": "⏱️",
-    "description": "게이지 90% 경고음",
-    "detail": "90% 게이지 경고음",
+    "description": "완벽 타이밍 알림",
+    "detail": "각 슬롯이 완벽 구간에 진입하면 알림",
     "cost": 40000,
-    "effect": { "dangerAlarm": true }
+    "effect": { "perfectTimingAlarm": true }
   },
   {
     "id": "auto_assist",
