@@ -22,10 +22,17 @@ export interface GrillSlotsProps {
   slots: GrillSlot[]
   now: number
   onCollect: (slot: GrillSlot) => void
+  alertingSlotIds?: readonly string[]
 }
 
 /** 그릴 슬롯 2행3열 — 확보한 슬롯은 실제 조리 기능을 제공하고 나머지는 단계별 잠금 안내를 표시한다. */
-export default function GrillSlots({ slots, now, onCollect }: GrillSlotsProps) {
+export default function GrillSlots({
+  slots,
+  now,
+  onCollect,
+  alertingSlotIds = [],
+}: GrillSlotsProps) {
+  const alertingSlots = new Set(alertingSlotIds)
   return (
     <div className="grill-slot-grid">
       {slots.map((slot) => {
@@ -43,6 +50,7 @@ export default function GrillSlots({ slots, now, onCollect }: GrillSlotsProps) {
         const ingredient = slot.ingredientId ? ingredientById.get(slot.ingredientId) : undefined
         const progress = getCookProgress(slot, now)
         const result = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
+        const isPerfectTimingAlert = alertingSlots.has(slot.id)
         const tone =
           result === 'burnt'
             ? 'burnt'
@@ -58,11 +66,17 @@ export default function GrillSlots({ slots, now, onCollect }: GrillSlotsProps) {
           <button
             key={slot.id}
             type="button"
-            className={`grill-slot-card grill-slot-card--cooking grill-slot-card--${tone}`}
+            className={`grill-slot-card grill-slot-card--cooking grill-slot-card--${tone}${isPerfectTimingAlert ? ' is-perfect-timing-alert' : ''}`}
             style={{ '--grill-progress': Math.min(1, progress) } as CSSProperties}
             onClick={() => onCollect(slot)}
             title={resultLabel[result]}
           >
+            {isPerfectTimingAlert ? (
+              <>
+                <span className="grill-slot-alarm-icon" aria-hidden>🔔</span>
+                <span className="grill-slot-alarm-label" aria-hidden>완벽! 지금 회수</span>
+              </>
+            ) : null}
             <span className="grill-slot-timer">
               <span className="grill-slot-timer-icon" aria-hidden>
                 {ingredient?.icon ?? '🍳'}
@@ -70,6 +84,7 @@ export default function GrillSlots({ slots, now, onCollect }: GrillSlotsProps) {
             </span>
             <span className="visually-hidden">
               {ingredient?.name ?? '재료'} — {resultLabel[result]}
+              {isPerfectTimingAlert ? ' — 완벽 타이밍 알림 중' : ''}
             </span>
           </button>
         )

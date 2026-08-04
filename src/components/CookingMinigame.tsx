@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../state/GameContext'
 import {
   clearGrillSlot,
@@ -9,7 +9,16 @@ import {
   resolveGrillSlot,
   type GrillSlot,
 } from '../grill/grillSlots'
-import { getGrillSlotCount } from '../grill/grillUpgrades'
+import {
+  getGrillSlotCount,
+  getUpgradedCookDurationMs,
+  hasPerfectTimingAlarm,
+} from '../grill/grillUpgrades'
+import {
+  updatePerfectTimingAlarms,
+  type PerfectTimingAlarmState,
+} from '../grill/perfectTimingAlarm'
+import { playPerfectTimingAlarm } from '../audio/sfx'
 import { grillIngredients } from '../grill/grillIngredients'
 import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
@@ -19,6 +28,7 @@ import ingredientData from '../data/ingredients.json'
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
 const grillIngredientById = new Map(grillIngredients.map((ingredient) => [ingredient.id, ingredient]))
 const resultLabels = { good: '좋음', perfect: '완벽', danger: '아슬아슬' } as const
+const PERFECT_TIMING_ALERT_DURATION_MS = 1_000
 
 /**
  * 조리 미니게임 컨테이너 — 재료 / 그릴 / 완성 3분할(1:1.5:1) 레이아웃.
@@ -33,6 +43,11 @@ export default function CookingMinigame() {
   )
   const [now, setNow] = useState(() => Date.now())
   const [selectedPreparedId, setSelectedPreparedId] = useState<string | null>(null)
+  const [alertingSlotIds, setAlertingSlotIds] = useState<string[]>([])
+  const [alarmAnnouncement, setAlarmAnnouncement] = useState({ id: 0, message: '' })
+  const alarmStateRef = useRef<PerfectTimingAlarmState>({})
+  const alertTimersRef = useRef(new Map<string, number>())
+  const perfectTimingAlarmEnabled = hasPerfectTimingAlarm(state.upgrades)
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -42,6 +57,48 @@ export default function CookingMinigame() {
     }, 200)
     return () => clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    const update = updatePerfectTimingAlarms(
+      slots,
+      now,
+      alarmStateRef.current,
+      perfectTimingAlarmEnabled,
+      typeof document === 'undefined' || document.visibilityState === 'visible',
+    )
+    alarmStateRef.current = update.state
+    if (update.enteredSlotIds.length === 0) return
+
+    setAlertingSlotIds((current) => [...new Set([...current, ...update.enteredSlotIds])])
+    for (const slotId of update.enteredSlotIds) {
+      const existingTimer = alertTimersRef.current.get(slotId)
+      if (existingTimer !== undefined) window.clearTimeout(existingTimer)
+      const timer = window.setTimeout(() => {
+        setAlertingSlotIds((current) => current.filter((id) => id !== slotId))
+        alertTimersRef.current.delete(slotId)
+      }, PERFECT_TIMING_ALERT_DURATION_MS)
+      alertTimersRef.current.set(slotId, timer)
+    }
+
+    const message = update.enteredSlotIds
+      .map((slotId) => `${slots.findIndex((slot) => slot.id === slotId) + 1}번 슬롯이 완벽 상태입니다. 지금 회수하세요.`)
+      .join(' ')
+    setAlarmAnnouncement((current) => ({ id: current.id + 1, message }))
+    playPerfectTimingAlarm()
+  }, [slots, now, perfectTimingAlarmEnabled])
+
+  useEffect(() => () => {
+    for (const timer of alertTimersRef.current.values()) window.clearTimeout(timer)
+    alertTimersRef.current.clear()
+    alarmStateRef.current = {}
+  }, [])
+
+  const clearSlotAlert = (slotId: string) => {
+    const timer = alertTimersRef.current.get(slotId)
+    if (timer !== undefined) window.clearTimeout(timer)
+    alertTimersRef.current.delete(slotId)
+    setAlertingSlotIds((current) => current.filter((id) => id !== slotId))
+  }
 
   const ownedIngredients = ingredientData.filter((ingredient) => (state.ingredients[ingredient.id] ?? 0) > 0)
 
@@ -54,13 +111,21 @@ export default function CookingMinigame() {
     if (!idleSlot) return // 빈 슬롯 없음
 
     dispatch({ type: ActionTypes.USE_INGREDIENT, payload: { ingredientId } })
+    const upgradedIngredient = {
+      ...grillIngredient,
+      cookDurationMs: getUpgradedCookDurationMs(
+        grillIngredient.cookDurationMs,
+        state.upgrades,
+      ),
+    }
     setSlots((prev) =>
-      prev.map((slot) => (slot.id === idleSlot.id ? placeIngredient(slot, grillIngredient, Date.now()) : slot)),
+      prev.map((slot) => (slot.id === idleSlot.id ? placeIngredient(slot, upgradedIngredient, Date.now()) : slot)),
     )
   }
 
   const handleCollect = (slot: GrillSlot) => {
     if (!slot.ingredientId) return
+    clearSlotAlert(slot.id)
     const t = Date.now()
     const result = slot.status === 'burnt' ? 'burnt' : getCookResult(getCookProgress(slot, t))
     dispatch({
@@ -132,7 +197,12 @@ export default function CookingMinigame() {
               </span>
             </span>
           </h4>
-          <GrillSlots slots={slots} now={now} onCollect={handleCollect} />
+          <GrillSlots
+            slots={slots}
+            now={now}
+            onCollect={handleCollect}
+            alertingSlotIds={alertingSlotIds}
+          />
         </section>
 
         <section className="cooking-col cooking-col--plated" aria-label="완성">
@@ -194,6 +264,15 @@ export default function CookingMinigame() {
           <b>+₩{state.lastServeFeedback.amount.toLocaleString('ko-KR')}</b>
         </div>
       ) : null}
+      <div
+        key={alarmAnnouncement.id}
+        className="visually-hidden"
+        role="status"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
+        {alarmAnnouncement.message}
+      </div>
     </div>
   )
 }
