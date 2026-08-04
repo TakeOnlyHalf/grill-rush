@@ -47,11 +47,17 @@ describe('auto assist upgrade levels', () => {
     )).toEqual([9_000, 8_000, 7_000])
   })
 
-  it('explains the level one behavior and reuse cooldown to a first-time player', () => {
-    const levelOne = upgradesData.find((upgrade) => upgrade.id === 'auto_assist')
-    expect(levelOne?.description).toBe('완벽 재료 1개 자동 회수')
-    expect(levelOne?.detail).toContain('손님이 없어도 작동합니다')
-    expect(levelOne?.detail).toContain('완성 칸')
-    expect(levelOne?.detail).toContain('회수 후 9초 동안 재사용 대기')
+  it('keeps each card sentence aligned with its configured cooldown', () => {
+    const definitions = AUTO_ASSIST_UPGRADE_IDS.map((id) =>
+      upgradesData.find((upgrade) => upgrade.id === id),
+    )
+
+    expect(definitions.map((upgrade) => upgrade?.description))
+      .toEqual(Array(3).fill('완벽 재료 1개 자동 회수'))
+    expect(definitions.map((upgrade) => upgrade?.detail)).toEqual([
+      '완벽 재료 회수 후 9초 대기합니다.',
+      '완벽 재료 회수 후 8초 대기합니다.',
+      '완벽 재료 회수 후 7초 대기합니다.',
+    ])
   })
 })

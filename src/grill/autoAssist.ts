@@ -11,6 +11,15 @@ export interface AutoAssistTickResult {
   collected: CollectedGrillItem | null
 }
 
+export function createAutoAssistReadyState(
+  intervalMs: number | null,
+  now: number,
+): AutoAssistTimerState {
+  return {
+    readyAt: intervalMs === null ? null : now,
+  }
+}
+
 export function startAutoAssistCooldown(
   intervalMs: number | null,
   now: number,
@@ -32,7 +41,7 @@ export function runAutoAssistTick(
   }
 
   const initializedTimer = timer.readyAt === null
-    ? startAutoAssistCooldown(intervalMs, now)
+    ? createAutoAssistReadyState(intervalMs, now)
     : timer
   if (!active || now < (initializedTimer.readyAt ?? Number.POSITIVE_INFINITY)) {
     return { slots: [...slots], timer: initializedTimer, collected: null }

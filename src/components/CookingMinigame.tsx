@@ -8,8 +8,8 @@ import {
   type GrillSlot,
 } from '../grill/grillSlots'
 import {
+  createAutoAssistReadyState,
   runAutoAssistTick,
-  startAutoAssistCooldown,
   type AutoAssistTimerState,
 } from '../grill/autoAssist'
 import {
@@ -71,11 +71,11 @@ export default function CookingMinigame() {
   const alertTimersRef = useRef(new Map<string, number>())
   const autoCollectFeedbackTimerRef = useRef<number | null>(null)
   const autoAssistTimerRef = useRef<AutoAssistTimerState>(
-    startAutoAssistCooldown(autoCollectIntervalMs, Date.now()),
+    createAutoAssistReadyState(autoCollectIntervalMs, Date.now()),
   )
 
   useEffect(() => {
-    autoAssistTimerRef.current = startAutoAssistCooldown(
+    autoAssistTimerRef.current = createAutoAssistReadyState(
       autoCollectIntervalMs,
       Date.now(),
     )

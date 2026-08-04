@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { runAutoAssistTick, startAutoAssistCooldown } from './autoAssist'
+import {
+  createAutoAssistReadyState,
+  runAutoAssistTick,
+  startAutoAssistCooldown,
+} from './autoAssist'
 import {
   collectGrillSlot,
   createIdleGrillSlots,
@@ -23,6 +27,12 @@ describe('auto collect candidate selection', () => {
     const danger = cookingSlot('danger', 900, 10_000)
     const burnt = { ...cookingSlot('burnt', -100, 10_000), status: 'burnt' as const }
     expect(getAutoCollectCandidate([idle, good, danger, burnt], 10_000)).toBeNull()
+  })
+
+  it('rejects invalid cooking timestamps and durations', () => {
+    const invalidStartedAt = cookingSlot('invalid-start', Number.NaN, 10_000)
+    const invalidDuration = cookingSlot('invalid-duration', 3_000, Number.POSITIVE_INFINITY)
+    expect(getAutoCollectCandidate([invalidStartedAt, invalidDuration], 10_000)).toBeNull()
   })
 
   it('selects the perfect slot with the least real time before danger', () => {
@@ -83,12 +93,29 @@ describe('auto assist reuse cooldown', () => {
     expect(result.timer.readyAt).toBeNull()
   })
 
-  it('does not collect before the initial cooldown finishes', () => {
-    const perfect = cookingSlot('perfect', 1_000, 10_000)
-    const timer = startAutoAssistCooldown(9_000, 0)
-    const result = runAutoAssistTick([perfect], 8_000, 9_000, timer, true)
-    expect(result.collected).toBeNull()
-    expect(result.timer.readyAt).toBe(9_000)
+  it('starts armed and collects the first perfect ingredient without an initial wait', () => {
+    const perfect = cookingSlot('first-before-customer', 3_000, 10_000)
+    const timer = createAutoAssistReadyState(9_000, 0)
+    const result = runAutoAssistTick([perfect], 10_000, 9_000, timer, true)
+    expect(result.collected?.slotId).toBe('first-before-customer')
+    expect(result.timer.readyAt).toBe(19_000)
+  })
+
+  it.each([
+    [9_000, 19_000],
+    [8_000, 18_000],
+    [7_000, 17_000],
+  ])('starts the %ims cooldown only after a successful collection', (intervalMs, readyAt) => {
+    const perfect = cookingSlot('perfect', 3_000, 10_000)
+    const result = runAutoAssistTick(
+      [perfect],
+      10_000,
+      intervalMs,
+      createAutoAssistReadyState(intervalMs, 0),
+      true,
+    )
+    expect(result.collected?.slotId).toBe('perfect')
+    expect(result.timer.readyAt).toBe(readyAt)
   })
 
   it('remains armed after an empty check and collects on the first later perfect tick', () => {
@@ -156,5 +183,12 @@ describe('auto assist reuse cooldown', () => {
       true,
     )
     expect(result.collected?.slotId).toBe('no-customer-needed')
+  })
+
+  it('preserves the same cooldown across unrelated customer or order updates', () => {
+    const coolingDown = startAutoAssistCooldown(9_000, 10_000)
+    const firstRender = runAutoAssistTick([], 12_000, 9_000, coolingDown, true)
+    const afterContextChange = runAutoAssistTick([], 13_000, 9_000, firstRender.timer, true)
+    expect(afterContextChange.timer.readyAt).toBe(19_000)
   })
 })

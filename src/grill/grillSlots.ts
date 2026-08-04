@@ -106,6 +106,8 @@ export function getAutoCollectCandidate(
       slot.status === 'cooking' &&
       slot.ingredientId !== null &&
       slot.startedAt !== null &&
+      Number.isFinite(slot.startedAt) &&
+      Number.isFinite(slot.cookDurationMs) &&
       slot.cookDurationMs > 0 &&
       getCookResult(getCookProgress(slot, now)) === 'perfect'
     )
