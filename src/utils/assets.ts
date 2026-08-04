@@ -72,6 +72,8 @@ export const OPEN_COOKING_FRAME_ART = publicUrl('images/open_phase/open-phase-la
 export const GRILL_TILE_OFF_ART = publicUrl('images/open_phase/grill-off.webp')
 /** 그릴 슬롯 타일 — 조리 중 상태(그릴 자국) */
 export const GRILL_TILE_ON_ART = publicUrl('images/open_phase/grill-on.webp')
+/** 서빙/폐기 버튼 스프라이트 시트 — 2x2(서빙 기본/클릭, 폐기 기본/클릭) */
+export const OPEN_ACTION_BUTTONS_ART = publicUrl('images/open_phase/buttons.webp')
 
 /**
  * 영업 페이즈 — 장소별 창밖 배경. 아직 그리지 않은 장소는 항목을 비워두면
@@ -112,6 +114,7 @@ export const CRITICAL_IMAGE_URLS = [
   OPEN_COOKING_FRAME_ART,
   GRILL_TILE_OFF_ART,
   GRILL_TILE_ON_ART,
+  OPEN_ACTION_BUTTONS_ART,
   ...(Object.values(STREET_BG_BY_LOCATION).filter(Boolean) as string[]),
 ] as const
 

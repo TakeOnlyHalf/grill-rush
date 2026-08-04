@@ -500,6 +500,20 @@ body:has(.prep-lobby) .bgm-mute-control--floating {
   animation: serve-toast-in 0.25s ease-out;
 }
 
+/*
+ * 문서 흐름에 그대로 두면 .phase-open 플렉스 컬럼에 새 자식으로 끼어들어
+ * flex:1인 .open-frame이 그만큼 눌려서 화면 전체가 순간 줄어들어 보인다.
+ * 오버레이로 띄워서 레이아웃에 영향을 주지 않게 한다.
+ */
+.phase-open .serve-toast {
+  position: absolute;
+  left: 50%;
+  top: 3.8rem;
+  z-index: 30;
+  width: max-content;
+  max-width: min(90%, 28rem);
+}
+
 .serve-toast-stars {
   color: var(--gold);
   font-weight: 700;
@@ -514,11 +528,11 @@ body:has(.prep-lobby) .bgm-mute-control--floating {
 @keyframes serve-toast-in {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translate(-50%, -6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, 0);
   }
 }
 
@@ -2375,18 +2389,23 @@ body:has(.phase-open) {
 
 .plated-action-btn {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  padding: 0.4rem 0.3rem;
+  min-width: 0;
+  /* buttons.webp 원본 버튼 비율(480x192 ≈ 2.5:1)에 맞춰서 이미지가 늘어나 보이지 않도록 */
+  aspect-ratio: 2.5 / 1;
+  padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-weight: 700;
-  font-size: 0.75rem;
-  color: #fff8f6;
+  appearance: none;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: var(--btn-pos-default);
   cursor: pointer;
+}
+
+.plated-action-btn:active:not(:disabled) {
+  background-position: var(--btn-pos-pressed);
 }
 
 .plated-action-btn:hover:not(:disabled) {
@@ -2394,18 +2413,7 @@ body:has(.phase-open) {
 }
 
 .plated-action-btn:disabled {
-  background: var(--disabled);
-  color: var(--muted);
-  opacity: 0.85;
-  cursor: not-allowed;
-}
-
-.plated-action-btn--serve {
-  background: var(--ok);
-}
-
-.plated-action-btn--discard {
-  background: var(--danger);
+  visibility: hidden;
 }
 
 .queue-list {
