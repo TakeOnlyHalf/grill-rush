@@ -35,6 +35,16 @@ export interface StreetSceneHandle {
 
 const MAX_CROWD = 9
 
+/**
+ * characters_sprite_sheet.webp 각 칸(정사각형)은 인물 주변에 여백이 커서, 칸 크기 그대로
+ * 폭을 맞추면 실제 인물이 훨씬 작아 보인다. 실측한 인물 bbox 비율(칸 세로 대비 89%, 인물 가로/세로 41%)로
+ * "보이는 인물 폭" 기준 크기를 역산한다.
+ */
+const CHAR_VISIBLE_HEIGHT_RATIO = 0.89
+const CHAR_VISIBLE_WIDTH_RATIO = 0.41
+/** 칸 위쪽에서 인물(정수리)까지의 여백 비율 — 맨 앞 손님을 창 위쪽에 안 잘리게 앉힐 때 쓴다 */
+const CHAR_TOP_INSET_RATIO = 0.057
+
 /** foodtruck_interior_transparent.webp 원본 크기 — 창문(알파 투명) 영역 좌표 계산 기준 */
 const FRAME_W = 2075
 const FRAME_H = 758
@@ -42,9 +52,6 @@ const FRAME_H = 758
 const WINDOW = { x: 190, y: 72, w: 1696, h: 546 }
 const WINDOW_CORNER_RADIUS = 55
 
-/** 맨 앞(0번) 손님은 카운터에 붙어있는 것처럼 크게 확대하고, 하반신은 창 아래로 잘려 나가게 한다 */
-const FRONT_VISIBLE_FRACTION = 0.54
-const FRONT_TOP_MARGIN_RATIO = 0.02
 
 /** 영업 페이즈 거리 뷰 씬 — 트럭 창문 안쪽에서 바라본 시점 (인테리어 프레임 + 창 밖 손님 대기열) */
 export function createStreetScene(
@@ -208,22 +215,36 @@ export function createStreetScene(
     }
 
     const margin = win.w * 0.05
+    // 인원수와 무관하게 슬롯 폭(step)을 고정한다 — 슬롯 = 캐릭터 자리(보이는 인물 폭) + 오른쪽 여백.
+    // 번호 배지는 그 오른쪽 여백 아래에 붙고, 여백 폭이 곧 손님들 사이 간격이 된다.
     const usable = win.w - margin * 2
-    // 인원수와 무관하게 간격을 고정해, 맨 앞 손님이 항상 왼쪽에 있고
-    // 대기열이 늘어날수록 오른쪽으로 채워지도록 한다 (MAX_CROWD 기준으로 폭을 나눔).
-    const step = usable / MAX_CROWD
-    const backBaseY = win.h * 0.9
-    const backGuestHeight = win.h * 0.74
-    const badgeBaseY = win.h * 0.94
-    const badgeR = Math.min(12, step * 0.28)
+    const gapFrac = 0.22
+    // 맨 앞(0번) 손님은 카운터 바로 앞에 서 있는 것처럼 다른 손님보다 크게 — 그만큼 커지는 폭을
+    // 전체 폭 계산에 미리 반영해서, 9명이 항상 usable 안에 다 들어오도록 한다.
+    const FRONT_SCALE = 1.4
+    const step = usable / (MAX_CROWD + (1 - gapFrac) * (FRONT_SCALE - 1))
+    const rightGap = step * gapFrac
+    const contentWidth = step - rightGap
+    const backBaseY = win.h * 0.97
+    const badgeR = Math.min(12, rightGap * 0.4)
+    const badgeBaseY = win.h * 0.96
+
+    const frontContentWidth = contentWidth * FRONT_SCALE
+    const frontExtra = frontContentWidth - contentWidth
+
+    function slotGeometry(i: number) {
+      const isFront = i === 0
+      const slotLeft = margin + step * i + (isFront ? 0 : frontExtra)
+      const width = isFront ? frontContentWidth : contentWidth
+      return { isFront, slotLeft, width }
+    }
 
     // 손님별로 캐릭터를 손님 id 기반으로 안정적으로 고른다 — 대기 카드(CustomerQueue)와
     // 동일한 pickStablePortrait를 써서 같은 손님이 거리뷰·대기 카드에서 같은 얼굴로 보이게 한다.
     const slots: Container[] = []
 
     visible.forEach((customer, i) => {
-      const cx = margin + step * (i + 0.5)
-      const isFront = i === 0
+      const { isFront, slotLeft, width } = slotGeometry(i)
 
       let guestKey = guestByCustomerId.get(customer.id)
       if (!guestKey && portraits) {
@@ -232,29 +253,23 @@ export function createStreetScene(
       }
       const guestTexture = guestKey && portraits ? portraits[guestKey] : undefined
 
+      // 칸 안에서 실제로 보이는 인물 폭이 width가 되도록 텍스처 전체 크기를 역산해서 키운다.
+      const cellHeight = width / CHAR_VISIBLE_WIDTH_RATIO / CHAR_VISIBLE_HEIGHT_RATIO
+
       const slot = new Container()
-      slot.x = cx
+      slot.x = slotLeft + width / 2
+      // 맨 앞 손님은 정수리가 창 위쪽 끝에 딱 맞도록 앉혀서, 남는 만큼(발밑)만 창 아래로 잘리게 한다.
+      slot.y = isFront ? cellHeight * (1 - CHAR_TOP_INSET_RATIO) : backBaseY
 
       if (guestTexture) {
         const aspect = guestTexture.width / guestTexture.height
         const sprite = createCustomerSprite(guestTexture)
-        if (isFront) {
-          // 맨 앞 손님 — 카운터 바로 앞에 서 있는 것처럼 크게 확대하고, 하반신은 창 아래로 잘려 나가게 한다.
-          const topMargin = win.h * FRONT_TOP_MARGIN_RATIO
-          const frontHeight = (win.h - topMargin) / FRONT_VISIBLE_FRACTION
-          sprite.height = frontHeight
-          sprite.width = frontHeight * aspect
-          slot.y = topMargin + frontHeight
-        } else {
-          sprite.height = backGuestHeight
-          sprite.width = backGuestHeight * aspect
-          slot.y = backBaseY
-        }
+        sprite.height = cellHeight
+        sprite.width = cellHeight * aspect
         slot.addChild(sprite)
       } else {
         // 캐릭터가 아직 로드 전이거나 등록되지 않은 타입은 플레이스홀더 도형으로 대체
-        const guestHeight = isFront ? win.h * 0.95 : backGuestHeight
-        slot.y = isFront ? win.h * 0.98 : backBaseY
+        const guestHeight = win.h * (isFront ? 1.05 : 0.86)
         const person = new Graphics()
         const shade = i % 2 === 0 ? PIXI_COLORS.crowd : PIXI_COLORS.muted
         person.circle(0, -guestHeight * 0.82, guestHeight * 0.14)
@@ -270,11 +285,12 @@ export function createStreetScene(
     // 맨 앞(0번) 손님이 다른 손님들보다 위에 그려지도록 역순으로 추가한다.
     crowdLayer.addChild(...[...slots].reverse())
 
-    // 번호 배지는 캐릭터 크기와 무관하게 항상 같은 높이에 고정 배치한다.
+    // 번호 배지는 캐릭터 자리 오른쪽 여백 한가운데, 발 높이에 고정 배치한다.
     visible.forEach((_, i) => {
-      const cx = margin + step * (i + 0.5)
+      const { slotLeft, width } = slotGeometry(i)
+      const bx = slotLeft + width + rightGap / 2
       const badge = new Graphics()
-      badge.circle(cx, badgeBaseY, badgeR)
+      badge.circle(bx, badgeBaseY, badgeR)
       badge.fill({ color: 0x1a1410, alpha: 0.55 })
       const badgeText = new Text({
         text: String(i + 1),
@@ -286,7 +302,7 @@ export function createStreetScene(
         },
       })
       badgeText.anchor.set(0.5)
-      badgeText.position.set(cx, badgeBaseY)
+      badgeText.position.set(bx, badgeBaseY)
       crowdLayer.addChild(badge, badgeText)
     })
 

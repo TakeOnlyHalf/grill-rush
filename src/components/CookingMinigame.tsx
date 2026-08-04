@@ -29,9 +29,27 @@ import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
 import { getOrderFulfillment } from '../state/orderFulfillment'
 import ingredientData from '../data/ingredients.json'
+import { INGREDIENT_FOOD_STYLE } from '../utils/foodIcons'
+import { OPEN_ACTION_BUTTONS_ART } from '../utils/assets'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
 const grillIngredientById = new Map(grillIngredients.map((ingredient) => [ingredient.id, ingredient]))
+
+/** buttons.webp(1536x1024) 2x2 — 서빙 기본/클릭, 폐기 기본/클릭 크롭 좌표 */
+const ACTION_BUTTON_STYLE = {
+  serve: {
+    backgroundImage: `url(${OPEN_ACTION_BUTTONS_ART})`,
+    backgroundSize: '320% 541.8%',
+    '--btn-pos-default': '22.44% 30.54%',
+    '--btn-pos-pressed': '78.41% 30.54%',
+  },
+  discard: {
+    backgroundImage: `url(${OPEN_ACTION_BUTTONS_ART})`,
+    backgroundSize: '320% 525.13%',
+    '--btn-pos-default': '22.44% 68.4%',
+    '--btn-pos-pressed': '78.41% 68.4%',
+  },
+} as const
 const resultLabels = { good: '좋음', perfect: '완벽', danger: '아슬아슬' } as const
 const PERFECT_TIMING_ALERT_DURATION_MS = 1_000
 const AUTO_COLLECT_FEEDBACK_DURATION_MS = 1_300
@@ -253,7 +271,13 @@ export default function CookingMinigame() {
                       onClick={() => handleIngredientClick(ingredient.id)}
                       title={grillable ? `${ingredient.name} · 그릴에 올리기` : `${ingredient.name} · 조립 재료(서빙 시 자동 사용)`}
                     >
-                      <span className="ingredient-chip-icon" aria-hidden>{ingredient.icon}</span>
+                      <span
+                        className={`ingredient-chip-icon${INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
+                        aria-hidden
+                        style={INGREDIENT_FOOD_STYLE[ingredient.id]}
+                      >
+                        {INGREDIENT_FOOD_STYLE[ingredient.id] ? null : ingredient.icon}
+                      </span>
                       <span className="ingredient-chip-count">{state.ingredients[ingredient.id] ?? 0}</span>
                       <span className="visually-hidden">{ingredient.name}</span>
                     </button>
@@ -303,7 +327,13 @@ export default function CookingMinigame() {
                     onClick={() => setSelectedPreparedId(selected ? null : item.id)}
                     aria-pressed={selected}
                   >
-                    <span className="plated-item-icon" aria-hidden>{ingredient?.icon ?? '🍽️'}</span>
+                    <span
+                      className={`plated-item-icon${ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
+                      aria-hidden
+                      style={ingredient ? INGREDIENT_FOOD_STYLE[ingredient.id] : undefined}
+                    >
+                      {ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? null : (ingredient?.icon ?? '🍽️')}
+                    </span>
                     <span className="visually-hidden">{ingredient?.name ?? item.ingredientId}</span>
                     <small className="plated-item-label">{resultLabels[item.result]}</small>
                   </button>
@@ -318,19 +348,21 @@ export default function CookingMinigame() {
             <button
               type="button"
               className="plated-action-btn plated-action-btn--serve"
+              style={ACTION_BUTTON_STYLE.serve}
               disabled={!selectedStillExists || !readyOrder}
               onClick={handleServeFromPlate}
               title={readyOrder ? undefined : '서빙 가능한 주문이 없습니다'}
             >
-              <span aria-hidden>🍽️</span> 서빙
+              <span className="visually-hidden">서빙</span>
             </button>
             <button
               type="button"
               className="plated-action-btn plated-action-btn--discard"
+              style={ACTION_BUTTON_STYLE.discard}
               disabled={!selectedStillExists}
               onClick={handleDiscardFromPlate}
             >
-              <span aria-hidden>🗑️</span> 폐기
+              <span className="visually-hidden">폐기</span>
             </button>
           </div>
         </section>
