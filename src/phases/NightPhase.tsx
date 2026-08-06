@@ -15,6 +15,7 @@ import {
   getGrillSlotCount,
   GRILL_EXPANSION_UPGRADE_IDS,
 } from '../grill/grillUpgrades'
+import { getIngredientCapacity } from '../utils/ingredientStorage'
 
 type UpgradeCategory =
   | 'all'
@@ -60,7 +61,14 @@ function baseTruckStats(owned: string[]) {
   )
   const visitBonus = owned.includes('signboard') ? 10 : 0
   const autoCollectIntervalMs = getAutoAssistIntervalMs(owned)
-  return { slots, cookTimeReduction, visitBonus, autoCollectIntervalMs }
+  const ingredientCapacity = getIngredientCapacity(owned)
+  return {
+    slots,
+    cookTimeReduction,
+    visitBonus,
+    autoCollectIntervalMs,
+    ingredientCapacity,
+  }
 }
 
 function previewStats(owned: string[], planned: string[]) {
@@ -163,6 +171,11 @@ export default function NightPhase({
       : `${preview.autoCollectIntervalMs / 1_000}초`
     effectLines.push(`조리 보조 ${currentLabel} → ${previewLabel} 재사용 대기`)
   }
+  if (preview.ingredientCapacity !== current.ingredientCapacity) {
+    effectLines.push(
+      `재료 보관 한도 ${current.ingredientCapacity}개 → ${preview.ingredientCapacity}개`,
+    )
+  }
 
   return (
     <section className="phase phase-night" aria-label="트럭 관리실">
@@ -240,6 +253,10 @@ export default function NightPhase({
             <li>
               <span>방문 보너스</span>
               <strong>{current.visitBonus}%</strong>
+            </li>
+            <li>
+              <span>재료 보관 한도</span>
+              <strong>{current.ingredientCapacity}개</strong>
             </li>
           </ul>
         </aside>
