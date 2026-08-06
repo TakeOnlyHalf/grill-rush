@@ -18,6 +18,7 @@ import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
 import type { GameAction, GameState } from '../types/game'
 import { collectPreparedIngredient, serveOrder } from './orderFulfillment'
+import { canPurchaseIngredient } from '../utils/ingredientStorage'
 
 const MAX_QUEUE = 9
 
@@ -99,8 +100,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const { ingredientId, qty, unitCost } = action.payload
       const allowed = getRequiredIngredientIds(state.activeMenus)
       if (!allowed.includes(ingredientId)) return state
+      if (!Number.isSafeInteger(qty) || qty <= 0) return state
+      if (!Number.isSafeInteger(unitCost) || unitCost < 0) return state
       const total = unitCost * qty
+      if (!Number.isSafeInteger(total)) return state
       if (state.cash < total) return state
+      if (!canPurchaseIngredient(state.ingredients, state.upgrades, qty)) return state
       return {
         ...state,
         cash: state.cash - total,

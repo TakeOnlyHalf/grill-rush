@@ -9,6 +9,10 @@ import {
   type IngredientMarketHandle,
 } from '../pixi/scenes/IngredientMarketScene'
 import ingredients from '../data/ingredients.json'
+import {
+  getIngredientCapacity,
+  getIngredientCount,
+} from '../utils/ingredientStorage'
 
 /** 재료 매입 — PixiJS 마트 UI (선택 메뉴 재료만 해금) */
 export default function IngredientShop() {
@@ -17,17 +21,23 @@ export default function IngredientShop() {
     () => getRequiredIngredientIds(state.activeMenus),
     [state.activeMenus],
   )
+  const capacity = getIngredientCapacity(state.upgrades)
+  const currentIngredientCount = getIngredientCount(state.ingredients)
 
   const sceneRef = useRef<IngredientMarketHandle | null>(null)
   const stateRef = useRef({
     cash: state.cash,
     owned: state.ingredients,
     allowedIds,
+    capacity,
+    currentIngredientCount,
   })
   stateRef.current = {
     cash: state.cash,
     owned: state.ingredients,
     allowedIds,
+    capacity,
+    currentIngredientCount,
   }
 
   const dispatchRef = useRef(dispatch)
@@ -38,8 +48,16 @@ export default function IngredientShop() {
       cash: state.cash,
       owned: state.ingredients,
       allowedIds,
+      capacity,
+      currentIngredientCount,
     })
-  }, [state.cash, state.ingredients, allowedIds])
+  }, [
+    state.cash,
+    state.ingredients,
+    allowedIds,
+    capacity,
+    currentIngredientCount,
+  ])
 
   const setup = useCallback((app: Application) => {
     const scene = createIngredientMarketScene(
