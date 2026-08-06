@@ -57,6 +57,8 @@ export interface IngredientMarketState {
   owned: Record<string, number>
   /** 오늘 메뉴에 필요한 재료만 구매 가능 */
   allowedIds: string[]
+  capacity: number
+  currentIngredientCount: number
 }
 
 export interface IngredientMarketHandle {
@@ -105,6 +107,8 @@ export function createIngredientMarketScene(
     cash: initial.cash,
     owned: { ...initial.owned },
     allowedIds: [...initial.allowedIds],
+    capacity: initial.capacity,
+    currentIngredientCount: initial.currentIngredientCount,
   }
 
   const root = new Container()
@@ -170,6 +174,35 @@ export function createIngredientMarketScene(
     placeBgSprite()
   }
 
+  const CAPACITY_BADGE_X = 24
+  const CAPACITY_BADGE_W = 220
+  const capacityBg = new Graphics()
+  drawRoundRect(capacityBg, 0, 0, CAPACITY_BADGE_W, 36, 10, M.cashBg, 0.88)
+  capacityBg.x = CAPACITY_BADGE_X
+  capacityBg.y = 132
+  world.addChild(capacityBg)
+
+  const capacityText = new Text({
+    text: `보유 재료 ${state.currentIngredientCount} / ${state.capacity}`,
+    resolution: textRes,
+    style: {
+      fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
+      fontSize: 16,
+      fontWeight: 'bold',
+      fill: M.chalk,
+    },
+  })
+  capacityText.anchor.set(0.5)
+  capacityText.x = CAPACITY_BADGE_X + CAPACITY_BADGE_W / 2
+  capacityText.y = 150
+  world.addChild(capacityText)
+
+  function redrawCapacity() {
+    capacityText.text = `보유 재료 ${state.currentIngredientCount} / ${state.capacity}`
+    capacityText.style.fill =
+      state.currentIngredientCount >= state.capacity ? 0xffc078 : M.chalk
+  }
+
   /* ── Item grid ───────────────────────────────── */
   const GRID_COLS = 5
   const CARD_W = 152
@@ -186,10 +219,11 @@ export function createIngredientMarketScene(
   function redrawCard(slot: SlotView) {
     const owned = state.owned[slot.id] ?? 0
     const allowed = state.allowedIds.includes(slot.id)
-    const canBuy = allowed && state.cash >= slot.cost
+    const hasCapacity = state.currentIngredientCount < state.capacity
+    const canBuy = allowed && hasCapacity && state.cash >= slot.cost
     slot.ownedText.text = allowed ? `보유 ×${owned}` : '메뉴 미선택'
     slot.lockOverlay.visible = !allowed
-    slot.root.cursor = allowed ? 'pointer' : 'not-allowed'
+    slot.root.cursor = canBuy ? 'pointer' : 'not-allowed'
     slot.root.alpha = allowed ? 1 : 0.92
 
     slot.cardBg.clear()
@@ -226,9 +260,11 @@ export function createIngredientMarketScene(
       slot.buyBg.roundRect(12, CARD_H - 34, CARD_W - 24, 24, 8)
       slot.buyBg.stroke({ width: 1.5, color: M.buyDark })
     }
-    slot.buyLabel.text = allowed
-      ? `+1  ${formatWon(slot.cost)}`
-      : '잠김'
+    slot.buyLabel.text = !allowed
+      ? '잠김'
+      : !hasCapacity
+        ? '보관함 가득 참'
+        : `+1  ${formatWon(slot.cost)}`
     slot.buyLabel.style.fill = M.white
     slot.buyLabel.alpha = canBuy ? 1 : 0.75
   }
@@ -332,7 +368,11 @@ export function createIngredientMarketScene(
     slotRoot.hitArea = new Rectangle(0, 0, CARD_W, CARD_H)
 
     slotRoot.on('pointerover', () => {
-      if (!state.allowedIds.includes(item.id)) return
+      if (
+        !state.allowedIds.includes(item.id) ||
+        state.currentIngredientCount >= state.capacity ||
+        state.cash < item.unitCost
+      ) return
       slot.hover = true
       slotRoot.scale.set(1.04)
       slotRoot.x = gridOriginX + col * (CARD_W + GAP_X) - CARD_W * 0.02
@@ -348,6 +388,7 @@ export function createIngredientMarketScene(
     })
     slotRoot.on('pointerdown', () => {
       if (!state.allowedIds.includes(item.id)) return
+      if (state.currentIngredientCount >= state.capacity) return
       if (state.cash < item.unitCost) {
         slotRoot.x = gridOriginX + col * (CARD_W + GAP_X) + 3
         setTimeout(() => {
@@ -359,7 +400,9 @@ export function createIngredientMarketScene(
       }
       state.cash -= item.unitCost
       state.owned[item.id] = (state.owned[item.id] ?? 0) + 1
+      state.currentIngredientCount += 1
       cashText.text = formatWon(state.cash)
+      redrawCapacity()
       slots.forEach(redrawCard)
 
       const fx = new Text({
@@ -446,6 +489,13 @@ export function createIngredientMarketScene(
       if (next.allowedIds !== undefined) {
         state.allowedIds = [...next.allowedIds]
       }
+      if (next.capacity !== undefined) {
+        state.capacity = next.capacity
+      }
+      if (next.currentIngredientCount !== undefined) {
+        state.currentIngredientCount = next.currentIngredientCount
+      }
+      redrawCapacity()
       slots.forEach(redrawCard)
     },
     destroy() {
