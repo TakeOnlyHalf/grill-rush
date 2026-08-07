@@ -11,15 +11,15 @@ import type {
   WeatherId,
 } from '../types/game'
 
-/** 가격 대비 만족도 배율 */
+/** 가격 대비 만족도 배율 — menus.json 기본가가 대체로 cost의 2~3.5배라 그 구간을 기준으로 잡음 */
 export function getPriceFactor(price: number, cost: number): number {
-  if (price <= cost * 1.5) return 1.3
-  if (price <= cost * 2.0) return 1.0
-  if (price <= cost * 2.5) return 0.8
-  return 0.5
+  if (price <= cost * 2.2) return 1.3
+  if (price <= cost * 2.9) return 1.1
+  if (price <= cost * 3.6) return 0.9
+  return 0.6
 }
 
-const QUALITY_FACTOR: Record<PreparedQuality, number> = { 1: 0.4, 2: 0.75, 3: 1 }
+const QUALITY_FACTOR: Record<PreparedQuality, number> = { 1: 0.5, 2: 0.85, 3: 1 }
 
 /** 서빙 만족도(0~1) — 가격 대비 · 대기 여유 · 그릴 품질 평균을 종합 */
 export function calcSatisfaction({

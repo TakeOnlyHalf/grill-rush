@@ -222,7 +222,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const crossedInterval =
         Math.floor(state.time / interval) !== Math.floor(nextTime / interval)
       if (crossedInterval && customers.length < MAX_QUEUE) {
-        const spawned = spawnCustomer(spawnCtx)
+        const lastType = customers[customers.length - 1]?.type
+        const spawned = spawnCustomer(spawnCtx, lastType)
         if (spawned) customers.push(spawned)
       }
       const customerIds = new Set(customers.map((customer) => customer.id))
