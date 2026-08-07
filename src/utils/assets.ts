@@ -72,7 +72,7 @@ export const OPEN_COOKING_FRAME_ART = publicUrl('images/open_phase/open-phase-la
 export const GRILL_TILE_OFF_ART = publicUrl('images/open_phase/grill-off.webp')
 /** 그릴 슬롯 타일 — 조리 중 상태(그릴 자국) */
 export const GRILL_TILE_ON_ART = publicUrl('images/open_phase/grill-on.webp')
-/** 서빙/폐기 버튼 스프라이트 시트 — 2x2(서빙 기본/클릭, 폐기 기본/클릭) */
+/** 서빙/폐기 버튼 스프라이트 시트 — 2x2(서빙 활성/비활성, 폐기 활성/비활성) */
 export const OPEN_ACTION_BUTTONS_ART = publicUrl('images/open_phase/buttons.webp')
 
 /**

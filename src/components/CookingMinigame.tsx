@@ -30,26 +30,11 @@ import { ActionTypes } from '../state/actions'
 import { getOrderFulfillment } from '../state/orderFulfillment'
 import ingredientData from '../data/ingredients.json'
 import { INGREDIENT_FOOD_STYLE } from '../utils/foodIcons'
-import { OPEN_ACTION_BUTTONS_ART } from '../utils/assets'
+import PlatedActionButton from './PlatedActionButton'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
 const grillIngredientById = new Map(grillIngredients.map((ingredient) => [ingredient.id, ingredient]))
 
-/** buttons.webp(1536x1024) 2x2 — 서빙 기본/클릭, 폐기 기본/클릭 크롭 좌표 */
-const ACTION_BUTTON_STYLE = {
-  serve: {
-    backgroundImage: `url(${OPEN_ACTION_BUTTONS_ART})`,
-    backgroundSize: '320% 541.8%',
-    '--btn-pos-default': '22.44% 30.54%',
-    '--btn-pos-pressed': '78.41% 30.54%',
-  },
-  discard: {
-    backgroundImage: `url(${OPEN_ACTION_BUTTONS_ART})`,
-    backgroundSize: '320% 525.13%',
-    '--btn-pos-default': '22.44% 68.4%',
-    '--btn-pos-pressed': '78.41% 68.4%',
-  },
-} as const
 const resultLabels = { good: '좋음', perfect: '완벽', danger: '아슬아슬' } as const
 const PERFECT_TIMING_ALERT_DURATION_MS = 1_000
 const AUTO_COLLECT_FEEDBACK_DURATION_MS = 1_300
@@ -345,25 +330,17 @@ export default function CookingMinigame() {
             </li>
           </ul>
           <div className="plated-actions">
-            <button
-              type="button"
-              className="plated-action-btn plated-action-btn--serve"
-              style={ACTION_BUTTON_STYLE.serve}
+            <PlatedActionButton
+              variant="serve"
               disabled={!selectedStillExists || !readyOrder}
               onClick={handleServeFromPlate}
               title={readyOrder ? undefined : '서빙 가능한 주문이 없습니다'}
-            >
-              <span className="visually-hidden">서빙</span>
-            </button>
-            <button
-              type="button"
-              className="plated-action-btn plated-action-btn--discard"
-              style={ACTION_BUTTON_STYLE.discard}
+            />
+            <PlatedActionButton
+              variant="discard"
               disabled={!selectedStillExists}
               onClick={handleDiscardFromPlate}
-            >
-              <span className="visually-hidden">폐기</span>
-            </button>
+            />
           </div>
         </section>
       </div>
