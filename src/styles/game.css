@@ -2400,27 +2400,23 @@ body:has(.phase-open) {
   align-items: center;
   justify-content: center;
   min-width: 0;
-  /* buttons.webp 원본 버튼 비율(480x192 ≈ 2.5:1)에 맞춰서 이미지가 늘어나 보이지 않도록 */
+  /* buttons.webp 원본 버튼 비율(529x207 ≈ 2.5:1)에 맞춰서 이미지가 늘어나 보이지 않도록 */
   aspect-ratio: 2.5 / 1;
   padding: 0;
   border: none;
   appearance: none;
   background-color: transparent;
   background-repeat: no-repeat;
-  background-position: var(--btn-pos-default);
+  background-position: var(--btn-pos-inactive);
   cursor: pointer;
 }
 
-.plated-action-btn:active:not(:disabled) {
-  background-position: var(--btn-pos-pressed);
+.plated-action-btn:not(:disabled) {
+  background-position: var(--btn-pos-active);
 }
 
 .plated-action-btn:hover:not(:disabled) {
   filter: brightness(1.06);
-}
-
-.plated-action-btn:disabled {
-  visibility: hidden;
 }
 
 .queue-list {
