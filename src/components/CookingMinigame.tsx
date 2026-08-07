@@ -27,12 +27,14 @@ import { playPerfectTimingAlarm } from '../audio/sfx'
 import { grillIngredients } from '../grill/grillIngredients'
 import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
-import { getOrderFulfillment } from '../state/orderFulfillment'
+import { getOrderFulfillment, groupPlatedIngredients, qualityByResult } from '../state/orderFulfillment'
 import ingredientData from '../data/ingredients.json'
-import { INGREDIENT_FOOD_STYLE } from '../utils/foodIcons'
+import menuData from '../data/menus.json'
+import { INGREDIENT_FOOD_STYLE, MENU_FOOD_STYLE } from '../utils/foodIcons'
 import PlatedActionButton from './PlatedActionButton'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
+const menuById = new Map(menuData.map((menu) => [menu.id, menu]))
 const grillIngredientById = new Map(grillIngredients.map((ingredient) => [ingredient.id, ingredient]))
 
 const resultLabels = { good: '좋음', perfect: '완벽', danger: '아슬아슬' } as const
@@ -63,7 +65,7 @@ export default function CookingMinigame() {
   )
   const slotsRef = useRef(slots)
   const [now, setNow] = useState(() => Date.now())
-  const [selectedPreparedId, setSelectedPreparedId] = useState<string | null>(null)
+  const [selectedPreparedIds, setSelectedPreparedIds] = useState<string[]>([])
   const [alertingSlotIds, setAlertingSlotIds] = useState<string[]>([])
   const [alarmAnnouncement, setAlarmAnnouncement] = useState({ id: 0, message: '' })
   const [autoCollectFeedback, setAutoCollectFeedback] = useState<{
@@ -217,8 +219,11 @@ export default function CookingMinigame() {
     setSlots(result.slots)
   }
 
-  const selectedStillExists = state.preparedIngredients.some((item) => item.id === selectedPreparedId)
+  const selectedStillExists =
+    selectedPreparedIds.length > 0 &&
+    selectedPreparedIds.every((id) => state.preparedIngredients.some((item) => item.id === id))
   const readyOrder = state.orders.find((order) => getOrderFulfillment(state, order.id).canServe)
+  const platedDisplayItems = groupPlatedIngredients(state.preparedIngredients)
 
   const handleServeFromPlate = () => {
     if (!selectedStillExists || !readyOrder) return
@@ -226,13 +231,15 @@ export default function CookingMinigame() {
       type: ActionTypes.SERVE_ORDER,
       payload: { orderId: readyOrder.id, customerId: readyOrder.customerId },
     })
-    setSelectedPreparedId(null)
+    setSelectedPreparedIds([])
   }
 
   const handleDiscardFromPlate = () => {
-    if (!selectedStillExists || !selectedPreparedId) return
-    dispatch({ type: ActionTypes.DISCARD_PREPARED_INGREDIENT, payload: { preparedId: selectedPreparedId } })
-    setSelectedPreparedId(null)
+    if (!selectedStillExists) return
+    selectedPreparedIds.forEach((preparedId) => {
+      dispatch({ type: ActionTypes.DISCARD_PREPARED_INGREDIENT, payload: { preparedId } })
+    })
+    setSelectedPreparedIds([])
   }
 
   return (
@@ -301,15 +308,45 @@ export default function CookingMinigame() {
         <section className="cooking-col cooking-col--plated" aria-label="완성">
           <h4 className="cooking-col-title">완성</h4>
           <ul className="plated-grid">
-            {state.preparedIngredients.map((item) => {
+            {platedDisplayItems.map((displayItem) => {
+              if (displayItem.kind === 'combo') {
+                const menu = menuById.get(displayItem.menuId)
+                const ids = displayItem.items.map((entry) => entry.id)
+                const selected = ids.every((id) => selectedPreparedIds.includes(id))
+                const worstResult = displayItem.items.reduce((worst, current) =>
+                  qualityByResult[current.result] < qualityByResult[worst.result] ? current : worst,
+                ).result
+                return (
+                  <li key={ids.join('+')}>
+                    <button
+                      type="button"
+                      className={`plated-item plated-item--${worstResult}${selected ? ' is-selected' : ''}`}
+                      onClick={() => setSelectedPreparedIds(selected ? [] : ids)}
+                      aria-pressed={selected}
+                    >
+                      <span
+                        className={`plated-item-icon${menu && MENU_FOOD_STYLE[menu.id] ? ' has-food-image' : ''}`}
+                        aria-hidden
+                        style={menu ? MENU_FOOD_STYLE[menu.id] : undefined}
+                      >
+                        {menu && MENU_FOOD_STYLE[menu.id] ? null : (menu?.icon ?? '🍽️')}
+                      </span>
+                      <span className="visually-hidden">{menu?.name ?? displayItem.menuId}</span>
+                      <small className="plated-item-label">{resultLabels[worstResult]}</small>
+                    </button>
+                  </li>
+                )
+              }
+
+              const item = displayItem.item
               const ingredient = ingredientById.get(item.ingredientId)
-              const selected = selectedPreparedId === item.id
+              const selected = selectedPreparedIds.length === 1 && selectedPreparedIds[0] === item.id
               return (
                 <li key={item.id}>
                   <button
                     type="button"
                     className={`plated-item plated-item--${item.result}${selected ? ' is-selected' : ''}`}
-                    onClick={() => setSelectedPreparedId(selected ? null : item.id)}
+                    onClick={() => setSelectedPreparedIds(selected ? [] : [item.id])}
                     aria-pressed={selected}
                   >
                     <span
