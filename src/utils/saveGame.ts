@@ -62,6 +62,7 @@ function isValidSave(value: Partial<GameState>): value is GameState {
 function sanitizeLoaded(state: GameState): GameState {
   const hydrated: GameState = {
     ...state,
+    dailyIngredientPurchases: sanitizePurchaseCounts(state.dailyIngredientPurchases),
     // Open-phase state is not autosaved, so stale prepared ingredients must never cross sessions.
     preparedIngredients: [],
     nextPreparedIngredientId: 1,
@@ -89,6 +90,17 @@ function sanitizeLoaded(state: GameState): GameState {
     }
   }
   return hydrated
+}
+
+function sanitizePurchaseCounts(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null) return {}
+  const counts: Record<string, number> = {}
+  for (const [ingredientId, count] of Object.entries(value)) {
+    if (Number.isSafeInteger(count) && Number(count) >= 0) {
+      counts[ingredientId] = Number(count)
+    }
+  }
+  return counts
 }
 
 /** 자동 저장 대상 페이즈 */

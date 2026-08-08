@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { Application } from 'pixi.js'
-import { useGame } from '../state/GameContext'
-import { ActionTypes } from '../state/actions'
-import { getRequiredIngredientIds } from '../state/formulas'
 import { PixiStage } from '../pixi'
 import {
   createIngredientMarketScene,
   type IngredientMarketHandle,
 } from '../pixi/scenes/IngredientMarketScene'
-import ingredients from '../data/ingredients.json'
+import { useGame } from '../state/GameContext'
+import { ActionTypes } from '../state/actions'
+import { getRequiredIngredientIds } from '../state/formulas'
 import {
   getIngredientCapacity,
   getIngredientCount,
 } from '../utils/ingredientStorage'
 
-/** 재료 매입 — PixiJS 마트 UI (선택 메뉴 재료만 해금) */
+/** 선택한 메뉴에 필요한 재료만 개별 구매하는 PixiJS 일반 마트 UI */
 export default function IngredientShop() {
   const { state, dispatch } = useGame()
   const allowedIds = useMemo(
@@ -28,6 +27,7 @@ export default function IngredientShop() {
   const stateRef = useRef({
     cash: state.cash,
     owned: state.ingredients,
+    dailyPurchases: state.dailyIngredientPurchases,
     allowedIds,
     capacity,
     currentIngredientCount,
@@ -35,6 +35,7 @@ export default function IngredientShop() {
   stateRef.current = {
     cash: state.cash,
     owned: state.ingredients,
+    dailyPurchases: state.dailyIngredientPurchases,
     allowedIds,
     capacity,
     currentIngredientCount,
@@ -47,6 +48,7 @@ export default function IngredientShop() {
     sceneRef.current?.update({
       cash: state.cash,
       owned: state.ingredients,
+      dailyPurchases: state.dailyIngredientPurchases,
       allowedIds,
       capacity,
       currentIngredientCount,
@@ -54,6 +56,7 @@ export default function IngredientShop() {
   }, [
     state.cash,
     state.ingredients,
+    state.dailyIngredientPurchases,
     allowedIds,
     capacity,
     currentIngredientCount,
@@ -64,15 +67,9 @@ export default function IngredientShop() {
       app,
       stateRef.current,
       (ingredientId: string) => {
-        const ing = ingredients.find((i) => i.id === ingredientId)
-        if (!ing) return
         dispatchRef.current({
           type: ActionTypes.BUY_INGREDIENT,
-          payload: {
-            ingredientId: ing.id,
-            qty: 1,
-            unitCost: ing.unitCost,
-          },
+          payload: { ingredientId },
         })
       },
     )

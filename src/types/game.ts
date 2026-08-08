@@ -89,6 +89,7 @@ export interface GameState {
   activeMenus: MenuId[]
   menuPrices: Record<MenuId, number>
   ingredients: Record<IngredientId, number>
+  dailyIngredientPurchases: Record<IngredientId, number>
   customers: Customer[]
   orders: Order[]
   preparedIngredients: PreparedIngredient[]
@@ -116,7 +117,10 @@ export type GameAction =
   | { type: 'CONFIRM_LOCATION' }
   | { type: 'TOGGLE_MENU'; payload: MenuId }
   | { type: 'SET_MENU_PRICE'; payload: { menuId: MenuId; price: number } }
-  | { type: 'BUY_INGREDIENT'; payload: { ingredientId: IngredientId; qty: number; unitCost: number } }
+  | {
+      type: 'BUY_INGREDIENT'
+      payload: { ingredientId: IngredientId }
+    }
   | { type: 'USE_INGREDIENT'; payload: { ingredientId: IngredientId } }
   | {
       type: 'COLLECT_COOKED_INGREDIENT'
