@@ -452,7 +452,7 @@ const DISTRICTS: DistrictDef[] = [
     icon: '🌳',
     left: 20,
     right: 260,
-    unlockDay: 3,
+    unlockDay: 5,
     draw(g, gy) {
       g.ellipse(80, gy + 16, 50, 8)
       g.fill(P.parkPondLight)
@@ -647,7 +647,7 @@ const DISTRICTS: DistrictDef[] = [
     icon: '🌙',
     left: 1010,
     right: 1260,
-    unlockDay: 5,
+    unlockDay: 10,
     draw(g, gy) {
       g.rect(1030, gy - 70, 14, 70)
       g.fill(P.gateRed)

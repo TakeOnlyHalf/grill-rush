@@ -113,7 +113,7 @@ const ZONES: ZoneDef[] = [
     w: 135,
     h: 75,
     color: C.zPark,
-    unlockDay: 3,
+    unlockDay: 5,
     drawDecor(g, x, y) {
       const drawTree = (tx: number, ty: number, r: number) => {
         g.rect(tx - 2, ty, 4, 12)
@@ -134,7 +134,7 @@ const ZONES: ZoneDef[] = [
     w: 135,
     h: 75,
     color: C.zMarket,
-    unlockDay: 5,
+    unlockDay: 10,
     drawDecor(g, x, y) {
       g.rect(x + 12, y + 20, 24, 16)
       g.fill(C.stall)

@@ -1,27 +1,27 @@
 [
   {
-    "day": 2,
+    "day": 3,
     "id": "first_reviewer",
     "name": "첫 리뷰어 방문",
     "description": "리뷰 평점 ×2 반영",
     "effect": { "reviewMultiplier": 2 }
   },
   {
-    "day": 4,
+    "day": 7,
     "id": "street_festival",
     "name": "거리 축제",
     "description": "축제 광장 해금, 유동인구 ×2",
     "effect": { "unlockLocation": "festival", "trafficMultiplier": 2 }
   },
   {
-    "day": 5,
+    "day": 14,
     "id": "rush_hour",
     "name": "러시아워",
     "description": "손님 폭주 — 그릴 슬롯 압박 최고조",
     "effect": { "spawnRateMultiplier": 1.8 }
   },
   {
-    "day": 7,
+    "day": 20,
     "id": "food_truck_contest",
     "name": "푸드트럭 대회",
     "description": "최종 도전, 결과에 따라 엔딩 분기",

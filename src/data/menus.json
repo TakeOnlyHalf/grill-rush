@@ -53,7 +53,7 @@
     "difficulty": 2,
     "popularity": 78,
     "unlockedByDefault": false,
-    "unlockCondition": "day>=2"
+    "unlockCondition": "Day 3 해금"
   },
   {
     "id": "grilled_chicken",
@@ -67,7 +67,7 @@
     "difficulty": 2,
     "popularity": 72,
     "unlockedByDefault": false,
-    "unlockCondition": "day>=2"
+    "unlockCondition": "Day 5 해금"
   },
   {
     "id": "shrimp_skewer",
@@ -81,7 +81,7 @@
     "difficulty": 3,
     "popularity": 74,
     "unlockedByDefault": false,
-    "unlockCondition": "day>=3"
+    "unlockCondition": "Day 10 해금"
   },
   {
     "id": "grilled_steak",
@@ -95,7 +95,7 @@
     "difficulty": 3,
     "popularity": 80,
     "unlockedByDefault": false,
-    "unlockCondition": "day>=3"
+    "unlockCondition": "Day 10 해금"
   },
   {
     "id": "grill_platter",
@@ -109,6 +109,6 @@
     "difficulty": 4,
     "popularity": 88,
     "unlockedByDefault": false,
-    "unlockCondition": "day>=5 && fame>=30"
+    "unlockCondition": "Day 15 · 명성 30 이상"
   }
 ]
