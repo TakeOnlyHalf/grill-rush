@@ -4,6 +4,7 @@ import {
   MAX_CUSTOMER_ORDER_ITEMS,
   MIN_CUSTOMER_ORDER_ITEMS,
   MULTI_ORDER_CHANCE,
+  MULTI_ORDER_PATIENCE_BONUS_SEC,
 } from '../state/actions'
 import { getDayDifficulty, getLocationById, getWeatherTrafficFactor, isRushHour } from '../state/formulas'
 import type { Customer, LocationId, MenuId, WeatherId } from '../types/game'
@@ -75,7 +76,12 @@ export function spawnCustomer(ctx: SpawnContext, excludeType?: string): Customer
   )
 
   const { patienceMultiplier } = getDayDifficulty(ctx.day)
-  const patience = Math.max(5, Math.round(type.patience * patienceMultiplier))
+  const basePatience = Math.max(5, Math.round(type.patience * patienceMultiplier))
+  const patience = basePatience + (
+    orderedMenuIds.length > MIN_CUSTOMER_ORDER_ITEMS
+      ? MULTI_ORDER_PATIENCE_BONUS_SEC
+      : 0
+  )
 
   return {
     id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,

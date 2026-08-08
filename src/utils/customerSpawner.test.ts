@@ -3,6 +3,7 @@ import {
   MAX_CUSTOMER_ORDER_ITEMS,
   MIN_CUSTOMER_ORDER_ITEMS,
   MULTI_ORDER_CHANCE,
+  MULTI_ORDER_PATIENCE_BONUS_SEC,
 } from '../state/actions'
 import { selectOrderMenuIds, spawnCustomer } from './customerSpawner'
 
@@ -81,4 +82,30 @@ describe('spawnCustomer', () => {
     expect(spawned?.orderedMenuNames).toEqual(['에그 & 베이컨', '그릴 옥수수'])
   })
 
+  it('gives a two-item customer exactly three more seconds of patience', () => {
+    const context = {
+      locationId: 'office',
+      weather: 'sunny',
+      activeMenus: ['egg_bacon', 'grilled_corn'],
+      unlockedMenus: ['egg_bacon', 'grilled_corn'],
+      fame: 0,
+      day: 1,
+      time: 0,
+    }
+    vi.spyOn(Math, 'random').mockImplementation(sequence(0.5, 0, 0, 0))
+    const singleOrderCustomer = spawnCustomer(context)
+
+    vi.restoreAllMocks()
+    vi.spyOn(Math, 'random').mockImplementation(sequence(0, 0, 0, 0, 0))
+    const multiOrderCustomer = spawnCustomer(context)
+
+    expect(singleOrderCustomer?.orderedMenuIds).toHaveLength(1)
+    expect(multiOrderCustomer?.orderedMenuIds).toHaveLength(2)
+    expect(multiOrderCustomer?.type).toBe(singleOrderCustomer?.type)
+    expect(MULTI_ORDER_PATIENCE_BONUS_SEC).toBe(3)
+    expect(multiOrderCustomer?.maxPatience).toBe(
+      (singleOrderCustomer?.maxPatience ?? 0) + MULTI_ORDER_PATIENCE_BONUS_SEC,
+    )
+    expect(multiOrderCustomer?.patience).toBe(multiOrderCustomer?.maxPatience)
+  })
 })
