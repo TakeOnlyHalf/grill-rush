@@ -143,42 +143,44 @@ export default function CustomerQueue() {
 
                     if (completed) {
                       return (
-                        <span
-                          key={order.id}
-                          className="order-menu-slot is-completed"
-                          title={`${menu?.name ?? order.menuId} 서빙 완료`}
-                        >
-                          {menuIcon}
-                          {ingredientRow}
-                          <span className="order-menu-complete-mark" aria-hidden>✓</span>
-                          <span className="visually-hidden">
-                            {menu?.name ?? order.menuId} · 서빙 완료
+                        <div key={order.id} className="order-menu-column">
+                          <span
+                            className="order-menu-slot is-completed"
+                            title={`${menu?.name ?? order.menuId} 서빙 완료`}
+                          >
+                            {menuIcon}
+                            <span className="order-menu-complete-mark" aria-hidden>✓</span>
+                            <span className="visually-hidden">
+                              {menu?.name ?? order.menuId} · 서빙 완료
+                            </span>
                           </span>
-                        </span>
+                          {ingredientRow}
+                        </div>
                       )
                     }
 
                     return (
-                      <button
-                        key={order.id}
-                        type="button"
-                        className={`order-menu-slot order-menu-button${fulfillment.canServe ? ' is-serveable' : ''}`}
-                        disabled={!fulfillment.canServe}
-                        title={fulfillment.canServe
-                          ? `${menu?.name ?? order.menuId} 서빙 가능 · 클릭해서 제공`
-                          : `${menu?.name ?? order.menuId} 필요 재료: ${ingredientSummary}`}
-                        onClick={() => dispatch({
-                          type: ActionTypes.SERVE_ORDER,
-                          payload: { orderId: order.id, customerId: c.id },
-                        })}
-                      >
-                        {menuIcon}
+                      <div key={order.id} className="order-menu-column">
+                        <button
+                          type="button"
+                          className={`order-menu-slot order-menu-button${fulfillment.canServe ? ' is-serveable' : ''}`}
+                          disabled={!fulfillment.canServe}
+                          title={fulfillment.canServe
+                            ? `${menu?.name ?? order.menuId} 서빙 가능 · 클릭해서 제공`
+                            : `${menu?.name ?? order.menuId} 필요 재료: ${ingredientSummary}`}
+                          onClick={() => dispatch({
+                            type: ActionTypes.SERVE_ORDER,
+                            payload: { orderId: order.id, customerId: c.id },
+                          })}
+                        >
+                          {menuIcon}
+                          <span className="visually-hidden">
+                            {menu?.name ?? order.menuId}
+                            {fulfillment.canServe ? ' · 서빙 가능' : ` · 필요 재료: ${ingredientSummary}`}
+                          </span>
+                        </button>
                         {ingredientRow}
-                        <span className="visually-hidden">
-                          {menu?.name ?? order.menuId}
-                          {fulfillment.canServe ? ' · 서빙 가능' : ` · 필요 재료: ${ingredientSummary}`}
-                        </span>
-                      </button>
+                      </div>
                     )
                   })}
                 </div>

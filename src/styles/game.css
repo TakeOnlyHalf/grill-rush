@@ -2682,7 +2682,9 @@ body:has(.phase-open) {
 }
 
 .queue-list {
-  --order-card-area-size: 5.85rem;
+  --order-card-area-size: 5.05rem;
+  --order-portrait-size: 5.85rem;
+  --order-portrait-height: 6.85rem;
   --order-card-inner-gap: 0.3rem;
   --order-card-list-gap: 0.45rem;
   display: flex;
@@ -2693,8 +2695,7 @@ body:has(.phase-open) {
   list-style: none;
   flex: 1 1 auto;
   min-height: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 .order-queue-card {
@@ -2737,18 +2738,23 @@ body:has(.phase-open) {
   align-items: flex-start;
 }
 
-/* 초상화와 각 메뉴는 같은 고정 너비를 쓴다. 메뉴 슬롯은 재료 행만큼 높이가 늘어난다. */
-.order-queue-portrait,
-.order-menu-slot {
-  flex: 0 0 var(--order-card-area-size);
-  box-sizing: border-box;
+/* 초상화는 기존 크기, 메뉴 칸만 조금 작게. 재료는 메뉴 칸 아래에 따로 표시한다. */
+.order-menu-column {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
   width: var(--order-card-area-size);
 }
 
 .order-queue-portrait {
+  box-sizing: border-box;
+  flex: 0 0 var(--order-portrait-size);
   display: grid;
   place-items: center;
-  height: var(--order-card-area-size);
+  width: var(--order-portrait-size);
+  height: var(--order-portrait-height);
   max-height: 100%;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
@@ -2760,13 +2766,13 @@ body:has(.phase-open) {
 
 .order-menu-slot {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.18rem;
-  min-height: var(--order-card-area-size);
-  padding: 0.28rem 0.22rem 0.24rem;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: var(--order-card-area-size);
+  height: var(--order-card-area-size);
+  overflow: hidden;
+  padding: 0.12rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--cream);
@@ -2797,8 +2803,9 @@ body:has(.phase-open) {
 
 .order-menu-complete-mark {
   position: absolute;
-  right: 0.3rem;
-  bottom: 0.3rem;
+  right: 0.22rem;
+  bottom: 0.22rem;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 1.25rem;
@@ -2812,14 +2819,17 @@ body:has(.phase-open) {
 }
 
 .order-queue-menu-icon {
-  flex: 0 0 auto;
   width: 100%;
-  max-width: 2.85rem;
-  aspect-ratio: 1 / 1;
+  height: 100%;
   display: grid;
   place-items: center;
-  font-size: 1.15rem;
+  font-size: 2.05rem;
   line-height: 1;
+}
+
+.order-menu-slot .order-queue-menu-icon.has-food-image {
+  border-radius: calc(var(--radius-sm) - 1px);
+  padding: 0.06rem;
 }
 
 .order-menu-ingredients {
@@ -2827,7 +2837,7 @@ body:has(.phase-open) {
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 0.12rem;
+  gap: 0.14rem;
   width: 100%;
   margin: 0;
   padding: 0;
@@ -2838,8 +2848,8 @@ body:has(.phase-open) {
   position: relative;
   display: grid;
   place-items: center;
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.48rem;
+  height: 1.48rem;
   opacity: 0.42;
   filter: grayscale(0.35);
 }
@@ -2856,7 +2866,7 @@ body:has(.phase-open) {
   place-items: center;
   border-radius: 999px;
   background: color-mix(in srgb, #fff 70%, var(--cream));
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   line-height: 1;
 }
 
@@ -3052,6 +3062,7 @@ body:has(.phase-open) {
   border: none;
   border-radius: 0;
   box-shadow: none;
+  overflow: hidden;
 }
 
 .queue-strip-title {
@@ -3071,7 +3082,7 @@ body:has(.phase-open) {
   padding: 0 0 0.2rem;
   display: flex;
   gap: 0.55rem;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .queue-chip {
