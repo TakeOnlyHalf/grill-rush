@@ -26,15 +26,36 @@ export const qualityByResult: Record<PreparedCookResult, PreparedQuality> = {
   perfect: 3,
 }
 
-/** 완성 트레이 최대 표시 칸 수 */
-export const MAX_PLATED_ITEMS = 10
+/** 완성 트레이: 가로 5열 */
+export const PLATED_SLOT_COLUMNS = 5
+/** 기본 해금 행 수 (업그레이드 전) */
+export const PLATED_BASE_ROWS = 2
+/** 잠긴 확장 행 수 — 추후 업그레이드로 해금 */
+export const PLATED_LOCKED_ROWS = 1
+
+/** 현재 사용 가능한 완성 칸 수 (기본 10 = 5×2) */
+export const MAX_PLATED_ITEMS = PLATED_SLOT_COLUMNS * PLATED_BASE_ROWS
+
+/** 잠긴 확장 칸 수 (5 = 5×1) — UI 표시용 */
+export const PLATED_LOCKED_SLOT_COUNT = PLATED_SLOT_COLUMNS * PLATED_LOCKED_ROWS
+
+/**
+ * 업그레이드로 열린 완성 칸 수용량.
+ * 지금은 기본 칸만 반환하고, 이후 plated 확장 업그레이드 효과를 여기서 합산한다.
+ */
+export function getUnlockedPlatedCapacity(_ownedUpgradeIds: readonly string[] = []): number {
+  return MAX_PLATED_ITEMS
+}
 
 export function getPlatedDisplayCount(preparedIngredients: PreparedIngredient[]): number {
   return groupPlatedIngredients(preparedIngredients).length
 }
 
-export function isPlatedTrayFull(preparedIngredients: PreparedIngredient[]): boolean {
-  return getPlatedDisplayCount(preparedIngredients) >= MAX_PLATED_ITEMS
+export function isPlatedTrayFull(
+  preparedIngredients: PreparedIngredient[],
+  ownedUpgradeIds: readonly string[] = [],
+): boolean {
+  return getPlatedDisplayCount(preparedIngredients) >= getUnlockedPlatedCapacity(ownedUpgradeIds)
 }
 
 /**
@@ -45,7 +66,7 @@ export function collectPreparedIngredient(
   collected: CollectedIngredientInput,
 ): GameState {
   if (!isServableResult(collected.cookResult)) return state
-  if (isPlatedTrayFull(state.preparedIngredients)) return state
+  if (isPlatedTrayFull(state.preparedIngredients, state.upgrades)) return state
 
   const prepared: PreparedIngredient = {
     id: `prepared-${state.nextPreparedIngredientId}`,

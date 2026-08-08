@@ -29,12 +29,17 @@ import { playPerfectTimingAlarm, playSfx } from '../audio/sfx'
 import { grillIngredients } from '../grill/grillIngredients'
 import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
-import { getOrderFulfillment, groupPlatedIngredients, isPlatedTrayFull, MAX_PLATED_ITEMS, qualityByResult } from '../state/orderFulfillment'
+import {
+  groupPlatedIngredients,
+  isPlatedTrayFull,
+  MAX_PLATED_ITEMS,
+  PLATED_LOCKED_SLOT_COUNT,
+  qualityByResult,
+} from '../state/orderFulfillment'
 import ingredientData from '../data/ingredients.json'
 import menuData from '../data/menus.json'
 import { INGREDIENT_FOOD_STYLE, MENU_FOOD_STYLE } from '../utils/foodIcons'
 import { getIngredientCapacity } from '../utils/ingredientStorage'
-import PlatedActionButton from './PlatedActionButton'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
 const menuById = new Map(menuData.map((menu) => [menu.id, menu]))
@@ -68,7 +73,9 @@ export default function CookingMinigame() {
   )
   const slotsRef = useRef(slots)
   const preparedIngredientsRef = useRef(state.preparedIngredients)
+  const upgradesRef = useRef(state.upgrades)
   preparedIngredientsRef.current = state.preparedIngredients
+  upgradesRef.current = state.upgrades
   const [now, setNow] = useState(() => Date.now())
   const [selectedPreparedIds, setSelectedPreparedIds] = useState<string[]>([])
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null)
@@ -93,7 +100,10 @@ export default function CookingMinigame() {
     const id = setInterval(() => {
       const t = Date.now()
       const resolvedSlots = slotsRef.current.map((slot) => resolveGrillSlot(slot, t))
-      const trayFull = isPlatedTrayFull(preparedIngredientsRef.current)
+      const trayFull = isPlatedTrayFull(
+        preparedIngredientsRef.current,
+        upgradesRef.current,
+      )
       const autoAssistTick = runAutoAssistTick(
         resolvedSlots,
         t,
@@ -222,7 +232,7 @@ export default function CookingMinigame() {
     if (
       cookResult !== 'burnt' &&
       cookResult !== 'raw' &&
-      isPlatedTrayFull(state.preparedIngredients)
+      isPlatedTrayFull(state.preparedIngredients, state.upgrades)
     ) {
       return
     }
@@ -245,21 +255,11 @@ export default function CookingMinigame() {
   const selectedStillExists =
     selectedPreparedIds.length > 0 &&
     selectedPreparedIds.every((id) => state.preparedIngredients.some((item) => item.id === id))
-  const readyOrder = state.orders.find((order) => getOrderFulfillment(state, order.id).canServe)
   const platedDisplayItems = groupPlatedIngredients(state.preparedIngredients)
-
-  const handleServeFromPlate = () => {
-    if (!selectedStillExists || !readyOrder) return
-    playSfx('serve_dish')
-    dispatch({
-      type: ActionTypes.SERVE_ORDER,
-      payload: { orderId: readyOrder.id, customerId: readyOrder.customerId },
-    })
-    setSelectedPreparedIds([])
-  }
 
   const handleDiscardFromPlate = () => {
     if (!selectedStillExists) return
+    playSfx('button_secondary')
     selectedPreparedIds.forEach((preparedId) => {
       dispatch({ type: ActionTypes.DISCARD_PREPARED_INGREDIENT, payload: { preparedId } })
     })
@@ -349,7 +349,18 @@ export default function CookingMinigame() {
         </section>
 
         <section className="cooking-col cooking-col--plated" aria-label="완성">
-          <h4 className="cooking-col-title">완성</h4>
+          <h4 className="cooking-col-title cooking-col-title--plated">
+            <span>완성</span>
+            <button
+              type="button"
+              className="plated-discard-btn"
+              disabled={!selectedStillExists}
+              onClick={handleDiscardFromPlate}
+              title={selectedStillExists ? '선택한 완성 음식 폐기' : '폐기할 음식을 선택하세요'}
+            >
+              폐기
+            </button>
+          </h4>
           <ul className="plated-grid">
             {platedDisplayItems.map((displayItem) => {
               if (displayItem.kind === 'combo') {
@@ -421,20 +432,21 @@ export default function CookingMinigame() {
                 </li>
               ),
             )}
+            {Array.from({ length: PLATED_LOCKED_SLOT_COUNT }, (_, index) => (
+              <li key={`plated-locked-${index}`}>
+                <div
+                  className="plated-item plated-item--locked"
+                  title="업그레이드로 해금됩니다"
+                  aria-label="잠긴 완성 칸 · 업그레이드로 해금"
+                >
+                  <span className="plated-item-lock-icon" aria-hidden>
+                    🔒
+                  </span>
+                  <small className="plated-item-lock-label">잠김</small>
+                </div>
+              </li>
+            ))}
           </ul>
-          <div className="plated-actions">
-            <PlatedActionButton
-              variant="serve"
-              disabled={!selectedStillExists || !readyOrder}
-              onClick={handleServeFromPlate}
-              title={readyOrder ? undefined : '서빙 가능한 주문이 없습니다'}
-            />
-            <PlatedActionButton
-              variant="discard"
-              disabled={!selectedStillExists}
-              onClick={handleDiscardFromPlate}
-            />
-          </div>
         </section>
       </div>
 
