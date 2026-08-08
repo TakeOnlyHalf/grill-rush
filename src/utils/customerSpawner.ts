@@ -1,5 +1,11 @@
 import customerTypes from '../data/customers.json'
 import menus from '../data/menus.json'
+import {
+  MAX_CUSTOMER_ORDER_ITEMS,
+  MIN_CUSTOMER_ORDER_ITEMS,
+  MULTI_ORDER_CHANCE,
+  MULTI_ORDER_PATIENCE_BONUS_SEC,
+} from '../state/actions'
 import { getDayDifficulty, getLocationById, getWeatherTrafficFactor, isRushHour } from '../state/formulas'
 import type { Customer, LocationId, MenuId, WeatherId } from '../types/game'
 
@@ -7,6 +13,7 @@ export interface SpawnContext {
   locationId: LocationId
   weather: WeatherId | string
   activeMenus: MenuId[]
+  unlockedMenus: MenuId[]
   fame: number
   day: number
   time: number
@@ -25,31 +32,64 @@ function pickWeighted<T>(candidates: T[], weights: number[]): T {
   return candidates[candidates.length - 1]
 }
 
+/** 선택·해금된 판매 메뉴 중에서 1~2개를 중복 없이 뽑는다. */
+export function selectOrderMenuIds(
+  activeMenus: MenuId[],
+  unlockedMenus: MenuId[],
+  random: () => number = Math.random,
+): MenuId[] {
+  const knownMenuIds = new Set(menus.map((menu) => menu.id))
+  const unlockedMenuIds = new Set(unlockedMenus)
+  const candidates = [...new Set(activeMenus)].filter(
+    (menuId) => unlockedMenuIds.has(menuId) && knownMenuIds.has(menuId),
+  )
+  if (candidates.length === 0) return []
+
+  const requestedCount = random() < MULTI_ORDER_CHANCE
+    ? MAX_CUSTOMER_ORDER_ITEMS
+    : MIN_CUSTOMER_ORDER_ITEMS
+  const orderCount = Math.min(requestedCount, candidates.length)
+  const selected: MenuId[] = []
+
+  while (selected.length < orderCount) {
+    const index = Math.floor(random() * candidates.length)
+    selected.push(candidates.splice(index, 1)[0])
+  }
+  return selected
+}
+
 /**
  * 손님 생성 — 모든 손님 유형이 어느 장소에서나 나올 수 있되, 장소별 가중치대로 비율만 다르게 뽑는다.
  * excludeType(바로 직전에 스폰된 타입)은 캐릭터 이미지 종류가 적어 연속 등장이 눈에 띄기 쉬우므로 제외한다.
  */
 export function spawnCustomer(ctx: SpawnContext, excludeType?: string): Customer | null {
-  if (!ctx.activeMenus?.length) return null
+  const orderedMenuIds = selectOrderMenuIds(ctx.activeMenus, ctx.unlockedMenus)
+  if (orderedMenuIds.length === 0) return null
 
   const loc = getLocationById(ctx.locationId)
   // customerWeights에 없는 타입은 기본 가중치 1 — 주력 손님이 자주, 나머지도 가끔 섞여 나온다.
   const customerWeights = loc?.customerWeights as Record<string, number> | undefined
   const weights = customerTypes.map((t) => (t.id === excludeType ? 0 : customerWeights?.[t.id] ?? 1))
   const type = pickWeighted(customerTypes, weights)
-  const menuId = ctx.activeMenus[Math.floor(Math.random() * ctx.activeMenus.length)]
-  const menu = menus.find((m) => m.id === menuId)
+  const orderedMenuNames = orderedMenuIds.map(
+    (menuId) => menus.find((menu) => menu.id === menuId)?.name ?? menuId,
+  )
 
   const { patienceMultiplier } = getDayDifficulty(ctx.day)
-  const patience = Math.max(5, Math.round(type.patience * patienceMultiplier))
+  const basePatience = Math.max(5, Math.round(type.patience * patienceMultiplier))
+  const patience = basePatience + (
+    orderedMenuIds.length > MIN_CUSTOMER_ORDER_ITEMS
+      ? MULTI_ORDER_PATIENCE_BONUS_SEC
+      : 0
+  )
 
   return {
     id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     type: type.id,
     typeName: type.name,
     icon: type.icon,
-    orderMenuId: menuId,
-    orderName: menu?.name ?? menuId,
+    orderedMenuIds,
+    orderedMenuNames,
     patience,
     maxPatience: patience,
     tipChance: type.tipChance,

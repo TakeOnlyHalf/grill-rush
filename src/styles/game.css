@@ -2420,20 +2420,25 @@ body:has(.phase-open) {
 }
 
 .queue-list {
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  grid-auto-rows: 1fr;
-  gap: 0.45rem;
+  --order-card-area-size: 5.85rem;
+  --order-card-inner-gap: 0.3rem;
+  --order-card-list-gap: 0.45rem;
+  display: flex;
+  align-items: stretch;
+  gap: var(--order-card-list-gap);
   margin: 4px 0;
   padding: 0;
   list-style: none;
   flex: 1 1 auto;
   min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .order-queue-card {
   position: relative;
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   align-items: stretch;
   gap: 0.3rem;
@@ -2464,52 +2469,86 @@ body:has(.phase-open) {
   display: flex;
   flex: 1 1 auto;
   min-height: 0;
-  gap: 0.3rem;
-  justify-content: center;
+  width: max-content;
+  gap: var(--order-card-inner-gap);
+  justify-content: flex-start;
   align-items: center;
 }
 
-/* 캐릭터 이미지 / 음식 아이콘 자리 — 카드 폭 기준 정사각형(세로로 넘치지 않도록 폭 기준으로 계산 후 세로 중앙 정렬) */
+/* 초상화와 각 메뉴는 같은 고정 슬롯을 사용한다. 메뉴 슬롯이 늘어난 만큼 카드 자연 너비도 증가한다. */
 .order-queue-portrait,
-.order-combination {
-  flex: 0 0 calc(50% - 0.15rem);
+.order-menu-slot {
+  flex: 0 0 var(--order-card-area-size);
   box-sizing: border-box;
-  height: auto;
+  width: var(--order-card-area-size);
+  height: var(--order-card-area-size);
   max-height: 100%;
-  aspect-ratio: 1 / 1;
-  min-width: 0;
-  min-height: 0;
 }
 
 .order-queue-portrait {
+  display: grid;
+  place-items: center;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background-color: var(--cream);
   background-repeat: no-repeat;
+  font-size: 2.35rem;
+  line-height: 1;
 }
 
-.order-combination {
+.order-menu-slot {
+  position: relative;
   display: grid;
   place-items: center;
   padding: 0.3rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--cream);
+}
+
+.order-menu-button {
   font: inherit;
   cursor: default;
 }
 
-.order-combination:not(:disabled) {
+.order-menu-button:not(:disabled) {
   cursor: pointer;
 }
 
-.order-combination:disabled {
+.order-menu-button:disabled {
   opacity: 0.85;
 }
 
+.order-menu-button.is-serveable {
+  border-color: var(--ok);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 55%, transparent);
+}
+
+.order-menu-slot.is-completed .order-queue-menu-icon {
+  opacity: 0.36;
+  filter: grayscale(0.55);
+}
+
+.order-menu-complete-mark {
+  position: absolute;
+  right: 0.3rem;
+  bottom: 0.3rem;
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--ok);
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .order-queue-menu-icon {
-  width: 3.4rem;
-  height: 3.4rem;
+  width: 100%;
+  max-width: 3.4rem;
+  aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
   font-size: 1.25rem;
@@ -2526,11 +2565,6 @@ body:has(.phase-open) {
   border-color: var(--ok);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 28%, transparent);
   animation: serveable-pulse 900ms ease-in-out infinite alternate;
-}
-
-.order-queue-card.is-serveable .order-combination {
-  border-color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 18%, var(--cream));
 }
 
 @keyframes serveable-pulse {
