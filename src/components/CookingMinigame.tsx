@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../state/GameContext'
 import {
-  clearGrillSlot,
+  collectGrillSlot,
   createIdleGrillSlots,
-  getCookProgress,
-  getCookResult,
   placeIngredient,
   resolveGrillSlot,
   type GrillSlot,
 } from '../grill/grillSlots'
 import {
+  createAutoAssistReadyState,
+  runAutoAssistTick,
+  type AutoAssistTimerState,
+} from '../grill/autoAssist'
+import {
   getAdjustedCookDurationMs,
+  getAutoAssistIntervalMs,
+  getAutoAssistLevel,
   getGrillSlotCount,
   hasPerfectTimingAlarm,
 } from '../grill/grillUpgrades'
@@ -22,13 +27,27 @@ import { playPerfectTimingAlarm, playSfx } from '../audio/sfx'
 import { grillIngredients } from '../grill/grillIngredients'
 import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
-import { getOrderFulfillment } from '../state/orderFulfillment'
+import { getOrderFulfillment, groupPlatedIngredients, qualityByResult } from '../state/orderFulfillment'
 import ingredientData from '../data/ingredients.json'
+import menuData from '../data/menus.json'
+import { INGREDIENT_FOOD_STYLE, MENU_FOOD_STYLE } from '../utils/foodIcons'
+import PlatedActionButton from './PlatedActionButton'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
+const menuById = new Map(menuData.map((menu) => [menu.id, menu]))
 const grillIngredientById = new Map(grillIngredients.map((ingredient) => [ingredient.id, ingredient]))
+
 const resultLabels = { good: '좋음', perfect: '완벽', danger: '아슬아슬' } as const
 const PERFECT_TIMING_ALERT_DURATION_MS = 1_000
+const AUTO_COLLECT_FEEDBACK_DURATION_MS = 1_300
+
+function withObjectParticle(value: string): string {
+  const lastCodePoint = value.codePointAt(value.length - 1)
+  if (lastCodePoint === undefined || lastCodePoint < 0xac00 || lastCodePoint > 0xd7a3) {
+    return `${value}을`
+  }
+  return `${value}${(lastCodePoint - 0xac00) % 28 === 0 ? '를' : '을'}`
+}
 
 /**
  * 조리 미니게임 컨테이너 — 재료 / 그릴 / 완성 3분할(1:1.5:1) 레이아웃.
@@ -38,25 +57,79 @@ const PERFECT_TIMING_ALERT_DURATION_MS = 1_000
  */
 export default function CookingMinigame() {
   const { state, dispatch } = useGame()
+  const perfectTimingAlarmEnabled = hasPerfectTimingAlarm(state.upgrades)
+  const autoAssistLevel = getAutoAssistLevel(state.upgrades)
+  const autoCollectIntervalMs = getAutoAssistIntervalMs(state.upgrades)
   const [slots, setSlots] = useState<GrillSlot[]>(() =>
     createIdleGrillSlots(getGrillSlotCount(state.upgrades)),
   )
+  const slotsRef = useRef(slots)
   const [now, setNow] = useState(() => Date.now())
-  const [selectedPreparedId, setSelectedPreparedId] = useState<string | null>(null)
+  const [selectedPreparedIds, setSelectedPreparedIds] = useState<string[]>([])
   const [alertingSlotIds, setAlertingSlotIds] = useState<string[]>([])
   const [alarmAnnouncement, setAlarmAnnouncement] = useState({ id: 0, message: '' })
+  const [autoCollectFeedback, setAutoCollectFeedback] = useState<{
+    id: number
+    message: string
+  } | null>(null)
   const alarmStateRef = useRef<PerfectTimingAlarmState>({})
   const alertTimersRef = useRef(new Map<string, number>())
-  const perfectTimingAlarmEnabled = hasPerfectTimingAlarm(state.upgrades)
+  const autoCollectFeedbackTimerRef = useRef<number | null>(null)
+  const autoAssistTimerRef = useRef<AutoAssistTimerState>(
+    createAutoAssistReadyState(autoCollectIntervalMs, Date.now()),
+  )
 
   useEffect(() => {
+    autoAssistTimerRef.current = createAutoAssistReadyState(
+      autoCollectIntervalMs,
+      Date.now(),
+    )
     const id = setInterval(() => {
       const t = Date.now()
+      const resolvedSlots = slotsRef.current.map((slot) => resolveGrillSlot(slot, t))
+      const autoAssistTick = runAutoAssistTick(
+        resolvedSlots,
+        t,
+        autoCollectIntervalMs,
+        autoAssistTimerRef.current,
+        typeof document === 'undefined' || document.visibilityState === 'visible',
+      )
+      autoAssistTimerRef.current = autoAssistTick.timer
+      slotsRef.current = autoAssistTick.slots
       setNow(t)
-      setSlots((prev) => prev.map((slot) => resolveGrillSlot(slot, t)))
+      setSlots(autoAssistTick.slots)
+
+      if (!autoAssistTick.collected) return
+      const alertTimer = alertTimersRef.current.get(autoAssistTick.collected.slotId)
+      if (alertTimer !== undefined) window.clearTimeout(alertTimer)
+      alertTimersRef.current.delete(autoAssistTick.collected.slotId)
+      setAlertingSlotIds((current) =>
+        current.filter((id) => id !== autoAssistTick.collected?.slotId)
+      )
+      dispatch({
+        type: ActionTypes.COLLECT_COOKED_INGREDIENT,
+        payload: {
+          ingredientId: autoAssistTick.collected.ingredientId,
+          cookResult: autoAssistTick.collected.result,
+        },
+      })
+
+      const ingredientName = ingredientById.get(autoAssistTick.collected.ingredientId)?.name
+        ?? autoAssistTick.collected.ingredientId
+      setAutoCollectFeedback((current) => ({
+        id: (current?.id ?? 0) + 1,
+        message: `🤖 조리 보조: ${withObjectParticle(ingredientName)} 자동 회수했습니다.`,
+      }))
+      if (autoCollectFeedbackTimerRef.current !== null) {
+        window.clearTimeout(autoCollectFeedbackTimerRef.current)
+      }
+      autoCollectFeedbackTimerRef.current = window.setTimeout(() => {
+        setAutoCollectFeedback(null)
+        autoCollectFeedbackTimerRef.current = null
+      }, AUTO_COLLECT_FEEDBACK_DURATION_MS)
     }, 200)
     return () => clearInterval(id)
-  }, [])
+  }, [autoCollectIntervalMs, dispatch])
 
   useEffect(() => {
     const update = updatePerfectTimingAlarms(
@@ -91,6 +164,10 @@ export default function CookingMinigame() {
     for (const timer of alertTimersRef.current.values()) window.clearTimeout(timer)
     alertTimersRef.current.clear()
     alarmStateRef.current = {}
+    if (autoCollectFeedbackTimerRef.current !== null) {
+      window.clearTimeout(autoCollectFeedbackTimerRef.current)
+      autoCollectFeedbackTimerRef.current = null
+    }
   }, [])
 
   const clearSlotAlert = (slotId: string) => {
@@ -107,7 +184,7 @@ export default function CookingMinigame() {
     if (owned <= 0) return
     const grillIngredient = grillIngredientById.get(ingredientId)
     if (!grillIngredient) return // 조립 재료(치즈·소스·번 등)는 그릴에 올릴 필요가 없다
-    const idleSlot = slots.find((slot) => slot.status === 'idle')
+    const idleSlot = slotsRef.current.find((slot) => slot.status === 'idle')
     if (!idleSlot) return // 빈 슬롯 없음
 
     dispatch({ type: ActionTypes.USE_INGREDIENT, payload: { ingredientId } })
@@ -119,30 +196,36 @@ export default function CookingMinigame() {
         state.upgrades,
       ),
     }
-    setSlots((prev) =>
-      prev.map((slot) =>
-        slot.id === idleSlot.id
-          ? placeIngredient(slot, adjustedIngredient, Date.now())
-          : slot,
-      ),
+    const nextSlots = slotsRef.current.map((slot) =>
+      slot.id === idleSlot.id
+        ? placeIngredient(slot, adjustedIngredient, Date.now())
+        : slot,
     )
+    slotsRef.current = nextSlots
+    setSlots(nextSlots)
   }
 
   const handleCollect = (slot: GrillSlot) => {
-    if (!slot.ingredientId) return
+    const result = collectGrillSlot(slotsRef.current, slot, Date.now())
+    if (!result.collected) return
     clearSlotAlert(slot.id)
-    const t = Date.now()
-    const result = slot.status === 'burnt' ? 'burnt' : getCookResult(getCookProgress(slot, t))
-    if (result !== 'burnt') playSfx('cooking_done')
+    if (result.collected.result !== 'burnt') playSfx('cooking_done')
     dispatch({
       type: ActionTypes.COLLECT_COOKED_INGREDIENT,
-      payload: { ingredientId: slot.ingredientId, cookResult: result },
+      payload: {
+        ingredientId: result.collected.ingredientId,
+        cookResult: result.collected.result,
+      },
     })
-    setSlots((prev) => prev.map((s) => (s.id === slot.id ? clearGrillSlot(s) : s)))
+    slotsRef.current = result.slots
+    setSlots(result.slots)
   }
 
-  const selectedStillExists = state.preparedIngredients.some((item) => item.id === selectedPreparedId)
+  const selectedStillExists =
+    selectedPreparedIds.length > 0 &&
+    selectedPreparedIds.every((id) => state.preparedIngredients.some((item) => item.id === id))
   const readyOrder = state.orders.find((order) => getOrderFulfillment(state, order.id).canServe)
+  const platedDisplayItems = groupPlatedIngredients(state.preparedIngredients)
 
   const handleServeFromPlate = () => {
     if (!selectedStillExists || !readyOrder) return
@@ -151,13 +234,15 @@ export default function CookingMinigame() {
       type: ActionTypes.SERVE_ORDER,
       payload: { orderId: readyOrder.id, customerId: readyOrder.customerId },
     })
-    setSelectedPreparedId(null)
+    setSelectedPreparedIds([])
   }
 
   const handleDiscardFromPlate = () => {
-    if (!selectedStillExists || !selectedPreparedId) return
-    dispatch({ type: ActionTypes.DISCARD_PREPARED_INGREDIENT, payload: { preparedId: selectedPreparedId } })
-    setSelectedPreparedId(null)
+    if (!selectedStillExists) return
+    selectedPreparedIds.forEach((preparedId) => {
+      dispatch({ type: ActionTypes.DISCARD_PREPARED_INGREDIENT, payload: { preparedId } })
+    })
+    setSelectedPreparedIds([])
   }
 
   return (
@@ -181,7 +266,13 @@ export default function CookingMinigame() {
                       onClick={() => handleIngredientClick(ingredient.id)}
                       title={grillable ? `${ingredient.name} · 그릴에 올리기` : `${ingredient.name} · 조립 재료(서빙 시 자동 사용)`}
                     >
-                      <span className="ingredient-chip-icon" aria-hidden>{ingredient.icon}</span>
+                      <span
+                        className={`ingredient-chip-icon${INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
+                        aria-hidden
+                        style={INGREDIENT_FOOD_STYLE[ingredient.id]}
+                      >
+                        {INGREDIENT_FOOD_STYLE[ingredient.id] ? null : ingredient.icon}
+                      </span>
                       <span className="ingredient-chip-count">{state.ingredients[ingredient.id] ?? 0}</span>
                       <span className="visually-hidden">{ingredient.name}</span>
                     </button>
@@ -204,6 +295,11 @@ export default function CookingMinigame() {
               </span>
             </span>
           </h4>
+          {autoCollectIntervalMs !== null ? (
+            <p className="grill-auto-assist-status">
+              조리 보조 Lv.{autoAssistLevel} · 회수 후 {autoCollectIntervalMs / 1_000}초 재사용 대기
+            </p>
+          ) : null}
           <GrillSlots
             slots={slots}
             now={now}
@@ -215,9 +311,42 @@ export default function CookingMinigame() {
         <section className="cooking-col cooking-col--plated" aria-label="완성">
           <h4 className="cooking-col-title">완성</h4>
           <ul className="plated-grid">
-            {state.preparedIngredients.map((item) => {
+            {platedDisplayItems.map((displayItem) => {
+              if (displayItem.kind === 'combo') {
+                const menu = menuById.get(displayItem.menuId)
+                const ids = displayItem.items.map((entry) => entry.id)
+                const selected = ids.every((id) => selectedPreparedIds.includes(id))
+                const worstResult = displayItem.items.reduce((worst, current) =>
+                  qualityByResult[current.result] < qualityByResult[worst.result] ? current : worst,
+                ).result
+                return (
+                  <li key={ids.join('+')}>
+                    <button
+                      type="button"
+                      className={`plated-item plated-item--${worstResult}${selected ? ' is-selected' : ''}`}
+                      onClick={() => {
+                        playSfx('menu_select')
+                        setSelectedPreparedIds(selected ? [] : ids)
+                      }}
+                      aria-pressed={selected}
+                    >
+                      <span
+                        className={`plated-item-icon${menu && MENU_FOOD_STYLE[menu.id] ? ' has-food-image' : ''}`}
+                        aria-hidden
+                        style={menu ? MENU_FOOD_STYLE[menu.id] : undefined}
+                      >
+                        {menu && MENU_FOOD_STYLE[menu.id] ? null : (menu?.icon ?? '🍽️')}
+                      </span>
+                      <span className="visually-hidden">{menu?.name ?? displayItem.menuId}</span>
+                      <small className="plated-item-label">{resultLabels[worstResult]}</small>
+                    </button>
+                  </li>
+                )
+              }
+
+              const item = displayItem.item
               const ingredient = ingredientById.get(item.ingredientId)
-              const selected = selectedPreparedId === item.id
+              const selected = selectedPreparedIds.length === 1 && selectedPreparedIds[0] === item.id
               return (
                 <li key={item.id}>
                   <button
@@ -225,11 +354,17 @@ export default function CookingMinigame() {
                     className={`plated-item plated-item--${item.result}${selected ? ' is-selected' : ''}`}
                     onClick={() => {
                       playSfx('menu_select')
-                      setSelectedPreparedId(selected ? null : item.id)
+                      setSelectedPreparedIds(selected ? [] : [item.id])
                     }}
                     aria-pressed={selected}
                   >
-                    <span className="plated-item-icon" aria-hidden>{ingredient?.icon ?? '🍽️'}</span>
+                    <span
+                      className={`plated-item-icon${ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
+                      aria-hidden
+                      style={ingredient ? INGREDIENT_FOOD_STYLE[ingredient.id] : undefined}
+                    >
+                      {ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? null : (ingredient?.icon ?? '🍽️')}
+                    </span>
                     <span className="visually-hidden">{ingredient?.name ?? item.ingredientId}</span>
                     <small className="plated-item-label">{resultLabels[item.result]}</small>
                   </button>
@@ -241,23 +376,17 @@ export default function CookingMinigame() {
             </li>
           </ul>
           <div className="plated-actions">
-            <button
-              type="button"
-              className="plated-action-btn plated-action-btn--serve"
+            <PlatedActionButton
+              variant="serve"
               disabled={!selectedStillExists || !readyOrder}
               onClick={handleServeFromPlate}
               title={readyOrder ? undefined : '서빙 가능한 주문이 없습니다'}
-            >
-              <span aria-hidden>🍽️</span> 서빙
-            </button>
-            <button
-              type="button"
-              className="plated-action-btn plated-action-btn--discard"
+            />
+            <PlatedActionButton
+              variant="discard"
               disabled={!selectedStillExists}
               onClick={handleDiscardFromPlate}
-            >
-              <span aria-hidden>🗑️</span> 폐기
-            </button>
+            />
           </div>
         </section>
       </div>
@@ -272,6 +401,17 @@ export default function CookingMinigame() {
           <strong>주문 완료</strong>
           <span>{state.lastServeFeedback.menuName}</span>
           <b>+₩{state.lastServeFeedback.amount.toLocaleString('ko-KR')}</b>
+        </div>
+      ) : null}
+      {autoCollectFeedback ? (
+        <div
+          key={autoCollectFeedback.id}
+          className="auto-collect-feedback"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {autoCollectFeedback.message}
         </div>
       ) : null}
       <div

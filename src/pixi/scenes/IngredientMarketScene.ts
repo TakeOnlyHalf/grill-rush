@@ -9,23 +9,14 @@ import {
   type Ticker,
 } from 'pixi.js'
 import ingredientsData from '../../data/ingredients.json'
+import { DAILY_INGREDIENT_PURCHASE_LIMIT } from '../../state/actions'
 import { MART_BACKGROUND_ART } from '../../utils/assets'
 import { layoutPrepUiWorld } from '../layoutPrepUi'
-
-/* ================================================================
-   DESIGN
-   ================================================================ */
 
 export const MARKET_W = 920
 export const MARKET_H = 560
 
 const M = {
-  bgTop: 0x3d6e4a,
-  bgBot: 0x2a4f36,
-  wood: 0x8b5a2b,
-  woodDark: 0x6b4220,
-  woodLight: 0xb8793c,
-  shelf: 0xa06a35,
   card: 0xfff4e2,
   cardEdge: 0xe8d0b0,
   cardHover: 0xfffaf0,
@@ -33,13 +24,13 @@ const M = {
   accent2: 0xf48c06,
   buy: 0x2f9e44,
   buyDark: 0x237a34,
-  buyDisabled: 0x9a8f84,
+  buyDisabled: 0x8d867e,
   text: 0x3a2a1c,
   muted: 0x7a6550,
   white: 0xffffff,
   cashBg: 0x1a1410,
-  sign: 0xc45c26,
   chalk: 0xf5efe4,
+  woodLight: 0xb8793c,
 }
 
 interface IngredientDef {
@@ -55,8 +46,10 @@ const ITEMS = ingredientsData as IngredientDef[]
 export interface IngredientMarketState {
   cash: number
   owned: Record<string, number>
-  /** 오늘 메뉴에 필요한 재료만 구매 가능 */
+  dailyPurchases: Record<string, number>
   allowedIds: string[]
+  capacity: number
+  currentIngredientCount: number
 }
 
 export interface IngredientMarketHandle {
@@ -65,36 +58,38 @@ export interface IngredientMarketHandle {
 }
 
 interface SlotView {
-  id: string
+  item: IngredientDef
   root: Container
+  baseX: number
+  baseY: number
   cardBg: Graphics
   ownedText: Text
+  dailyText: Text
   buyBg: Graphics
   buyLabel: Text
   lockOverlay: Container
-  cost: number
   hover: boolean
 }
 
-function formatWon(n: number): string {
-  return `₩${n.toLocaleString('ko-KR')}`
+function formatWon(value: number): string {
+  return `₩${value.toLocaleString('ko-KR')}`
 }
 
 function drawRoundRect(
-  g: Graphics,
+  graphics: Graphics,
   x: number,
   y: number,
-  w: number,
-  h: number,
-  r: number,
+  width: number,
+  height: number,
+  radius: number,
   color: number,
   alpha = 1,
 ) {
-  g.roundRect(x, y, w, h, r)
-  g.fill({ color, alpha })
+  graphics.roundRect(x, y, width, height, radius)
+  graphics.fill({ color, alpha })
 }
 
-/** 재료 마트 씬 — mart_background.webp 선반 배경 + 매입 카드 UI */
+/** 선택한 메뉴의 재료를 한 개씩 구매하는 일반 마트 장면 */
 export function createIngredientMarketScene(
   app: Application,
   initial: IngredientMarketState,
@@ -104,26 +99,25 @@ export function createIngredientMarketScene(
   const state: IngredientMarketState = {
     cash: initial.cash,
     owned: { ...initial.owned },
+    dailyPurchases: { ...initial.dailyPurchases },
     allowedIds: [...initial.allowedIds],
+    capacity: initial.capacity,
+    currentIngredientCount: initial.currentIngredientCount,
   }
 
   const root = new Container()
   app.stage.addChild(root)
 
-  /** 전체 화면을 채우는 배경 (UI world와 분리) */
   const bgSprite = new Sprite()
   root.addChild(bgSprite)
 
   const world = new Container()
   root.addChild(world)
 
-  const floatTexts: { t: Text; life: number; vy: number }[] = []
-
+  const floatTexts: { text: Text; life: number; velocityY: number }[] = []
   const onResize = () => layoutToScreen()
   app.renderer.on('resize', onResize)
 
-  /* ── Cash (배경 이미지 우측 명패 위치) ───────── */
-  /** mart_background.webp 기준 명패 중심 (정규화 좌표) */
   const CASH_CX = 0.762
   const CASH_CY = 0.2545
   const CASH_ART_W = 1400
@@ -144,8 +138,7 @@ export function createIngredientMarketScene(
   cashRoot.addChild(cashText)
 
   function placeCash() {
-    if (!bgSprite.texture || bgSprite.texture.width === 0) return
-    if (bgSprite.width <= 0) return
+    if (!bgSprite.texture || bgSprite.texture.width === 0 || bgSprite.width <= 0) return
     const scale = bgSprite.width / CASH_ART_W
     cashRoot.scale.set(scale)
     cashRoot.x = bgSprite.x + bgSprite.width * CASH_CX
@@ -155,11 +148,14 @@ export function createIngredientMarketScene(
   function placeBgSprite() {
     if (!bgSprite.texture || bgSprite.texture.width === 0) return
     if (app.screen.width <= 0 || app.screen.height <= 0) return
-    const tw = bgSprite.texture.width
-    const th = bgSprite.texture.height
-    const cover = Math.max(app.screen.width / tw, app.screen.height / th)
-    bgSprite.width = tw * cover
-    bgSprite.height = th * cover
+    const textureWidth = bgSprite.texture.width
+    const textureHeight = bgSprite.texture.height
+    const cover = Math.max(
+      app.screen.width / textureWidth,
+      app.screen.height / textureHeight,
+    )
+    bgSprite.width = textureWidth * cover
+    bgSprite.height = textureHeight * cover
     bgSprite.x = (app.screen.width - bgSprite.width) / 2
     bgSprite.y = (app.screen.height - bgSprite.height) / 2
     placeCash()
@@ -170,26 +166,90 @@ export function createIngredientMarketScene(
     placeBgSprite()
   }
 
-  /* ── Item grid ───────────────────────────────── */
+  const CAPACITY_BADGE_X = 24
+  const CAPACITY_BADGE_W = 220
+  const capacityBg = new Graphics()
+  drawRoundRect(capacityBg, 0, 0, CAPACITY_BADGE_W, 36, 10, M.cashBg, 0.88)
+  capacityBg.x = CAPACITY_BADGE_X
+  capacityBg.y = 132
+  world.addChild(capacityBg)
+
+  const capacityText = new Text({
+    text: `보유 재료 ${state.currentIngredientCount} / ${state.capacity}`,
+    resolution: textRes,
+    style: {
+      fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
+      fontSize: 16,
+      fontWeight: 'bold',
+      fill: M.chalk,
+    },
+  })
+  capacityText.anchor.set(0.5)
+  capacityText.x = CAPACITY_BADGE_X + CAPACITY_BADGE_W / 2
+  capacityText.y = 150
+  world.addChild(capacityText)
+
+  function redrawCapacity() {
+    capacityText.text = `보유 재료 ${state.currentIngredientCount} / ${state.capacity}`
+    capacityText.style.fill =
+      state.currentIngredientCount >= state.capacity ? 0xffc078 : M.chalk
+  }
+
   const GRID_COLS = 5
   const CARD_W = 152
   const CARD_H = 118
   const GAP_X = 14
   const GAP_Y = 18
-  const gridW = GRID_COLS * CARD_W + (GRID_COLS - 1) * GAP_X
-  const gridOriginX = (MARKET_W - gridW) / 2
+  const gridWidth = GRID_COLS * CARD_W + (GRID_COLS - 1) * GAP_X
+  const gridOriginX = (MARKET_W - gridWidth) / 2
   const gridOriginY = 188
 
   const slots: SlotView[] = []
-  const displayItems = ITEMS.slice(0, 15)
+
+  function isAllowed(ingredientId: string): boolean {
+    return state.allowedIds.includes(ingredientId)
+  }
+
+  function getPurchasedToday(ingredientId: string): number {
+    return state.dailyPurchases[ingredientId] ?? 0
+  }
+
+  function showPurchaseFeedback(slot: SlotView, message: string, color: number) {
+    const feedback = new Text({
+      text: message,
+      resolution: textRes,
+      style: {
+        fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
+        fontSize: 14,
+        fontWeight: 'bold',
+        fill: color,
+      },
+    })
+    feedback.anchor.set(0.5)
+    feedback.x = slot.root.x + CARD_W / 2
+    feedback.y = slot.root.y + 20
+    world.addChild(feedback)
+    floatTexts.push({ text: feedback, life: 0.9, velocityY: -34 })
+  }
 
   function redrawCard(slot: SlotView) {
-    const owned = state.owned[slot.id] ?? 0
-    const allowed = state.allowedIds.includes(slot.id)
-    const canBuy = allowed && state.cash >= slot.cost
-    slot.ownedText.text = allowed ? `보유 ×${owned}` : '메뉴 미선택'
+    const { item } = slot
+    const allowed = isAllowed(item.id)
+    const purchasedToday = getPurchasedToday(item.id)
+    const limitReached = purchasedToday >= DAILY_INGREDIENT_PURCHASE_LIMIT
+    const hasCapacity = state.currentIngredientCount < state.capacity
+    const hasCash = state.cash >= item.unitCost
+    const canBuy = allowed && !limitReached && hasCapacity && hasCash
+
+    slot.ownedText.text = allowed
+      ? `보유 ×${state.owned[item.id] ?? 0}`
+      : '메뉴 미선택'
+    slot.dailyText.text = allowed
+      ? `오늘 구매 ${Math.min(purchasedToday, DAILY_INGREDIENT_PURCHASE_LIMIT)} / ${DAILY_INGREDIENT_PURCHASE_LIMIT}`
+      : ''
+    slot.dailyText.style.fill = purchasedToday > 0 ? M.accent2 : M.text
     slot.lockOverlay.visible = !allowed
-    slot.root.cursor = allowed ? 'pointer' : 'not-allowed'
+    slot.root.cursor = canBuy ? 'pointer' : 'not-allowed'
     slot.root.alpha = allowed ? 1 : 0.92
 
     slot.cardBg.clear()
@@ -200,12 +260,12 @@ export function createIngredientMarketScene(
       CARD_W,
       CARD_H,
       12,
-      slot.hover && allowed ? M.cardHover : M.card,
+      slot.hover && canBuy ? M.cardHover : M.card,
     )
     slot.cardBg.roundRect(0, 0, CARD_W, CARD_H, 12)
     slot.cardBg.stroke({
-      width: slot.hover && allowed ? 2.5 : 1.5,
-      color: slot.hover && allowed ? M.accent2 : M.cardEdge,
+      width: slot.hover && canBuy ? 2.5 : 1.5,
+      color: slot.hover && canBuy ? M.accent2 : M.cardEdge,
     })
     slot.cardBg.roundRect(0, 0, CARD_W, 8, 12)
     slot.cardBg.fill(M.woodLight)
@@ -216,29 +276,32 @@ export function createIngredientMarketScene(
     drawRoundRect(
       slot.buyBg,
       12,
-      CARD_H - 34,
+      CARD_H - 31,
       CARD_W - 24,
-      24,
+      22,
       8,
       canBuy ? M.buy : M.buyDisabled,
     )
     if (canBuy) {
-      slot.buyBg.roundRect(12, CARD_H - 34, CARD_W - 24, 24, 8)
+      slot.buyBg.roundRect(12, CARD_H - 31, CARD_W - 24, 22, 8)
       slot.buyBg.stroke({ width: 1.5, color: M.buyDark })
     }
-    slot.buyLabel.text = allowed
-      ? `+1  ${formatWon(slot.cost)}`
-      : '잠김'
-    slot.buyLabel.style.fill = M.white
-    slot.buyLabel.alpha = canBuy ? 1 : 0.75
+    slot.buyLabel.text = !allowed
+      ? '잠김'
+      : limitReached
+        ? '구매 완료'
+        : formatWon(item.unitCost)
+    slot.buyLabel.alpha = canBuy || limitReached ? 1 : 0.75
   }
 
-  displayItems.forEach((item, i) => {
-    const col = i % GRID_COLS
-    const row = Math.floor(i / GRID_COLS)
+  ITEMS.slice(0, 15).forEach((item, index) => {
+    const column = index % GRID_COLS
+    const row = Math.floor(index / GRID_COLS)
+    const baseX = gridOriginX + column * (CARD_W + GAP_X)
+    const baseY = gridOriginY + row * (CARD_H + GAP_Y)
     const slotRoot = new Container()
-    slotRoot.x = gridOriginX + col * (CARD_W + GAP_X)
-    slotRoot.y = gridOriginY + row * (CARD_H + GAP_Y)
+    slotRoot.x = baseX
+    slotRoot.y = baseY
 
     const cardBg = new Graphics()
     slotRoot.addChild(cardBg)
@@ -246,11 +309,14 @@ export function createIngredientMarketScene(
     const icon = new Text({
       text: item.icon,
       resolution: textRes,
-      style: { fontSize: 34 },
+      style: {
+        fontFamily: 'Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif',
+        fontSize: 25,
+      },
     })
     icon.anchor.set(0.5, 0)
     icon.x = CARD_W / 2
-    icon.y = 14
+    icon.y = 5
     slotRoot.addChild(icon)
 
     const name = new Text({
@@ -265,7 +331,7 @@ export function createIngredientMarketScene(
     })
     name.anchor.set(0.5, 0)
     name.x = CARD_W / 2
-    name.y = 52
+    name.y = 35
     slotRoot.addChild(name)
 
     const ownedText = new Text({
@@ -273,19 +339,34 @@ export function createIngredientMarketScene(
       resolution: textRes,
       style: {
         fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-        fontSize: 11,
+        fontSize: 10,
         fill: M.muted,
       },
     })
     ownedText.anchor.set(0.5, 0)
     ownedText.x = CARD_W / 2
-    ownedText.y = 70
+    ownedText.y = 54
     slotRoot.addChild(ownedText)
+
+    const dailyText = new Text({
+      text: `오늘 구매 0 / ${DAILY_INGREDIENT_PURCHASE_LIMIT}`,
+      resolution: textRes,
+      style: {
+        fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
+        fontSize: 11,
+        fontWeight: 'bold',
+        fill: M.text,
+      },
+    })
+    dailyText.anchor.set(0.5, 0)
+    dailyText.x = CARD_W / 2
+    dailyText.y = 69
+    slotRoot.addChild(dailyText)
 
     const buyBg = new Graphics()
     slotRoot.addChild(buyBg)
     const buyLabel = new Text({
-      text: `+1  ${formatWon(item.unitCost)}`,
+      text: formatWon(item.unitCost),
       resolution: textRes,
       style: {
         fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
@@ -296,7 +377,7 @@ export function createIngredientMarketScene(
     })
     buyLabel.anchor.set(0.5)
     buyLabel.x = CARD_W / 2
-    buyLabel.y = CARD_H - 22
+    buyLabel.y = CARD_H - 20
     slotRoot.addChild(buyLabel)
 
     const lockOverlay = new Container()
@@ -307,77 +388,74 @@ export function createIngredientMarketScene(
     const lockIcon = new Text({
       text: '🔒',
       resolution: textRes,
-      style: { fontSize: 28 },
+      style: {
+        fontFamily: 'Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif',
+        fontSize: 18,
+      },
     })
     lockIcon.anchor.set(0.5)
-    lockIcon.x = CARD_W / 2
-    lockIcon.y = CARD_H / 2 - 6
+    lockIcon.x = CARD_W - 18
+    lockIcon.y = 20
     lockOverlay.addChild(lockIcon)
     slotRoot.addChild(lockOverlay)
 
     const slot: SlotView = {
-      id: item.id,
+      item,
       root: slotRoot,
+      baseX,
+      baseY,
       cardBg,
       ownedText,
+      dailyText,
       buyBg,
       buyLabel,
       lockOverlay,
-      cost: item.unitCost,
       hover: false,
     }
 
     slotRoot.eventMode = 'static'
-    slotRoot.cursor = 'pointer'
     slotRoot.hitArea = new Rectangle(0, 0, CARD_W, CARD_H)
-
     slotRoot.on('pointerover', () => {
-      if (!state.allowedIds.includes(item.id)) return
+      const canHover =
+        isAllowed(item.id) &&
+        getPurchasedToday(item.id) < DAILY_INGREDIENT_PURCHASE_LIMIT &&
+        state.currentIngredientCount < state.capacity &&
+        state.cash >= item.unitCost
+      if (!canHover) return
       slot.hover = true
       slotRoot.scale.set(1.04)
-      slotRoot.x = gridOriginX + col * (CARD_W + GAP_X) - CARD_W * 0.02
-      slotRoot.y = gridOriginY + row * (CARD_H + GAP_Y) - CARD_H * 0.02
+      slotRoot.x = slot.baseX - CARD_W * 0.02
+      slotRoot.y = slot.baseY - CARD_H * 0.02
       redrawCard(slot)
     })
     slotRoot.on('pointerout', () => {
       slot.hover = false
       slotRoot.scale.set(1)
-      slotRoot.x = gridOriginX + col * (CARD_W + GAP_X)
-      slotRoot.y = gridOriginY + row * (CARD_H + GAP_Y)
+      slotRoot.x = slot.baseX
+      slotRoot.y = slot.baseY
       redrawCard(slot)
     })
     slotRoot.on('pointerdown', () => {
-      if (!state.allowedIds.includes(item.id)) return
-      if (state.cash < item.unitCost) {
-        slotRoot.x = gridOriginX + col * (CARD_W + GAP_X) + 3
-        setTimeout(() => {
-          if (!slot.hover) {
-            slotRoot.x = gridOriginX + col * (CARD_W + GAP_X)
-          }
-        }, 80)
+      if (!isAllowed(item.id)) return
+      if (getPurchasedToday(item.id) >= DAILY_INGREDIENT_PURCHASE_LIMIT) return
+      if (state.currentIngredientCount >= state.capacity) {
+        showPurchaseFeedback(slot, '보관 공간이 부족합니다', M.accent)
         return
       }
+      if (state.cash < item.unitCost) {
+        showPurchaseFeedback(slot, '돈이 부족합니다', M.accent)
+        return
+      }
+
       state.cash -= item.unitCost
       state.owned[item.id] = (state.owned[item.id] ?? 0) + 1
+      state.dailyPurchases[item.id] = getPurchasedToday(item.id) + 1
+      state.currentIngredientCount += 1
       cashText.text = formatWon(state.cash)
+      redrawCapacity()
       slots.forEach(redrawCard)
 
-      const fx = new Text({
-        text: `+1 ${item.icon}`,
-        resolution: textRes,
-        style: {
-          fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-          fontSize: 16,
-          fontWeight: 'bold',
-          fill: M.buy,
-        },
-      })
-      fx.anchor.set(0.5)
-      fx.x = slotRoot.x + CARD_W / 2
-      fx.y = slotRoot.y + 20
-      world.addChild(fx)
-      floatTexts.push({ t: fx, life: 0.7, vy: -42 })
-
+      showPurchaseFeedback(slot, '구매 완료', M.buy)
       onBuy(item.id)
     })
 
@@ -386,49 +464,48 @@ export function createIngredientMarketScene(
     slots.push(slot)
   })
 
-  /* ── Ambient dust ────────────────────────────── */
-  const dustG = new Graphics()
-  world.addChild(dustG)
-  const dust = Array.from({ length: 18 }, (_, i) => ({
-    x: (i * 97) % MARKET_W,
-    y: 90 + ((i * 53) % 360),
-    r: 1 + (i % 3),
-    sp: 8 + (i % 5) * 3,
+  const dustGraphics = new Graphics()
+  world.addChild(dustGraphics)
+  const dust = Array.from({ length: 18 }, (_, index) => ({
+    x: (index * 97) % MARKET_W,
+    y: 90 + ((index * 53) % 360),
+    radius: 1 + (index % 3),
+    speed: 8 + (index % 5) * 3,
   }))
 
   async function loadBg() {
-    const tex = await Assets.load(MART_BACKGROUND_ART)
-    tex.source.scaleMode = 'linear'
-    bgSprite.texture = tex
+    const texture = await Assets.load(MART_BACKGROUND_ART)
+    texture.source.scaleMode = 'linear'
+    bgSprite.texture = texture
     placeBgSprite()
     layoutToScreen()
   }
 
-  void loadBg().catch((err) => {
-    console.error('Failed to load mart background', err)
+  void loadBg().catch((error: unknown) => {
+    console.error('Failed to load mart background', error)
   })
 
   layoutToScreen()
 
   const onTick = (ticker: Ticker) => {
-    const dt = ticker.deltaMS / 1000
+    const deltaSeconds = ticker.deltaMS / 1000
 
-    dustG.clear()
-    for (const d of dust) {
-      d.y += d.sp * dt * 0.15
-      if (d.y > MARKET_H - 80) d.y = 90
-      dustG.circle(d.x, d.y, d.r)
-      dustG.fill({ color: M.white, alpha: 0.12 })
+    dustGraphics.clear()
+    for (const particle of dust) {
+      particle.y += particle.speed * deltaSeconds * 0.15
+      if (particle.y > MARKET_H - 80) particle.y = 90
+      dustGraphics.circle(particle.x, particle.y, particle.radius)
+      dustGraphics.fill({ color: M.white, alpha: 0.12 })
     }
 
-    for (let i = floatTexts.length - 1; i >= 0; i--) {
-      const f = floatTexts[i]
-      f.life -= dt
-      f.t.y += f.vy * dt
-      f.t.alpha = Math.max(0, f.life / 0.7)
-      if (f.life <= 0) {
-        f.t.destroy()
-        floatTexts.splice(i, 1)
+    for (let index = floatTexts.length - 1; index >= 0; index -= 1) {
+      const floating = floatTexts[index]
+      floating.life -= deltaSeconds
+      floating.text.y += floating.velocityY * deltaSeconds
+      floating.text.alpha = Math.max(0, floating.life / 0.7)
+      if (floating.life <= 0) {
+        floating.text.destroy()
+        floatTexts.splice(index, 1)
       }
     }
   }
@@ -440,18 +517,22 @@ export function createIngredientMarketScene(
         state.cash = next.cash
         cashText.text = formatWon(state.cash)
       }
-      if (next.owned !== undefined) {
-        state.owned = { ...next.owned }
+      if (next.owned !== undefined) state.owned = { ...next.owned }
+      if (next.dailyPurchases !== undefined) {
+        state.dailyPurchases = { ...next.dailyPurchases }
       }
-      if (next.allowedIds !== undefined) {
-        state.allowedIds = [...next.allowedIds]
+      if (next.allowedIds !== undefined) state.allowedIds = [...next.allowedIds]
+      if (next.capacity !== undefined) state.capacity = next.capacity
+      if (next.currentIngredientCount !== undefined) {
+        state.currentIngredientCount = next.currentIngredientCount
       }
+      redrawCapacity()
       slots.forEach(redrawCard)
     },
     destroy() {
       app.renderer.off('resize', onResize)
       app.ticker.remove(onTick)
-      for (const f of floatTexts) f.t.destroy()
+      for (const floating of floatTexts) floating.text.destroy()
       root.destroy({ children: true })
     },
   }

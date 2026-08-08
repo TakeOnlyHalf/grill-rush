@@ -96,3 +96,73 @@ export function clearGrillSlot(slot: GrillSlot): GrillSlot {
     cookDurationMs: 0,
   }
 }
+
+export function getAutoCollectCandidate(
+  slots: readonly GrillSlot[],
+  now: number,
+): GrillSlot | null {
+  return slots
+    .filter((slot) =>
+      slot.status === 'cooking' &&
+      slot.ingredientId !== null &&
+      slot.startedAt !== null &&
+      Number.isFinite(slot.startedAt) &&
+      Number.isFinite(slot.cookDurationMs) &&
+      slot.cookDurationMs > 0 &&
+      getCookResult(getCookProgress(slot, now)) === 'perfect'
+    )
+    .sort((left, right) => {
+      const leftRemainingMs =
+        (PERFECT_WINDOW_END - getCookProgress(left, now)) * left.cookDurationMs
+      const rightRemainingMs =
+        (PERFECT_WINDOW_END - getCookProgress(right, now)) * right.cookDurationMs
+      return leftRemainingMs - rightRemainingMs ||
+        (left.startedAt ?? 0) - (right.startedAt ?? 0) ||
+        left.id.localeCompare(right.id)
+    })[0] ?? null
+}
+
+export interface CollectGrillSlotResult {
+  slots: GrillSlot[]
+  collected: CollectedGrillItem | null
+}
+
+export type GrillSlotIdentity = Pick<GrillSlot, 'id' | 'ingredientId' | 'startedAt'>
+
+export function collectGrillSlot(
+  slots: readonly GrillSlot[],
+  target: GrillSlotIdentity,
+  now: number,
+  requiredResult?: CookResult,
+): CollectGrillSlotResult {
+  const slot = slots.find((candidate) => candidate.id === target.id)
+  if (
+    !slot ||
+    slot.status === 'idle' ||
+    slot.ingredientId === null ||
+    slot.startedAt === null ||
+    slot.cookDurationMs <= 0 ||
+    slot.ingredientId !== target.ingredientId ||
+    slot.startedAt !== target.startedAt
+  ) {
+    return { slots: [...slots], collected: null }
+  }
+
+  const progress = getCookProgress(slot, now)
+  const result = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
+  if (requiredResult !== undefined && result !== requiredResult) {
+    return { slots: [...slots], collected: null }
+  }
+
+  return {
+    slots: slots.map((candidate) =>
+      candidate.id === target.id ? clearGrillSlot(candidate) : candidate
+    ),
+    collected: {
+      slotId: target.id,
+      ingredientId: slot.ingredientId,
+      result,
+      progress,
+    },
+  }
+}

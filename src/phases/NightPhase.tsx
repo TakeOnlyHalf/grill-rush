@@ -8,11 +8,15 @@ import events from '../data/events.json'
 import { forceUnlockBgm } from '../audio/bgm'
 import { playSfx } from '../audio/sfx'
 import {
+  AUTO_ASSIST_UPGRADE_IDS,
+  getAutoAssistIntervalMs,
   getCookTimeFactor,
+  getDisplayedAutoAssistUpgrade,
   getDisplayedGrillExpansionUpgrade,
   getGrillSlotCount,
   GRILL_EXPANSION_UPGRADE_IDS,
 } from '../grill/grillUpgrades'
+import { getIngredientCapacity } from '../utils/ingredientStorage'
 
 type UpgradeCategory =
   | 'all'
@@ -32,8 +36,10 @@ type UpgradeDef = (typeof upgradesData)[number] & {
 
 const upgrades = upgradesData as UpgradeDef[]
 const grillExpansionUpgradeIdSet = new Set<string>(GRILL_EXPANSION_UPGRADE_IDS)
+const autoAssistUpgradeIdSet = new Set<string>(AUTO_ASSIST_UPGRADE_IDS)
 const maxGrillExpansionId =
   GRILL_EXPANSION_UPGRADE_IDS[GRILL_EXPANSION_UPGRADE_IDS.length - 1]
+const maxAutoAssistId = AUTO_ASSIST_UPGRADE_IDS[AUTO_ASSIST_UPGRADE_IDS.length - 1]
 
 const CATEGORIES: { id: UpgradeCategory; label: string; icon: string }[] = [
   { id: 'all', label: '전체', icon: '▦' },
@@ -55,7 +61,15 @@ function baseTruckStats(owned: string[]) {
     Math.round((1 - getCookTimeFactor(owned)) * 100),
   )
   const visitBonus = owned.includes('signboard') ? 10 : 0
-  return { slots, cookTimeReduction, visitBonus }
+  const autoCollectIntervalMs = getAutoAssistIntervalMs(owned)
+  const ingredientCapacity = getIngredientCapacity(owned)
+  return {
+    slots,
+    cookTimeReduction,
+    visitBonus,
+    autoCollectIntervalMs,
+    ingredientCapacity,
+  }
 }
 
 function previewStats(owned: string[], planned: string[]) {
@@ -92,11 +106,14 @@ export default function NightPhase({
 
   const filtered = useMemo(() => {
     const displayedGrillExpansion = getDisplayedGrillExpansionUpgrade(owned)
+    const displayedAutoAssist = getDisplayedAutoAssistUpgrade(owned)
     return upgrades.filter(
       (upgrade) =>
         (category === 'all' || upgrade.category === category) &&
         (!grillExpansionUpgradeIdSet.has(upgrade.id) ||
-          upgrade.id === displayedGrillExpansion?.id),
+          upgrade.id === displayedGrillExpansion?.id) &&
+        (!autoAssistUpgradeIdSet.has(upgrade.id) ||
+          upgrade.id === displayedAutoAssist?.id),
     )
   }, [category, owned])
 
@@ -147,6 +164,20 @@ export default function NightPhase({
   }
   if (preview.slots !== current.slots) {
     effectLines.push(`조리 슬롯 ${current.slots} → ${preview.slots}`)
+  }
+  if (preview.autoCollectIntervalMs !== current.autoCollectIntervalMs) {
+    const currentLabel = current.autoCollectIntervalMs === null
+      ? '미보유'
+      : `${current.autoCollectIntervalMs / 1_000}초`
+    const previewLabel = preview.autoCollectIntervalMs === null
+      ? '미보유'
+      : `${preview.autoCollectIntervalMs / 1_000}초`
+    effectLines.push(`조리 보조 ${currentLabel} → ${previewLabel} 재사용 대기`)
+  }
+  if (preview.ingredientCapacity !== current.ingredientCapacity) {
+    effectLines.push(
+      `재료 보관 한도 ${current.ingredientCapacity}개 → ${preview.ingredientCapacity}개`,
+    )
   }
 
   return (
@@ -229,6 +260,10 @@ export default function NightPhase({
               <span>방문 보너스</span>
               <strong>{current.visitBonus}%</strong>
             </li>
+            <li>
+              <span>재료 보관 한도</span>
+              <strong>{current.ingredientCapacity}개</strong>
+            </li>
           </ul>
         </aside>
 
@@ -238,6 +273,7 @@ export default function NightPhase({
             const locked = isLocked(up)
             const selected = planned.includes(up.id)
             const isMaxExpansion = isOwned && up.id === maxGrillExpansionId
+            const isMaxAutoAssist = isOwned && up.id === maxAutoAssistId
             return (
               <button
                 key={up.id}
@@ -262,7 +298,13 @@ export default function NightPhase({
                 ) : (
                   <>
                     <span className="night-card__cost">
-                      {isMaxExpansion ? '최대 확장' : isOwned ? '보유 중' : formatWon(up.cost)}
+                      {isMaxExpansion
+                        ? '최대 확장'
+                        : isMaxAutoAssist
+                          ? '최대 레벨'
+                          : isOwned
+                            ? '보유 중'
+                            : formatWon(up.cost)}
                     </span>
                     <span className="night-card__detail">
                       {up.detail ?? up.description}

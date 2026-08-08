@@ -25,14 +25,17 @@ function pickWeighted<T>(candidates: T[], weights: number[]): T {
   return candidates[candidates.length - 1]
 }
 
-/** 손님 생성 — 모든 손님 유형이 어느 장소에서나 나올 수 있되, 장소별 가중치대로 비율만 다르게 뽑는다 */
-export function spawnCustomer(ctx: SpawnContext): Customer | null {
+/**
+ * 손님 생성 — 모든 손님 유형이 어느 장소에서나 나올 수 있되, 장소별 가중치대로 비율만 다르게 뽑는다.
+ * excludeType(바로 직전에 스폰된 타입)은 캐릭터 이미지 종류가 적어 연속 등장이 눈에 띄기 쉬우므로 제외한다.
+ */
+export function spawnCustomer(ctx: SpawnContext, excludeType?: string): Customer | null {
   if (!ctx.activeMenus?.length) return null
 
   const loc = getLocationById(ctx.locationId)
   // customerWeights에 없는 타입은 기본 가중치 1 — 주력 손님이 자주, 나머지도 가끔 섞여 나온다.
   const customerWeights = loc?.customerWeights as Record<string, number> | undefined
-  const weights = customerTypes.map((t) => customerWeights?.[t.id] ?? 1)
+  const weights = customerTypes.map((t) => (t.id === excludeType ? 0 : customerWeights?.[t.id] ?? 1))
   const type = pickWeighted(customerTypes, weights)
   const menuId = ctx.activeMenus[Math.floor(Math.random() * ctx.activeMenus.length)]
   const menu = menus.find((m) => m.id === menuId)
