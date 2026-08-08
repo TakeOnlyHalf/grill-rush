@@ -76,7 +76,7 @@ export function createStreetScene(
     },
   })
   const labelBg = new Graphics()
-  windowLayer.addChild(bg, sky, crowdLayer, labelBg, label)
+  windowLayer.addChild(sky, bg, crowdLayer, labelBg, label)
 
   const windowMask = new Graphics()
   windowLayer.mask = windowMask
@@ -116,7 +116,7 @@ export function createStreetScene(
     if (cached) {
       bg.texture = cached
       bg.visible = true
-      sky.visible = false
+      sky.visible = true
       layout()
       return
     }
@@ -124,10 +124,11 @@ export function createStreetScene(
     const token = ++bgLoadToken
     Assets.load(url).then((tex: Texture) => {
       if (destroyed || token !== bgLoadToken) return
+      tex.source.scaleMode = 'linear'
       bgTextureCache.set(locationId, tex)
       bg.texture = tex
       bg.visible = true
-      sky.visible = false
+      sky.visible = true
       layout()
     })
   }
@@ -177,20 +178,33 @@ export function createStreetScene(
     windowMask.fill(0xffffff)
 
     if (bg.visible && bg.texture.width > 0) {
-      bg.width = win.w
-      bg.height = win.h
+      const texW = bg.texture.width
+      const texH = bg.texture.height
+      // 비율 유지 cover. 하단 위주이되 위쪽도 조금 보이게 한다.
+      const scale = Math.max(win.w / texW, win.h / texH)
+      bg.width = texW * scale
+      bg.height = texH * scale
+      bg.x = (win.w - bg.width) / 2
+      const overflowY = bg.height - win.h
+      if (overflowY > 0) {
+        // 완전 하단 정렬(0)과 중앙(0.5) 사이 — 위쪽을 약간만 더 노출
+        bg.y = win.h - bg.height + overflowY * 0.3
+      } else {
+        bg.y = win.h - bg.height
+      }
+    } else {
+      bg.x = 0
+      bg.y = 0
     }
 
     sky.clear()
-    if (sky.visible) {
-      sky.rect(0, 0, win.w, win.h * 0.68)
-      sky.fill(PIXI_COLORS.skyTop)
-      sky.rect(0, win.h * 0.68, win.w, win.h * 0.32)
-      sky.fill(PIXI_COLORS.ground)
-      sky.moveTo(0, win.h * 0.68)
-      sky.lineTo(win.w, win.h * 0.68)
-      sky.stroke({ width: 2, color: PIXI_COLORS.groundLine })
-    }
+    sky.rect(0, 0, win.w, win.h * 0.68)
+    sky.fill(PIXI_COLORS.skyTop)
+    sky.rect(0, win.h * 0.68, win.w, win.h * 0.32)
+    sky.fill(PIXI_COLORS.ground)
+    sky.moveTo(0, win.h * 0.68)
+    sky.lineTo(win.w, win.h * 0.68)
+    sky.stroke({ width: 2, color: PIXI_COLORS.groundLine })
 
     labelBg.clear()
     if (locationLabel) {

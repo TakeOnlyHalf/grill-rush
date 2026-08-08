@@ -183,11 +183,21 @@ export default function SettlePhase() {
           className="settle-cta"
           onClick={() => {
             playSfx('button_primary')
-            forceUnlockBgm('store')
+            if (state.day === 1) {
+              forceUnlockBgm('store')
+            } else if (state.day >= state.maxDays) {
+              forceUnlockBgm('title')
+            } else {
+              forceUnlockBgm('lobby')
+            }
             dispatch({ type: ActionTypes.CONFIRM_SETTLE })
           }}
         >
-          성장 화면으로 →
+          {state.day === 1
+            ? '성장 화면으로 →'
+            : state.day >= state.maxDays
+              ? '엔딩 보기 →'
+              : '다음 날로 →'}
         </button>
       </div>
     </section>

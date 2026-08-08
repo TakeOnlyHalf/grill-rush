@@ -2067,41 +2067,97 @@ body:has(.phase-open) {
   box-shadow: inset 0 0 0 3px var(--accent-2);
 }
 
-.grill-slot-timer {
-  width: 46%;
+.grill-slot-cook {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: min(96%, 8.8rem);
+}
+
+.grill-slot-food {
+  width: 68%;
   aspect-ratio: 1;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: conic-gradient(var(--ok) calc(var(--grill-progress, 0) * 360deg), var(--cream) 0deg);
-  transition: background 0.15s linear;
-}
-
-.grill-slot-timer-icon {
-  width: 76%;
-  height: 76%;
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background-color: var(--cream);
+  background-color: transparent;
   background-repeat: no-repeat;
-  font-size: 1.25rem;
+  font-size: 1.45rem;
+  overflow: hidden;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
 
-.grill-slot-card--perfect .grill-slot-timer {
-  background: conic-gradient(var(--gold) calc(var(--grill-progress, 0) * 360deg), var(--cream) 0deg);
+.grill-slot-food.has-food-image {
+  background-origin: content-box;
+  background-clip: content-box;
+  padding: 0.15rem;
+  box-sizing: border-box;
 }
 
-.grill-slot-card--danger .grill-slot-timer {
-  background: conic-gradient(var(--warning) calc(var(--grill-progress, 0) * 360deg), var(--cream) 0deg);
+.grill-slot-bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 0.72rem;
+}
+
+.grill-slot-bar-track {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(20, 14, 10, 0.55);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.grill-slot-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #9aa3ad;
+  transition: width 0.15s linear, background-color 0.15s linear;
+}
+
+.grill-slot-bar-mark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  z-index: 1;
+  width: 0;
+  border-left: 1.5px dashed rgba(255, 255, 255, 0.95);
+  transform: translateX(-50%);
+  pointer-events: none;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.8));
+}
+
+/* 회색(덜익음) → 노랑(좋음) → 초록(완벽) → 빨강(위험) → 검정(탐) */
+.grill-slot-card--raw .grill-slot-bar-fill {
+  background: #9aa3ad;
+}
+
+.grill-slot-card--good .grill-slot-bar-fill {
+  background: #f0c93a;
+}
+
+.grill-slot-card--perfect .grill-slot-bar-fill {
+  background: #3dcc6e;
+}
+
+.grill-slot-card--danger .grill-slot-bar-fill {
+  background: #ef4d4d;
 }
 
 .grill-slot-card--burnt {
-  box-shadow: inset 0 0 0 3px var(--danger);
+  box-shadow: inset 0 0 0 3px #1a1a1a;
 }
 
-.grill-slot-card--burnt .grill-slot-timer {
-  background: var(--danger);
+.grill-slot-card--burnt .grill-slot-bar-fill {
+  background: #1a1a1a;
+  width: 100% !important;
 }
 
 .grill-slot-card--locked {
@@ -2190,15 +2246,63 @@ body:has(.phase-open) {
 /* open-phase-layout-ui.webp 하단 조리대의 재료:그릴:완성 칸 너비 비율(≈25.9 : 48 : 26.1)에 맞춘 고정폭. */
 .cooking-col--stock {
   flex: 0 0 25.9%;
+  padding: 0.35rem 0.28rem 0.4rem;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #4a3c34 0%, #3a2e28 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .cooking-col--plated {
   flex: 0 0 26.1%;
 }
 
+.cooking-col-title--plated {
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.plated-discard-btn {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.18rem 1.15rem;
+  min-width: 4.6rem;
+  border: 1px solid color-mix(in srgb, #ff8a7a 55%, #d8cdbf);
+  border-radius: 999px;
+  background: color-mix(in srgb, #5a2e28 72%, transparent);
+  color: #ffd2c8;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-shadow: none;
+}
+
+.plated-discard-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, #7a3a32 80%, transparent);
+  border-color: #ff9a8c;
+}
+
+.plated-discard-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .cooking-col--grill {
   flex: 0 0 48%;
   padding: 0.35rem 0.4rem 0;
+}
+
+.cooking-col--stock .cooking-col-title {
+  margin: 0 0 0.4rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+  background: rgba(20, 14, 10, 0.45);
+  color: #fff8ef;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  text-shadow: none;
 }
 
 .cooking-col-title {
@@ -2296,20 +2400,61 @@ body:has(.phase-open) {
   overflow-y: auto;
 }
 
-/* 완성 프레임 아트에 그려진 접시 2개 자리에 맞춰 2열로, 세로 중앙(접시 위치)에 정렬 */
-.plated-grid {
-  grid-template-columns: repeat(2, 1fr);
-  align-content: center;
-  justify-content: center;
-  gap: 0.5rem 0.9rem;
+.ingredient-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0;
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: auto;
 }
 
-.ingredient-grid > li,
+/* 완성: 가로 5열 · 세로는 아래로 계속 쌓임 */
+.plated-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: none;
+  grid-auto-rows: min-content;
+  align-content: start;
+  justify-items: stretch;
+  gap: 0.3rem;
+  padding: 0 0.15rem 0.15rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.ingredient-grid > li {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
 .plated-grid > li {
   display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 
-.ingredient-chip,
+.ingredient-chip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.28rem 0.28rem 0.28rem 0.3rem;
+  border: 1.5px solid #c9b8a4;
+  border-radius: 10px;
+  background: #f7f1e6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  font: inherit;
+  color: #3a2a1c;
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+}
+
 .plated-item {
   display: flex;
   flex-direction: column;
@@ -2317,52 +2462,147 @@ body:has(.phase-open) {
   justify-content: center;
   gap: 0.1rem;
   width: 100%;
-  padding: 0.3rem 0.15rem;
+  height: 100%;
+  aspect-ratio: 1;
+  padding: 0.16rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--cream);
   font: inherit;
   appearance: none;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .ingredient-chip:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-.ingredient-chip:not(:disabled):hover,
+.ingredient-chip:not(:disabled):hover {
+  filter: brightness(0.98);
+  border-color: #e08a3c;
+}
+
+.ingredient-chip.is-selected {
+  border-color: #f08a2a;
+  box-shadow:
+    0 0 0 2px rgba(240, 138, 42, 0.55),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
 .plated-item:not(.plated-item--empty):hover {
   filter: brightness(0.98);
   border-color: var(--accent-2);
 }
 
-.ingredient-chip-icon,
-.plated-item-icon {
-  width: 1.9rem;
-  height: 1.9rem;
+.ingredient-chip-icon {
+  flex: 0 0 auto;
+  width: 3.15rem;
+  height: 3.15rem;
   display: grid;
   place-items: center;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+.plated-item-icon {
+  width: 82%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
   line-height: 1;
 }
 
-.ingredient-chip-icon.has-food-image,
-.plated-item-icon.has-food-image {
+.plated-item--empty .plated-item-icon {
   border-radius: 999px;
-  background-color: var(--cream);
+  border: 2px solid #e8843a;
+  background: #fff;
+  box-sizing: border-box;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.ingredient-chip-icon.has-food-image,
+.plated-item-icon.has-food-image,
+.order-queue-menu-icon.has-food-image {
+  border-radius: 999px;
+  background-color: transparent;
   background-repeat: no-repeat;
+  background-origin: content-box;
+  background-clip: content-box;
+  /* % padding은 부모 너비 기준이라 작은 아이콘 content-box가 0이 됨 */
+  padding: 0.08rem;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.ingredient-chip-meta {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.ingredient-chip-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: #3a2a1c;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ingredient-chip-count {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--muted);
+  color: #5c4636;
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ingredient-chip-gauge {
+  display: block;
+  width: 100%;
+  height: 0.38rem;
+  margin-top: 0.06rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #d9cfc0;
+}
+
+.ingredient-chip-gauge-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5faf6f 0%, #7bc88a 100%);
 }
 
 .plated-item-label {
-  font-size: 0.62rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: var(--muted);
+}
+
+.plated-item--perfect .plated-item-label {
+  color: #2f9d6a;
+}
+
+.plated-item--good .plated-item-label {
+  color: #c48a1a;
+}
+
+.plated-item--danger .plated-item-label {
+  color: #d65a2e;
 }
 
 .plated-item--perfect {
@@ -2385,6 +2625,28 @@ body:has(.phase-open) {
   color: var(--muted);
   opacity: 0.6;
   cursor: default;
+}
+
+.plated-item--locked {
+  border-style: solid;
+  border-color: color-mix(in srgb, #8a7360 55%, transparent);
+  background: color-mix(in srgb, #2a211c 72%, transparent);
+  color: #cbb8a6;
+  opacity: 0.72;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
+
+.plated-item-lock-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.plated-item-lock-label {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #b9a691;
 }
 
 .plated-actions {
@@ -2420,7 +2682,9 @@ body:has(.phase-open) {
 }
 
 .queue-list {
-  --order-card-area-size: 5.85rem;
+  --order-card-area-size: 5.05rem;
+  --order-portrait-size: 5.85rem;
+  --order-portrait-height: 6.85rem;
   --order-card-inner-gap: 0.3rem;
   --order-card-list-gap: 0.45rem;
   display: flex;
@@ -2431,8 +2695,7 @@ body:has(.phase-open) {
   list-style: none;
   flex: 1 1 auto;
   min-height: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 .order-queue-card {
@@ -2472,22 +2735,27 @@ body:has(.phase-open) {
   width: max-content;
   gap: var(--order-card-inner-gap);
   justify-content: flex-start;
-  align-items: center;
+  align-items: flex-start;
 }
 
-/* 초상화와 각 메뉴는 같은 고정 슬롯을 사용한다. 메뉴 슬롯이 늘어난 만큼 카드 자연 너비도 증가한다. */
-.order-queue-portrait,
-.order-menu-slot {
-  flex: 0 0 var(--order-card-area-size);
-  box-sizing: border-box;
+/* 초상화는 기존 크기, 메뉴 칸만 조금 작게. 재료는 메뉴 칸 아래에 따로 표시한다. */
+.order-menu-column {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
   width: var(--order-card-area-size);
-  height: var(--order-card-area-size);
-  max-height: 100%;
 }
 
 .order-queue-portrait {
+  box-sizing: border-box;
+  flex: 0 0 var(--order-portrait-size);
   display: grid;
   place-items: center;
+  width: var(--order-portrait-size);
+  height: var(--order-portrait-height);
+  max-height: 100%;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background-color: var(--cream);
@@ -2498,9 +2766,13 @@ body:has(.phase-open) {
 
 .order-menu-slot {
   position: relative;
+  box-sizing: border-box;
   display: grid;
   place-items: center;
-  padding: 0.3rem;
+  width: var(--order-card-area-size);
+  height: var(--order-card-area-size);
+  overflow: hidden;
+  padding: 0.12rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--cream);
@@ -2531,8 +2803,9 @@ body:has(.phase-open) {
 
 .order-menu-complete-mark {
   position: absolute;
-  right: 0.3rem;
-  bottom: 0.3rem;
+  right: 0.22rem;
+  bottom: 0.22rem;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 1.25rem;
@@ -2547,18 +2820,79 @@ body:has(.phase-open) {
 
 .order-queue-menu-icon {
   width: 100%;
-  max-width: 3.4rem;
-  aspect-ratio: 1 / 1;
+  height: 100%;
   display: grid;
   place-items: center;
-  font-size: 1.25rem;
+  font-size: 2.05rem;
   line-height: 1;
 }
 
-.order-queue-menu-icon.has-food-image {
+.order-menu-slot .order-queue-menu-icon.has-food-image {
+  border-radius: calc(var(--radius-sm) - 1px);
+  padding: 0.06rem;
+}
+
+.order-menu-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.14rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-menu-ingredient {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.48rem;
+  height: 1.48rem;
+  opacity: 0.42;
+  filter: grayscale(0.35);
+}
+
+.order-menu-ingredient.is-ready {
+  opacity: 1;
+  filter: none;
+}
+
+.order-menu-ingredient-icon {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
   border-radius: 999px;
-  background-color: var(--cream);
+  background: color-mix(in srgb, #fff 70%, var(--cream));
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.order-menu-ingredient-icon.has-food-image {
+  background-color: transparent;
   background-repeat: no-repeat;
+  background-origin: content-box;
+  background-clip: content-box;
+  padding: 0.04rem;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.order-menu-ingredient-count {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.18rem;
+  min-width: 0.7rem;
+  padding: 0 0.08rem;
+  border-radius: 999px;
+  background: rgba(40, 28, 18, 0.78);
+  color: #fff;
+  font-size: 0.48rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
 }
 
 .order-queue-card.is-serveable {
@@ -2728,6 +3062,7 @@ body:has(.phase-open) {
   border: none;
   border-radius: 0;
   box-shadow: none;
+  overflow: hidden;
 }
 
 .queue-strip-title {
@@ -2747,7 +3082,7 @@ body:has(.phase-open) {
   padding: 0 0 0.2rem;
   display: flex;
   gap: 0.55rem;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .queue-chip {

@@ -3,7 +3,6 @@ import ingredientData from '../data/ingredients.json'
 import upgradesData from '../data/upgrades.json'
 import {
   ActionTypes,
-  DAILY_INGREDIENT_PURCHASE_LIMIT,
   DAILY_TRUCK_COST,
   MAX_ACTIVE_MENUS,
   OPEN_DURATION_SEC,
@@ -14,11 +13,12 @@ import {
   getRequiredIngredientIds,
   resolveEnding,
 } from './formulas'
+import { applyProgressUnlocks } from './unlocks'
 import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
 import type { GameAction, GameState } from '../types/game'
 import { collectPreparedIngredient, serveOrder } from './orderFulfillment'
-import { canPurchaseIngredient } from '../utils/ingredientStorage'
+import { getIngredientPurchaseLimit } from '../utils/ingredientStorage'
 
 const MAX_QUEUE = 9
 
@@ -28,11 +28,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case ActionTypes.START_GAME: {
       const weather = rollWeather()
-      return {
+      return applyProgressUnlocks({
         ...createInitialState(),
         phase: 'prep',
         weather,
-      }
+      })
     }
 
     case ActionTypes.FINISH_STORY: {
@@ -44,7 +44,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case ActionTypes.LOAD_GAME:
-      return action.payload
+      return applyProgressUnlocks(action.payload)
 
     case ActionTypes.SET_LOCATION: {
       if (state.phase !== 'prep') return state
@@ -95,6 +95,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case ActionTypes.BUY_INGREDIENT: {
       if (state.phase !== 'prep') return state
       const { ingredientId } = action.payload
+      const requestedQuantity = action.payload.quantity ?? 1
+      if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0) return state
+
       const ingredient = ingredientData.find((candidate) => candidate.id === ingredientId)
       if (!ingredient || !Number.isSafeInteger(ingredient.unitCost) || ingredient.unitCost < 0) {
         return state
@@ -103,20 +106,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const purchasedToday = state.dailyIngredientPurchases[ingredientId] ?? 0
       if (!Number.isSafeInteger(purchasedToday) || purchasedToday < 0) return state
-      if (purchasedToday >= DAILY_INGREDIENT_PURCHASE_LIMIT) return state
-      if (state.cash < ingredient.unitCost) return state
-      if (!canPurchaseIngredient(state.ingredients, state.upgrades, 1)) return state
+      const purchaseLimit = getIngredientPurchaseLimit(state.upgrades)
+      const remainingLimit = purchaseLimit - purchasedToday
+      if (remainingLimit <= 0) return state
 
-      const nextOwnedQuantity = (state.ingredients[ingredientId] ?? 0) + 1
+      const affordable = Math.floor(state.cash / ingredient.unitCost)
+      if (!Number.isSafeInteger(affordable) || affordable <= 0) return state
+
+      const quantity = Math.min(requestedQuantity, remainingLimit, affordable)
+      if (!Number.isSafeInteger(quantity) || quantity <= 0) return state
+
+      const totalCost = ingredient.unitCost * quantity
+      if (!Number.isSafeInteger(totalCost) || totalCost <= 0 || state.cash < totalCost) return state
+
+      const nextOwnedQuantity = (state.ingredients[ingredientId] ?? 0) + quantity
       if (!Number.isSafeInteger(nextOwnedQuantity)) return state
-      const nextPurchasedToday = purchasedToday + 1
+      const nextPurchasedToday = purchasedToday + quantity
       if (!Number.isSafeInteger(nextPurchasedToday)) return state
-      const nextIngredientCost = state.dailyCosts.ingredients + ingredient.unitCost
+      const nextIngredientCost = state.dailyCosts.ingredients + totalCost
       if (!Number.isSafeInteger(nextIngredientCost)) return state
 
       return {
         ...state,
-        cash: state.cash - ingredient.unitCost,
+        cash: state.cash - totalCost,
         ingredients: {
           ...state.ingredients,
           [ingredientId]: nextOwnedQuantity,
@@ -290,12 +302,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const reviewAvg = avgReviews(state.dailyReviews)
       const fameDelta = state.dailyReviews.length ? Math.round((reviewAvg - 3) * 4) : 0
 
-      return {
+      const settled = applyProgressUnlocks({
         ...state,
         cash: state.cash + openDayDelta,
         fame: Math.max(0, state.fame + fameDelta),
         reviewAvg: state.dailyReviews.length ? reviewAvg : state.reviewAvg,
-        phase: 'night',
         history: [
           ...state.history,
           {
@@ -311,7 +322,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             location: state.location,
           },
         ],
+      })
+
+      // Day 1만 야간(트럭 관리실). Day 2+는 정산 후 바로 다음날.
+      if (state.day === 1) {
+        return { ...settled, phase: 'night' }
       }
+
+      return advanceToNextDay(settled)
     }
 
     case ActionTypes.BUY_UPGRADE: {
@@ -336,41 +354,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case ActionTypes.NEXT_DAY: {
       if (state.phase !== 'night') return state
-
-      if (state.day >= state.maxDays) {
-        return {
-          ...state,
-          phase: 'ending',
-          endingId: resolveEnding({ cash: state.cash, fame: state.fame }),
-        }
-      }
-
-      return {
-        ...state,
-        day: state.day + 1,
-        phase: 'prep',
-        weather: rollWeather(),
-        time: 0,
-        ingredients: {},
-        dailyIngredientPurchases: {},
-        customers: [],
-        orders: [],
-        preparedIngredients: [],
-        nextPreparedIngredientId: 1,
-        lastServeFeedback: null,
-        lastCustomerLeaveFeedback: null,
-        dailySales: 0,
-        dailyTips: 0,
-        dailyServed: 0,
-        dailyLeft: 0,
-        dailyReviews: [],
-        dailyCosts: {
-          ingredients: 0,
-          rent: 0,
-          waste: 0,
-          truck: 0,
-        },
-      }
+      return advanceToNextDay(state)
     }
 
     case ActionTypes.SHOW_ENDING: {
@@ -392,6 +376,44 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 function avgReviews(reviews: number[]): number {
   if (!reviews.length) return 0
   return reviews.reduce((a, b) => a + b, 0) / reviews.length
+}
+
+/** 야간 종료 또는 Day 2+ 정산 직후 — 다음날 준비 / 최종일 엔딩 */
+function advanceToNextDay(state: GameState): GameState {
+  if (state.day >= state.maxDays) {
+    return {
+      ...state,
+      phase: 'ending',
+      endingId: resolveEnding({ cash: state.cash, fame: state.fame }),
+    }
+  }
+
+  return applyProgressUnlocks({
+    ...state,
+    day: state.day + 1,
+    phase: 'prep',
+    weather: rollWeather(),
+    time: 0,
+    ingredients: {},
+    dailyIngredientPurchases: {},
+    customers: [],
+    orders: [],
+    preparedIngredients: [],
+    nextPreparedIngredientId: 1,
+    lastServeFeedback: null,
+    lastCustomerLeaveFeedback: null,
+    dailySales: 0,
+    dailyTips: 0,
+    dailyServed: 0,
+    dailyLeft: 0,
+    dailyReviews: [],
+    dailyCosts: {
+      ingredients: 0,
+      rent: 0,
+      waste: 0,
+      truck: 0,
+    },
+  })
 }
 
 function endOpenDay(state: GameState, time: number): GameState {

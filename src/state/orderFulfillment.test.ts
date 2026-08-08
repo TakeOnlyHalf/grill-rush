@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest'
 import type { Customer, GameState, Order, PreparedIngredient } from '../types/game'
 import { createInitialState } from './initialState'
 import { gameReducer } from './gameReducer'
-import { getOrderFulfillment, serveOrder } from './orderFulfillment'
+import {
+  collectPreparedIngredient,
+  getOrderFulfillment,
+  getUnlockedPlatedCapacity,
+  isPlatedTrayFull,
+  MAX_PLATED_ITEMS,
+  serveOrder,
+} from './orderFulfillment'
 
 const customer: Customer = {
   id: 'customer-1',
@@ -140,5 +147,48 @@ describe('multi-item order fulfillment', () => {
     expect(ticked.customers.map((candidate) => candidate.id)).toEqual([nextCustomer.id])
     expect(ticked.orders).toEqual([nextOrder])
     expect(ticked.dailyLeft).toBe(1)
+  })
+})
+
+describe('plated tray capacity', () => {
+  it(`rejects collecting when ${MAX_PLATED_ITEMS} plated items are already ready`, () => {
+    const full = {
+      ...openState(),
+      preparedIngredients: Array.from({ length: MAX_PLATED_ITEMS }, (_, index) =>
+        prepared(`ready-${index}`, 'sausage'),
+      ),
+      nextPreparedIngredientId: MAX_PLATED_ITEMS + 1,
+    }
+
+    expect(isPlatedTrayFull(full.preparedIngredients)).toBe(true)
+
+    const next = collectPreparedIngredient(full, {
+      ingredientId: 'sausage',
+      cookResult: 'perfect',
+    })
+
+    expect(next).toBe(full)
+    expect(next.preparedIngredients).toHaveLength(MAX_PLATED_ITEMS)
+  })
+
+  it('unlocks five more plated slots when plated_expand is owned', () => {
+    const fullBase = {
+      ...openState(),
+      upgrades: ['plated_expand'],
+      preparedIngredients: Array.from({ length: MAX_PLATED_ITEMS }, (_, index) =>
+        prepared(`ready-${index}`, 'sausage'),
+      ),
+      nextPreparedIngredientId: MAX_PLATED_ITEMS + 1,
+    }
+
+    expect(getUnlockedPlatedCapacity(fullBase.upgrades)).toBe(MAX_PLATED_ITEMS + 5)
+    expect(isPlatedTrayFull(fullBase.preparedIngredients, fullBase.upgrades)).toBe(false)
+
+    const next = collectPreparedIngredient(fullBase, {
+      ingredientId: 'sausage',
+      cookResult: 'perfect',
+    })
+
+    expect(next.preparedIngredients).toHaveLength(MAX_PLATED_ITEMS + 1)
   })
 })

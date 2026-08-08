@@ -39,7 +39,7 @@
     "rentCost": 12000,
     "competition": 1,
     "unlockedByDefault": false,
-    "unlockDay": 3
+    "unlockDay": 5
   },
   {
     "id": "night_market",
@@ -53,7 +53,7 @@
     "rentCost": 25000,
     "competition": 4,
     "unlockedByDefault": false,
-    "unlockDay": 5
+    "unlockDay": 10
   },
   {
     "id": "festival",
@@ -67,6 +67,6 @@
     "rentCost": 30000,
     "competition": 5,
     "unlockedByDefault": false,
-    "unlockDay": 99
+    "unlockDay": 15
   }
 ]

@@ -27,7 +27,7 @@ export const ActionTypes = {
 
 export type ActionType = (typeof ActionTypes)[keyof typeof ActionTypes]
 
-export const MAX_DAYS = 7
+export const MAX_DAYS = 20
 export const MAX_ACTIVE_MENUS = 4
 export const OPEN_DURATION_SEC = 75
 export const STARTING_CASH = 200_000

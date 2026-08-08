@@ -1,5 +1,6 @@
 import ingredientData from '../data/ingredients.json'
 import menus from '../data/menus.json'
+import upgradesData from '../data/upgrades.json'
 import type {
   GameState,
   IngredientId,
@@ -10,6 +11,24 @@ import type {
 } from '../types/game'
 import { calcSatisfaction } from './formulas'
 import { satisfactionToStars } from '../utils/reviewGenerator'
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function getPlatedSlotsBonus(upgrade: unknown): number {
+  if (!isRecord(upgrade) || !isRecord(upgrade.effect)) return 0
+  const bonus = upgrade.effect.platedSlots
+  return Number.isSafeInteger(bonus) && Number(bonus) > 0 ? Number(bonus) : 0
+}
+
+const platedSlotsBonusByUpgradeId = new Map<string, number>()
+
+for (const upgrade of upgradesData as readonly unknown[]) {
+  if (!isRecord(upgrade) || typeof upgrade.id !== 'string') continue
+  const bonus = getPlatedSlotsBonus(upgrade)
+  if (bonus > 0) platedSlotsBonusByUpgradeId.set(upgrade.id, bonus)
+}
 
 const assemblyIngredientIds = new Set(
   ingredientData.filter((ingredient) => ingredient.grillSec === 0).map((ingredient) => ingredient.id),
@@ -26,6 +45,51 @@ export const qualityByResult: Record<PreparedCookResult, PreparedQuality> = {
   perfect: 3,
 }
 
+/** 완성 트레이: 가로 5열 */
+export const PLATED_SLOT_COLUMNS = 5
+/** 기본 해금 행 수 (업그레이드 전) */
+export const PLATED_BASE_ROWS = 2
+/** 잠긴 확장 행 수 — 추후 업그레이드로 해금 */
+export const PLATED_LOCKED_ROWS = 1
+
+/** 기본 해금 완성 칸 수 (10 = 5×2) */
+export const MAX_PLATED_ITEMS = PLATED_SLOT_COLUMNS * PLATED_BASE_ROWS
+
+/** 잠긴 확장 칸 수 (5 = 5×1) — 업그레이드 전 UI 표시용 */
+export const PLATED_LOCKED_SLOT_COUNT = PLATED_SLOT_COLUMNS * PLATED_LOCKED_ROWS
+
+/** 완성 트레이 전체 칸 수 (기본 + 확장 행) */
+export const TOTAL_PLATED_SLOT_COUNT = MAX_PLATED_ITEMS + PLATED_LOCKED_SLOT_COUNT
+
+/**
+ * 업그레이드로 열린 완성 칸 수용량.
+ * `platedSlots` 효과가 있는 보유 업그레이드를 합산한다.
+ */
+export function getUnlockedPlatedCapacity(ownedUpgradeIds: readonly string[] = []): number {
+  let capacity = MAX_PLATED_ITEMS
+  for (const upgradeId of new Set(ownedUpgradeIds)) {
+    const bonus = platedSlotsBonusByUpgradeId.get(upgradeId) ?? 0
+    if (Number.isSafeInteger(capacity + bonus)) capacity += bonus
+  }
+  return Math.min(TOTAL_PLATED_SLOT_COUNT, capacity)
+}
+
+/** 아직 잠긴 완성 칸 수 */
+export function getLockedPlatedSlotCount(ownedUpgradeIds: readonly string[] = []): number {
+  return Math.max(0, TOTAL_PLATED_SLOT_COUNT - getUnlockedPlatedCapacity(ownedUpgradeIds))
+}
+
+export function getPlatedDisplayCount(preparedIngredients: PreparedIngredient[]): number {
+  return groupPlatedIngredients(preparedIngredients).length
+}
+
+export function isPlatedTrayFull(
+  preparedIngredients: PreparedIngredient[],
+  ownedUpgradeIds: readonly string[] = [],
+): boolean {
+  return getPlatedDisplayCount(preparedIngredients) >= getUnlockedPlatedCapacity(ownedUpgradeIds)
+}
+
 /**
  * 유효한 조리 결과만 준비대에 넣는다. 서빙은 별도의 SERVE_ORDER 액션으로만 수행한다.
  */
@@ -34,6 +98,7 @@ export function collectPreparedIngredient(
   collected: CollectedIngredientInput,
 ): GameState {
   if (!isServableResult(collected.cookResult)) return state
+  if (isPlatedTrayFull(state.preparedIngredients, state.upgrades)) return state
 
   const prepared: PreparedIngredient = {
     id: `prepared-${state.nextPreparedIngredientId}`,

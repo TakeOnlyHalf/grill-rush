@@ -17,6 +17,9 @@ import { layoutPrepUiWorld } from '../layoutPrepUi'
 export const MENU_BOARD_W = 1000
 export const MENU_BOARD_H = 600
 
+/** 헤더 타이틀·카운트 기준 Y (ticker가 이 값을 기준으로 살짝 흔듦) */
+const TITLE_Y = 38
+
 const C = {
   card: 0xfff8ef,
   cardSel: 0xfffdf8,
@@ -44,6 +47,8 @@ interface MenuDef {
   difficulty: number
   unlockedByDefault: boolean
   unlockCondition: string | null
+  unlockDay: number | null
+  unlockFame: number | null
 }
 
 interface IngDef {
@@ -147,7 +152,7 @@ export function createMenuBoardScene(
   })
   title.anchor.set(0.5)
   title.x = MENU_BOARD_W / 2
-  title.y = 48
+  title.y = TITLE_Y
   world.addChild(title)
 
   const countText = new Text({
@@ -162,7 +167,7 @@ export function createMenuBoardScene(
   })
   countText.anchor.set(1, 0.5)
   countText.x = MENU_BOARD_W - 52
-  countText.y = 48
+  countText.y = TITLE_Y
   world.addChild(countText)
 
   const hint = new Text({
@@ -176,7 +181,7 @@ export function createMenuBoardScene(
   })
   hint.anchor.set(0.5, 0)
   hint.x = MENU_BOARD_W / 2
-  hint.y = 78
+  hint.y = TITLE_Y + 40
   world.addChild(hint)
 
   const COLS = 4
@@ -422,7 +427,7 @@ export function createMenuBoardScene(
 
   const onTick = (ticker: Ticker) => {
     elapsed += ticker.deltaMS / 1000
-    title.y = 48 + Math.sin(elapsed * 1.2) * 1.2
+    title.y = TITLE_Y + Math.sin(elapsed * 1.2) * 1.2
   }
   app.ticker.add(onTick)
 

@@ -3,6 +3,8 @@ import { useGame } from '../state/GameContext'
 import {
   collectGrillSlot,
   createIdleGrillSlots,
+  getCookProgress,
+  getCookResult,
   placeIngredient,
   resolveGrillSlot,
   type GrillSlot,
@@ -27,11 +29,17 @@ import { playPerfectTimingAlarm, playSfx } from '../audio/sfx'
 import { grillIngredients } from '../grill/grillIngredients'
 import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
-import { getOrderFulfillment, groupPlatedIngredients, qualityByResult } from '../state/orderFulfillment'
+import {
+  getLockedPlatedSlotCount,
+  getUnlockedPlatedCapacity,
+  groupPlatedIngredients,
+  isPlatedTrayFull,
+  qualityByResult,
+} from '../state/orderFulfillment'
 import ingredientData from '../data/ingredients.json'
 import menuData from '../data/menus.json'
 import { INGREDIENT_FOOD_STYLE, MENU_FOOD_STYLE } from '../utils/foodIcons'
-import PlatedActionButton from './PlatedActionButton'
+import { getIngredientPurchaseLimit } from '../utils/ingredientStorage'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
 const menuById = new Map(menuData.map((menu) => [menu.id, menu]))
@@ -64,8 +72,13 @@ export default function CookingMinigame() {
     createIdleGrillSlots(getGrillSlotCount(state.upgrades)),
   )
   const slotsRef = useRef(slots)
+  const preparedIngredientsRef = useRef(state.preparedIngredients)
+  const upgradesRef = useRef(state.upgrades)
+  preparedIngredientsRef.current = state.preparedIngredients
+  upgradesRef.current = state.upgrades
   const [now, setNow] = useState(() => Date.now())
   const [selectedPreparedIds, setSelectedPreparedIds] = useState<string[]>([])
+  const [selectedStockId, setSelectedStockId] = useState<string | null>(null)
   const [alertingSlotIds, setAlertingSlotIds] = useState<string[]>([])
   const [alarmAnnouncement, setAlarmAnnouncement] = useState({ id: 0, message: '' })
   const [autoCollectFeedback, setAutoCollectFeedback] = useState<{
@@ -87,10 +100,14 @@ export default function CookingMinigame() {
     const id = setInterval(() => {
       const t = Date.now()
       const resolvedSlots = slotsRef.current.map((slot) => resolveGrillSlot(slot, t))
+      const trayFull = isPlatedTrayFull(
+        preparedIngredientsRef.current,
+        upgradesRef.current,
+      )
       const autoAssistTick = runAutoAssistTick(
         resolvedSlots,
         t,
-        autoCollectIntervalMs,
+        trayFull ? null : autoCollectIntervalMs,
         autoAssistTimerRef.current,
         typeof document === 'undefined' || document.visibilityState === 'visible',
       )
@@ -178,10 +195,12 @@ export default function CookingMinigame() {
   }
 
   const ownedIngredients = ingredientData.filter((ingredient) => (state.ingredients[ingredient.id] ?? 0) > 0)
+  const stockGaugeMax = Math.max(1, getIngredientPurchaseLimit(state.upgrades))
 
   const handleIngredientClick = (ingredientId: string) => {
     const owned = state.ingredients[ingredientId] ?? 0
     if (owned <= 0) return
+    setSelectedStockId(ingredientId)
     const grillIngredient = grillIngredientById.get(ingredientId)
     if (!grillIngredient) return // 조립 재료(치즈·소스·번 등)는 그릴에 올릴 필요가 없다
     const idleSlot = slotsRef.current.find((slot) => slot.status === 'idle')
@@ -206,7 +225,19 @@ export default function CookingMinigame() {
   }
 
   const handleCollect = (slot: GrillSlot) => {
-    const result = collectGrillSlot(slotsRef.current, slot, Date.now())
+    const nowMs = Date.now()
+    const progress = getCookProgress(slot, nowMs)
+    const cookResult = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
+    // 완성 트레이가 가득 차면 서빙 가능 결과는 회수하지 않는다. 탄 재료는 치울 수 있다.
+    if (
+      cookResult !== 'burnt' &&
+      cookResult !== 'raw' &&
+      isPlatedTrayFull(state.preparedIngredients, state.upgrades)
+    ) {
+      return
+    }
+
+    const result = collectGrillSlot(slotsRef.current, slot, nowMs)
     if (!result.collected) return
     clearSlotAlert(slot.id)
     if (result.collected.result !== 'burnt') playSfx('cooking_done')
@@ -224,21 +255,14 @@ export default function CookingMinigame() {
   const selectedStillExists =
     selectedPreparedIds.length > 0 &&
     selectedPreparedIds.every((id) => state.preparedIngredients.some((item) => item.id === id))
-  const readyOrder = state.orders.find((order) => getOrderFulfillment(state, order.id).canServe)
   const platedDisplayItems = groupPlatedIngredients(state.preparedIngredients)
-
-  const handleServeFromPlate = () => {
-    if (!selectedStillExists || !readyOrder) return
-    playSfx('serve_dish')
-    dispatch({
-      type: ActionTypes.SERVE_ORDER,
-      payload: { orderId: readyOrder.id, customerId: readyOrder.customerId },
-    })
-    setSelectedPreparedIds([])
-  }
+  const unlockedPlatedCapacity = getUnlockedPlatedCapacity(state.upgrades)
+  const lockedPlatedSlotCount = getLockedPlatedSlotCount(state.upgrades)
+  const emptyPlatedSlotCount = Math.max(0, unlockedPlatedCapacity - platedDisplayItems.length)
 
   const handleDiscardFromPlate = () => {
     if (!selectedStillExists) return
+    playSfx('button_secondary')
     selectedPreparedIds.forEach((preparedId) => {
       dispatch({ type: ActionTypes.DISCARD_PREPARED_INGREDIENT, payload: { preparedId } })
     })
@@ -248,23 +272,31 @@ export default function CookingMinigame() {
   return (
     <div className="panel cooking-area">
       <div className="cooking-columns">
-        <section className="cooking-col cooking-col--stock" aria-label="재료">
-          <h4 className="cooking-col-title">재료</h4>
+        <section className="cooking-col cooking-col--stock" aria-label="재료 준비대">
+          <h4 className="cooking-col-title">재료 준비대</h4>
           {ownedIngredients.length === 0 ? (
             <p className="muted cooking-col-empty">구매한 재료가 없습니다.</p>
           ) : (
             <ul className="ingredient-grid">
               {ownedIngredients.map((ingredient) => {
+                const count = state.ingredients[ingredient.id] ?? 0
                 const grillable = grillIngredientById.has(ingredient.id)
                 const grillFull = grillable && !slots.some((slot) => slot.status === 'idle')
+                const selected = selectedStockId === ingredient.id
+                const gaugeRatio = Math.max(0, Math.min(1, count / stockGaugeMax))
                 return (
                   <li key={ingredient.id}>
                     <button
                       type="button"
-                      className="ingredient-chip"
-                      disabled={!grillable || grillFull}
+                      className={`ingredient-chip${selected ? ' is-selected' : ''}`}
+                      disabled={grillable && grillFull}
                       onClick={() => handleIngredientClick(ingredient.id)}
-                      title={grillable ? `${ingredient.name} · 그릴에 올리기` : `${ingredient.name} · 조립 재료(서빙 시 자동 사용)`}
+                      aria-pressed={selected}
+                      title={
+                        grillable
+                          ? `${ingredient.name} · 그릴에 올리기`
+                          : `${ingredient.name} · 조립 재료(서빙 시 자동 사용)`
+                      }
                     >
                       <span
                         className={`ingredient-chip-icon${INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
@@ -273,8 +305,19 @@ export default function CookingMinigame() {
                       >
                         {INGREDIENT_FOOD_STYLE[ingredient.id] ? null : ingredient.icon}
                       </span>
-                      <span className="ingredient-chip-count">{state.ingredients[ingredient.id] ?? 0}</span>
-                      <span className="visually-hidden">{ingredient.name}</span>
+                      <span className="ingredient-chip-meta">
+                        <span className="ingredient-chip-name">{ingredient.name}</span>
+                        <span className="ingredient-chip-count">x{count}</span>
+                        <span
+                          className="ingredient-chip-gauge"
+                          aria-hidden
+                        >
+                          <span
+                            className="ingredient-chip-gauge-fill"
+                            style={{ width: `${gaugeRatio * 100}%` }}
+                          />
+                        </span>
+                      </span>
                     </button>
                   </li>
                 )
@@ -309,7 +352,18 @@ export default function CookingMinigame() {
         </section>
 
         <section className="cooking-col cooking-col--plated" aria-label="완성">
-          <h4 className="cooking-col-title">완성</h4>
+          <h4 className="cooking-col-title cooking-col-title--plated">
+            <span>완성</span>
+            <button
+              type="button"
+              className="plated-discard-btn"
+              disabled={!selectedStillExists}
+              onClick={handleDiscardFromPlate}
+              title={selectedStillExists ? '선택한 완성 음식 폐기' : '폐기할 음식을 선택하세요'}
+            >
+              폐기
+            </button>
+          </h4>
           <ul className="plated-grid">
             {platedDisplayItems.map((displayItem) => {
               if (displayItem.kind === 'combo') {
@@ -371,23 +425,29 @@ export default function CookingMinigame() {
                 </li>
               )
             })}
-            <li className="plated-item plated-item--empty" aria-hidden>
-              <span className="plated-item-icon">🍽️</span>
-            </li>
+            {Array.from({ length: emptyPlatedSlotCount }, (_, index) => (
+                <li key={`plated-empty-${index}`} aria-hidden>
+                  <div className="plated-item plated-item--empty">
+                    <span className="plated-item-icon">🍽️</span>
+                  </div>
+                </li>
+              ),
+            )}
+            {Array.from({ length: lockedPlatedSlotCount }, (_, index) => (
+              <li key={`plated-locked-${index}`}>
+                <div
+                  className="plated-item plated-item--locked"
+                  title="업그레이드로 해금됩니다"
+                  aria-label="잠긴 완성 칸 · 업그레이드로 해금"
+                >
+                  <span className="plated-item-lock-icon" aria-hidden>
+                    🔒
+                  </span>
+                  <small className="plated-item-lock-label">잠김</small>
+                </div>
+              </li>
+            ))}
           </ul>
-          <div className="plated-actions">
-            <PlatedActionButton
-              variant="serve"
-              disabled={!selectedStillExists || !readyOrder}
-              onClick={handleServeFromPlate}
-              title={readyOrder ? undefined : '서빙 가능한 주문이 없습니다'}
-            />
-            <PlatedActionButton
-              variant="discard"
-              disabled={!selectedStillExists}
-              onClick={handleDiscardFromPlate}
-            />
-          </div>
         </section>
       </div>
 
