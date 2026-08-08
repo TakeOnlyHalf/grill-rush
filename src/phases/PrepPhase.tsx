@@ -12,7 +12,6 @@ import { ActionTypes } from '../state/actions'
 import {
   estimateCustomers,
   getLocationById,
-  hasRequiredIngredients,
 } from '../state/formulas'
 import { getWeatherLabel } from '../utils/weather'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
@@ -72,7 +71,6 @@ export default function PrepPhase() {
   const loc = getLocationById(state.location)
   const estimated = estimateCustomers(state.location, state.weather, state.fame)
   const menuReady = state.activeMenus.length > 0
-  const ingredientsReady = hasRequiredIngredients(state.activeMenus, state.ingredients)
   const isFreePrep = state.day >= 2
   const [step, setStep] = useState<PrepStep>(
     isFreePrep ? 'lobby' : 'location',
@@ -150,19 +148,14 @@ export default function PrepPhase() {
   }
 
   const canStart = isFreePrep
-    ? menuReady && ingredientsReady && locationConfirmed
+    ? menuReady && locationConfirmed
     : menuReady
-  const marketCta = !ingredientsReady
-    ? '필수 재료 준비 필요'
-    : isFreePrep
-      ? '구매 완료 →'
-      : '▶ 영업 시작'
+  const marketCta = isFreePrep ? '마트 나가기 →' : '▶ 영업 시작'
 
   if (step === 'lobby') {
     return (
       <PrepLobby
         locationConfirmed={locationConfirmed}
-        ingredientsReady={ingredientsReady}
         canStart={canStart}
         onOpen={handleOpenLobbyDestination}
         onStart={() => {
@@ -356,12 +349,8 @@ export default function PrepPhase() {
                   <button
                     type="button"
                     className="prep-btn prep-btn--start"
-                    disabled={!ingredientsReady}
-                    title={
-                      ingredientsReady
-                        ? '필수 재료 준비 완료'
-                        : '선택한 메뉴의 필수 재료를 각각 1개 이상 구매하세요.'
-                    }
+                    disabled={!menuReady}
+                    title="재료 구매는 선택 사항입니다."
                     onClick={() => {
                       if (isFreePrep) {
                         playSfx('button_primary')

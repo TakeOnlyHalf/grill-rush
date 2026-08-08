@@ -22,7 +22,6 @@ export type PrepLobbyDestination = 'menu' | 'location' | 'market' | 'upgrade'
 
 interface PrepLobbyProps {
   locationConfirmed: boolean
-  ingredientsReady: boolean
   canStart: boolean
   onOpen: (destination: PrepLobbyDestination) => void
   onStart: () => void
@@ -42,7 +41,6 @@ const NAV_BUTTONS: {
  */
 export default function PrepLobby({
   locationConfirmed,
-  ingredientsReady,
   canStart,
   onOpen,
   onStart,
@@ -102,9 +100,7 @@ export default function PrepLobby({
 
       <button
         type="button"
-        className={`prep-lobby-building prep-lobby-building--mart${
-          ingredientsReady ? '' : ' is-pending'
-        }`}
+        className="prep-lobby-building prep-lobby-building--mart"
         onClick={() => {
           playSfx('menu_select')
           onOpen('market')
@@ -189,10 +185,10 @@ export default function PrepLobby({
             <strong>메뉴 선택</strong>
             <small>{state.activeMenus.length} / 4</small>
           </li>
-          <li className={ingredientsReady ? 'is-done' : ''}>
-            <span>{ingredientsReady ? '✓' : '!'}</span>
+          <li className="is-optional">
+            <span>🛒</span>
             <strong>재료 구매</strong>
-            <small>{ingredientsReady ? '완료' : '미완료'}</small>
+            <small>선택 사항</small>
           </li>
           <li className={locationConfirmed ? 'is-done' : ''}>
             <span>{locationConfirmed ? '✓' : '!'}</span>
