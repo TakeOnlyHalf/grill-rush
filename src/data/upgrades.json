@@ -110,14 +110,14 @@
     "effect": { "ingredientCapBonus": 40 }
   },
   {
-    "id": "scroll_test_a",
-    "name": "테스트 업그레이드 A",
+    "id": "plated_expand",
+    "name": "완성 트레이 확장",
     "category": "kitchen",
-    "icon": "🧪",
-    "description": "스크롤 확인용 임시 항목",
-    "detail": "스크롤 확인용 (나중에 삭제)",
-    "cost": 10000,
-    "effect": {}
+    "icon": "🍽️",
+    "description": "완성 칸 +5",
+    "detail": "완성 트레이 10 → 15칸",
+    "cost": 70000,
+    "effect": { "platedSlots": 5 }
   },
   {
     "id": "scroll_test_b",

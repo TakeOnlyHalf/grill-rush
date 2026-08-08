@@ -5,6 +5,7 @@ import { gameReducer } from './gameReducer'
 import {
   collectPreparedIngredient,
   getOrderFulfillment,
+  getUnlockedPlatedCapacity,
   isPlatedTrayFull,
   MAX_PLATED_ITEMS,
   serveOrder,
@@ -168,5 +169,26 @@ describe('plated tray capacity', () => {
 
     expect(next).toBe(full)
     expect(next.preparedIngredients).toHaveLength(MAX_PLATED_ITEMS)
+  })
+
+  it('unlocks five more plated slots when plated_expand is owned', () => {
+    const fullBase = {
+      ...openState(),
+      upgrades: ['plated_expand'],
+      preparedIngredients: Array.from({ length: MAX_PLATED_ITEMS }, (_, index) =>
+        prepared(`ready-${index}`, 'sausage'),
+      ),
+      nextPreparedIngredientId: MAX_PLATED_ITEMS + 1,
+    }
+
+    expect(getUnlockedPlatedCapacity(fullBase.upgrades)).toBe(MAX_PLATED_ITEMS + 5)
+    expect(isPlatedTrayFull(fullBase.preparedIngredients, fullBase.upgrades)).toBe(false)
+
+    const next = collectPreparedIngredient(fullBase, {
+      ingredientId: 'sausage',
+      cookResult: 'perfect',
+    })
+
+    expect(next.preparedIngredients).toHaveLength(MAX_PLATED_ITEMS + 1)
   })
 })

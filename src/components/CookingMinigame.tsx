@@ -30,10 +30,10 @@ import { grillIngredients } from '../grill/grillIngredients'
 import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
 import {
+  getLockedPlatedSlotCount,
+  getUnlockedPlatedCapacity,
   groupPlatedIngredients,
   isPlatedTrayFull,
-  MAX_PLATED_ITEMS,
-  PLATED_LOCKED_SLOT_COUNT,
   qualityByResult,
 } from '../state/orderFulfillment'
 import ingredientData from '../data/ingredients.json'
@@ -256,6 +256,9 @@ export default function CookingMinigame() {
     selectedPreparedIds.length > 0 &&
     selectedPreparedIds.every((id) => state.preparedIngredients.some((item) => item.id === id))
   const platedDisplayItems = groupPlatedIngredients(state.preparedIngredients)
+  const unlockedPlatedCapacity = getUnlockedPlatedCapacity(state.upgrades)
+  const lockedPlatedSlotCount = getLockedPlatedSlotCount(state.upgrades)
+  const emptyPlatedSlotCount = Math.max(0, unlockedPlatedCapacity - platedDisplayItems.length)
 
   const handleDiscardFromPlate = () => {
     if (!selectedStillExists) return
@@ -422,9 +425,7 @@ export default function CookingMinigame() {
                 </li>
               )
             })}
-            {Array.from(
-              { length: Math.max(0, MAX_PLATED_ITEMS - platedDisplayItems.length) },
-              (_, index) => (
+            {Array.from({ length: emptyPlatedSlotCount }, (_, index) => (
                 <li key={`plated-empty-${index}`} aria-hidden>
                   <div className="plated-item plated-item--empty">
                     <span className="plated-item-icon">🍽️</span>
@@ -432,7 +433,7 @@ export default function CookingMinigame() {
                 </li>
               ),
             )}
-            {Array.from({ length: PLATED_LOCKED_SLOT_COUNT }, (_, index) => (
+            {Array.from({ length: lockedPlatedSlotCount }, (_, index) => (
               <li key={`plated-locked-${index}`}>
                 <div
                   className="plated-item plated-item--locked"
