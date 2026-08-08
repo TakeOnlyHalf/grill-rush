@@ -2078,14 +2078,23 @@ body:has(.phase-open) {
 }
 
 .grill-slot-timer-icon {
-  width: 76%;
-  height: 76%;
+  width: 84%;
+  height: 84%;
   display: grid;
   place-items: center;
   border-radius: 999px;
   background-color: var(--cream);
   background-repeat: no-repeat;
   font-size: 1.25rem;
+  overflow: hidden;
+}
+
+.grill-slot-timer-icon.has-food-image {
+  /* % padding은 부모 너비 기준이라 아이콘이 붕괴되므로 고정값 사용 */
+  background-origin: content-box;
+  background-clip: content-box;
+  padding: 0.12rem;
+  box-sizing: border-box;
 }
 
 .grill-slot-card--perfect .grill-slot-timer {
@@ -2339,8 +2348,8 @@ body:has(.phase-open) {
 
 .ingredient-chip-icon,
 .plated-item-icon {
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2.35rem;
+  height: 2.35rem;
   display: grid;
   place-items: center;
   font-size: 1.1rem;
@@ -2348,10 +2357,17 @@ body:has(.phase-open) {
 }
 
 .ingredient-chip-icon.has-food-image,
-.plated-item-icon.has-food-image {
+.plated-item-icon.has-food-image,
+.order-queue-menu-icon.has-food-image {
   border-radius: 999px;
   background-color: var(--cream);
   background-repeat: no-repeat;
+  background-origin: content-box;
+  background-clip: content-box;
+  /* % padding은 부모 너비 기준이라 작은 아이콘 content-box가 0이 됨 */
+  padding: 0.12rem;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .ingredient-chip-count {
@@ -2508,18 +2524,12 @@ body:has(.phase-open) {
 }
 
 .order-queue-menu-icon {
-  width: 3.4rem;
-  height: 3.4rem;
+  width: 3.8rem;
+  height: 3.8rem;
   display: grid;
   place-items: center;
   font-size: 1.25rem;
   line-height: 1;
-}
-
-.order-queue-menu-icon.has-food-image {
-  border-radius: 999px;
-  background-color: var(--cream);
-  background-repeat: no-repeat;
 }
 
 .order-queue-card.is-serveable {

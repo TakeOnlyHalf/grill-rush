@@ -100,7 +100,7 @@ export default function GrillSlots({
             ) : null}
             <span className="grill-slot-timer">
               <span
-                className="grill-slot-timer-icon"
+                className={`grill-slot-timer-icon${ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
                 aria-hidden
                 style={ingredient ? INGREDIENT_FOOD_STYLE[ingredient.id] : undefined}
               >
