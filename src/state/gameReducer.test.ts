@@ -252,7 +252,7 @@ describe('BUY_INGREDIENT', () => {
     expect(buyIngredient(malformed)).toBe(malformed)
   })
 
-  it('keeps inventory and resets daily counters on the next day', () => {
+  it('discards inventory and resets daily counters on the next day', () => {
     const initial = {
       ...nightState(),
       ingredients: { egg: 5, bacon: 3 },
@@ -260,7 +260,7 @@ describe('BUY_INGREDIENT', () => {
     }
     const nextDay = gameReducer(initial, { type: 'NEXT_DAY' })
 
-    expect(nextDay.ingredients).toEqual({ egg: 5, bacon: 3 })
+    expect(nextDay.ingredients).toEqual({})
     expect(nextDay.dailyIngredientPurchases).toEqual({})
   })
 
@@ -319,7 +319,7 @@ describe('ingredient storage upgrade persistence', () => {
 
     expect(getIngredientCapacity(loaded.upgrades)).toBe(80)
     expect(loaded.ingredients).toEqual({ egg: 80 })
-    expect(nextDay.ingredients).toEqual({ egg: 80 })
+    expect(nextDay.ingredients).toEqual({})
     expect(nextDay.dailyIngredientPurchases).toEqual({})
     expect(nextDay.upgrades).toEqual(['ingredient_storage'])
     expect(getIngredientCapacity(nextDay.upgrades)).toBe(80)
@@ -334,5 +334,71 @@ describe('ingredient storage upgrade persistence', () => {
     expect(started.upgrades).toEqual([])
     expect(started.dailyIngredientPurchases).toEqual({})
     expect(getIngredientCapacity(started.upgrades)).toBe(40)
+  })
+})
+
+describe('daily ingredient lifecycle', () => {
+  it('starts business with selected menus even when every ingredient quantity is zero', () => {
+    const initial = prepState()
+
+    const opened = gameReducer(initial, { type: 'START_OPEN' })
+
+    expect(opened.phase).toBe('open')
+    expect(opened.ingredients).toEqual({})
+  })
+
+  it('charges all purchases exactly once, then discards leftovers for day 2', () => {
+    const initial = prepState({}, [], ['egg_bacon'], 100_000)
+    let purchased = initial
+    for (let count = 0; count < 10; count += 1) {
+      purchased = buyIngredient(purchased, 'egg')
+      purchased = buyIngredient(purchased, 'bacon')
+    }
+
+    expect(purchased.cash).toBe(88_000)
+    expect(purchased.dailyCosts.ingredients).toBe(12_000)
+
+    let opened = gameReducer(purchased, { type: 'START_OPEN' })
+    for (let count = 0; count < 4; count += 1) {
+      opened = gameReducer(opened, {
+        type: 'USE_INGREDIENT',
+        payload: { ingredientId: 'egg' },
+      })
+    }
+    for (let count = 0; count < 6; count += 1) {
+      opened = gameReducer(opened, {
+        type: 'USE_INGREDIENT',
+        payload: { ingredientId: 'bacon' },
+      })
+    }
+    expect(opened.ingredients).toEqual({ egg: 6, bacon: 4 })
+
+    const settled = gameReducer(opened, { type: 'END_OPEN' })
+    const confirmed = gameReducer(settled, { type: 'CONFIRM_SETTLE' })
+    const expectedOperatingCosts =
+      settled.dailyCosts.rent + settled.dailyCosts.waste + settled.dailyCosts.truck
+
+    expect(confirmed.cash).toBe(88_000 - expectedOperatingCosts)
+    expect(confirmed.history[0].costs.ingredients).toBe(12_000)
+    expect(confirmed.history[0].profit).toBe(-12_000 - expectedOperatingCosts)
+
+    const nextDay = gameReducer(confirmed, { type: 'NEXT_DAY' })
+    expect(nextDay.day).toBe(2)
+    expect(nextDay.phase).toBe('prep')
+    expect(nextDay.ingredients).toEqual({})
+    expect(nextDay.dailyIngredientPurchases).toEqual({})
+    expect(nextDay.dailyCosts.ingredients).toBe(0)
+    expect(confirmed.history[0].costs.ingredients).toBe(12_000)
+  })
+
+  it('settles a no-purchase day and reaches the ending after the final day', () => {
+    const opened = gameReducer(prepState(), { type: 'START_OPEN' })
+    const settled = gameReducer(opened, { type: 'END_OPEN' })
+    const night = gameReducer(settled, { type: 'CONFIRM_SETTLE' })
+    const finalNight = { ...night, day: night.maxDays }
+
+    expect(night.phase).toBe('night')
+    expect(night.history[0].costs.ingredients).toBe(0)
+    expect(gameReducer(finalNight, { type: 'NEXT_DAY' }).phase).toBe('ending')
   })
 })

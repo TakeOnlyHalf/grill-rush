@@ -351,6 +351,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         phase: 'prep',
         weather: rollWeather(),
         time: 0,
+        ingredients: {},
         dailyIngredientPurchases: {},
         customers: [],
         orders: [],
