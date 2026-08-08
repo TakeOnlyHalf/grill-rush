@@ -5,7 +5,7 @@ import { publicUrl } from './assets'
  * public/images/foods 실사풍 음식 사진 — 재료 12종 중 sauce를 뺀 11종과 메뉴 8종의 아이콘 자리에 이모지 대신 쓴다.
  * "_set" 파일은 한 이미지 안에 여러 컷(재료/완성 접시)이 흩어져 있어, 알파 바운딩박스를 실측해서
  * CSS crop-to-fill(background-size/position 퍼센트) 방식으로 필요한 부분만 잘라 보여준다.
- * sauce(BBQ 소스)는 깨끗하게 잘라 쓸 만한 소스 사진이 없어 기존 이모지(🫙)를 그대로 쓴다.
+ * sauce(BBQ 소스)는 깨끗하게 잘라 쓸 만한 소스 사진이 없어 데이터의 용기 이모지를 그대로 쓴다.
  */
 const FOODS_DIR = 'images/foods/'
 

@@ -24,6 +24,7 @@ export function createInitialState(): GameState {
     activeMenus: [],
     menuPrices,
     ingredients: {},
+    dailyIngredientPurchases: {},
     customers: [],
     orders: [],
     preparedIngredients: [],
