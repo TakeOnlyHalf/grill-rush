@@ -13,7 +13,7 @@ import './styles/game.css'
 
 /**
  * 페이즈 라우팅
- * title → prep → open → settle → night → … → ending
+ * title → prep → open → settle → (day1: night) → prep → … → ending
  */
 function PhaseRouter() {
   const { phase } = useGameState()

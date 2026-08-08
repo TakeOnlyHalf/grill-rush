@@ -73,10 +73,38 @@ describe('progress unlocks', () => {
       dailyCosts: { ingredients: 0, rent: 0, waste: 0, truck: 0 },
       dailyReviews: [5, 5, 5, 5],
     }
-    const night = gameReducer(settle, { type: 'CONFIRM_SETTLE' })
+    const next = gameReducer(settle, { type: 'CONFIRM_SETTLE' })
 
-    expect(night.fame).toBeGreaterThanOrEqual(30)
-    expect(night.unlockedMenus).toContain('grill_platter')
+    expect(next.fame).toBeGreaterThanOrEqual(30)
+    expect(next.unlockedMenus).toContain('grill_platter')
+    expect(next.phase).toBe('prep')
+    expect(next.day).toBe(16)
+  })
+
+  it('sends day 1 settle to night, but day 2+ settle advances to the next day', () => {
+    const day1 = gameReducer(
+      {
+        ...createInitialState(),
+        phase: 'settle',
+        day: 1,
+        dailyCosts: { ingredients: 0, rent: 0, waste: 0, truck: 0 },
+      },
+      { type: 'CONFIRM_SETTLE' },
+    )
+    const day2 = gameReducer(
+      {
+        ...createInitialState(),
+        phase: 'settle',
+        day: 2,
+        dailyCosts: { ingredients: 0, rent: 0, waste: 0, truck: 0 },
+      },
+      { type: 'CONFIRM_SETTLE' },
+    )
+
+    expect(day1.phase).toBe('night')
+    expect(day1.day).toBe(1)
+    expect(day2.phase).toBe('prep')
+    expect(day2.day).toBe(3)
   })
 
   it('does not remove already unlocked content', () => {

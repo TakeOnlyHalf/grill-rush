@@ -290,12 +290,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const reviewAvg = avgReviews(state.dailyReviews)
       const fameDelta = state.dailyReviews.length ? Math.round((reviewAvg - 3) * 4) : 0
 
-      return applyProgressUnlocks({
+      const settled = applyProgressUnlocks({
         ...state,
         cash: state.cash + openDayDelta,
         fame: Math.max(0, state.fame + fameDelta),
         reviewAvg: state.dailyReviews.length ? reviewAvg : state.reviewAvg,
-        phase: 'night',
         history: [
           ...state.history,
           {
@@ -312,6 +311,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           },
         ],
       })
+
+      // Day 1만 야간(트럭 관리실). Day 2+는 정산 후 바로 다음날.
+      if (state.day === 1) {
+        return { ...settled, phase: 'night' }
+      }
+
+      return advanceToNextDay(settled)
     }
 
     case ActionTypes.BUY_UPGRADE: {
@@ -336,40 +342,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case ActionTypes.NEXT_DAY: {
       if (state.phase !== 'night') return state
-
-      if (state.day >= state.maxDays) {
-        return {
-          ...state,
-          phase: 'ending',
-          endingId: resolveEnding({ cash: state.cash, fame: state.fame }),
-        }
-      }
-
-      return applyProgressUnlocks({
-        ...state,
-        day: state.day + 1,
-        phase: 'prep',
-        weather: rollWeather(),
-        time: 0,
-        dailyIngredientPurchases: {},
-        customers: [],
-        orders: [],
-        preparedIngredients: [],
-        nextPreparedIngredientId: 1,
-        lastServeFeedback: null,
-        lastCustomerLeaveFeedback: null,
-        dailySales: 0,
-        dailyTips: 0,
-        dailyServed: 0,
-        dailyLeft: 0,
-        dailyReviews: [],
-        dailyCosts: {
-          ingredients: 0,
-          rent: 0,
-          waste: 0,
-          truck: 0,
-        },
-      })
+      return advanceToNextDay(state)
     }
 
     case ActionTypes.SHOW_ENDING: {
@@ -391,6 +364,43 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 function avgReviews(reviews: number[]): number {
   if (!reviews.length) return 0
   return reviews.reduce((a, b) => a + b, 0) / reviews.length
+}
+
+/** 야간 종료 또는 Day 2+ 정산 직후 — 다음날 준비 / 최종일 엔딩 */
+function advanceToNextDay(state: GameState): GameState {
+  if (state.day >= state.maxDays) {
+    return {
+      ...state,
+      phase: 'ending',
+      endingId: resolveEnding({ cash: state.cash, fame: state.fame }),
+    }
+  }
+
+  return applyProgressUnlocks({
+    ...state,
+    day: state.day + 1,
+    phase: 'prep',
+    weather: rollWeather(),
+    time: 0,
+    dailyIngredientPurchases: {},
+    customers: [],
+    orders: [],
+    preparedIngredients: [],
+    nextPreparedIngredientId: 1,
+    lastServeFeedback: null,
+    lastCustomerLeaveFeedback: null,
+    dailySales: 0,
+    dailyTips: 0,
+    dailyServed: 0,
+    dailyLeft: 0,
+    dailyReviews: [],
+    dailyCosts: {
+      ingredients: 0,
+      rent: 0,
+      waste: 0,
+      truck: 0,
+    },
+  })
 }
 
 function endOpenDay(state: GameState, time: number): GameState {
