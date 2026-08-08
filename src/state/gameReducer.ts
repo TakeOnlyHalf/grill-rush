@@ -12,7 +12,6 @@ import { createInitialState } from './initialState'
 import {
   calcDailyProfit,
   getRequiredIngredientIds,
-  hasRequiredIngredients,
   resolveEnding,
 } from './formulas'
 import { rollWeather } from '../utils/weather'
@@ -175,7 +174,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case ActionTypes.START_OPEN: {
       if (state.phase !== 'prep') return state
       if (state.activeMenus.length === 0) return state
-      if (!hasRequiredIngredients(state.activeMenus, state.ingredients)) return state
 
       const loc = locations.find((l) => l.id === state.location)
       return {

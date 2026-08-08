@@ -4,7 +4,6 @@ import { DAILY_TRUCK_COST, OPEN_DURATION_SEC } from './actions'
 import type {
   DailyCosts,
   EndingId,
-  IngredientId,
   LocationId,
   MenuId,
   PreparedQuality,
@@ -105,18 +104,6 @@ export function getRequiredIngredientIds(activeMenuIds: MenuId[]): string[] {
     for (const ing of menu.ingredients) set.add(ing)
   }
   return [...set]
-}
-
-/** 선택한 메뉴를 최소 한 번 조리할 필수 재료가 모두 준비됐는지 확인 */
-export function hasRequiredIngredients(
-  activeMenuIds: MenuId[],
-  ingredients: Record<IngredientId, number>,
-): boolean {
-  const requiredIngredientIds = getRequiredIngredientIds(activeMenuIds)
-  return (
-    requiredIngredientIds.length > 0 &&
-    requiredIngredientIds.every((ingredientId) => (ingredients[ingredientId] ?? 0) > 0)
-  )
 }
 
 /** 정산: 순이익 계산 */
