@@ -1,6 +1,7 @@
 ﻿import menus from '../data/menus.json'
 import locations from '../data/locations.json'
 import { MAX_DAYS, STARTING_CASH } from './actions'
+import { applyProgressUnlocks } from './unlocks'
 import type { GameState, MenuId, WeatherId } from '../types/game'
 
 export function createInitialState(): GameState {
@@ -11,7 +12,7 @@ export function createInitialState(): GameState {
     menus.map((m) => [m.id, m.basePrice]),
   ) as Record<MenuId, number>
 
-  return {
+  return applyProgressUnlocks({
     day: 1,
     phase: 'title',
     time: 0,
@@ -47,5 +48,5 @@ export function createInitialState(): GameState {
     unlockedLocations: locations.filter((l) => l.unlockedByDefault).map((l) => l.id),
     history: [],
     endingId: null,
-  }
+  })
 }

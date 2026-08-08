@@ -529,7 +529,7 @@ const DISTRICTS: DistrictDef[] = [
     icon: '🎪',
     left: 490,
     right: 790,
-    unlockDay: 99,
+    unlockDay: 15,
     draw(g, gy) {
       g.rect(520, gy - 6, 240, 10)
       g.fill(P.stageBrn)

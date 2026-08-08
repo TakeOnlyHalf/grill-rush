@@ -47,6 +47,8 @@ interface MenuDef {
   difficulty: number
   unlockedByDefault: boolean
   unlockCondition: string | null
+  unlockDay: number | null
+  unlockFame: number | null
 }
 
 interface IngDef {

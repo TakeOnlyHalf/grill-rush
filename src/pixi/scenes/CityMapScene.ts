@@ -158,7 +158,7 @@ const ZONES: ZoneDef[] = [
     w: 145,
     h: 80,
     color: C.zFestival,
-    unlockDay: 99,
+    unlockDay: 15,
     drawDecor(g, x, y) {
       g.moveTo(x + 25, y + 36)
       g.lineTo(x + 45, y + 8)

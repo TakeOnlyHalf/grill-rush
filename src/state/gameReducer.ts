@@ -15,6 +15,7 @@ import {
   hasRequiredIngredients,
   resolveEnding,
 } from './formulas'
+import { applyProgressUnlocks } from './unlocks'
 import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
 import type { GameAction, GameState } from '../types/game'
@@ -29,11 +30,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case ActionTypes.START_GAME: {
       const weather = rollWeather()
-      return {
+      return applyProgressUnlocks({
         ...createInitialState(),
         phase: 'prep',
         weather,
-      }
+      })
     }
 
     case ActionTypes.FINISH_STORY: {
@@ -45,7 +46,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case ActionTypes.LOAD_GAME:
-      return action.payload
+      return applyProgressUnlocks(action.payload)
 
     case ActionTypes.SET_LOCATION: {
       if (state.phase !== 'prep') return state
@@ -289,7 +290,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const reviewAvg = avgReviews(state.dailyReviews)
       const fameDelta = state.dailyReviews.length ? Math.round((reviewAvg - 3) * 4) : 0
 
-      return {
+      return applyProgressUnlocks({
         ...state,
         cash: state.cash + openDayDelta,
         fame: Math.max(0, state.fame + fameDelta),
@@ -310,7 +311,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             location: state.location,
           },
         ],
-      }
+      })
     }
 
     case ActionTypes.BUY_UPGRADE: {
@@ -344,7 +345,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       }
 
-      return {
+      return applyProgressUnlocks({
         ...state,
         day: state.day + 1,
         phase: 'prep',
@@ -368,7 +369,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           waste: 0,
           truck: 0,
         },
-      }
+      })
     }
 
     case ActionTypes.SHOW_ENDING: {

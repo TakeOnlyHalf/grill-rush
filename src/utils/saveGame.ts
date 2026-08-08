@@ -1,4 +1,5 @@
 import type { GameState, Phase } from '../types/game'
+import { applyProgressUnlocks } from '../state/unlocks'
 
 const SAVE_KEY = 'grill-rush:save:v1'
 
@@ -70,7 +71,7 @@ function sanitizeLoaded(state: GameState): GameState {
     lastCustomerLeaveFeedback: state.lastCustomerLeaveFeedback ?? null,
   }
   if (state.phase === 'open') {
-    return {
+    return applyProgressUnlocks({
       ...hydrated,
       phase: 'prep',
       time: 0,
@@ -80,16 +81,16 @@ function sanitizeLoaded(state: GameState): GameState {
       nextPreparedIngredientId: 1,
       lastServeFeedback: null,
       lastCustomerLeaveFeedback: null,
-    }
+    })
   }
   if (state.phase === 'title' || state.phase === 'ending' || state.phase === 'story') {
-    return {
+    return applyProgressUnlocks({
       ...hydrated,
       phase: 'prep',
       endingId: null,
-    }
+    })
   }
-  return hydrated
+  return applyProgressUnlocks(hydrated)
 }
 
 function sanitizePurchaseCounts(value: unknown): Record<string, number> {

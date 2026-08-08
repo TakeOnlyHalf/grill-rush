@@ -11,6 +11,8 @@
     "difficulty": 1,
     "popularity": 68,
     "unlockedByDefault": true,
+    "unlockDay": null,
+    "unlockFame": null,
     "unlockCondition": null
   },
   {
@@ -25,6 +27,8 @@
     "difficulty": 1,
     "popularity": 58,
     "unlockedByDefault": true,
+    "unlockDay": null,
+    "unlockFame": null,
     "unlockCondition": null
   },
   {
@@ -39,6 +43,8 @@
     "difficulty": 1,
     "popularity": 64,
     "unlockedByDefault": true,
+    "unlockDay": null,
+    "unlockFame": null,
     "unlockCondition": null
   },
   {
@@ -53,6 +59,8 @@
     "difficulty": 2,
     "popularity": 78,
     "unlockedByDefault": false,
+    "unlockDay": 3,
+    "unlockFame": null,
     "unlockCondition": "Day 3 해금"
   },
   {
@@ -67,6 +75,8 @@
     "difficulty": 2,
     "popularity": 72,
     "unlockedByDefault": false,
+    "unlockDay": 5,
+    "unlockFame": null,
     "unlockCondition": "Day 5 해금"
   },
   {
@@ -81,6 +91,8 @@
     "difficulty": 3,
     "popularity": 74,
     "unlockedByDefault": false,
+    "unlockDay": 10,
+    "unlockFame": null,
     "unlockCondition": "Day 10 해금"
   },
   {
@@ -95,6 +107,8 @@
     "difficulty": 3,
     "popularity": 80,
     "unlockedByDefault": false,
+    "unlockDay": 10,
+    "unlockFame": null,
     "unlockCondition": "Day 10 해금"
   },
   {
@@ -109,6 +123,8 @@
     "difficulty": 4,
     "popularity": 88,
     "unlockedByDefault": false,
+    "unlockDay": 15,
+    "unlockFame": 30,
     "unlockCondition": "Day 15 · 명성 30 이상"
   }
 ]
