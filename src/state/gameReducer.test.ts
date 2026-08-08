@@ -116,83 +116,177 @@ describe('BUY_UPGRADE', () => {
 })
 
 function prepState(
-  ingredients: Record<string, number>,
+  ingredients: Record<string, number> = {},
   upgrades: string[] = [],
+  activeMenus: string[] = ['egg_bacon'],
+  cash = 1_000_000,
+  dailyIngredientPurchases: Record<string, number> = {},
 ): GameState {
   return {
     ...createInitialState(),
     phase: 'prep' as const,
-    cash: 1_000_000,
-    activeMenus: ['egg_bacon'],
+    cash,
+    activeMenus,
     ingredients,
+    dailyIngredientPurchases,
     upgrades,
   }
 }
 
-function buyEgg(state: GameState, qty = 1) {
+function buyIngredient(state: GameState, ingredientId = 'egg') {
   return gameReducer(state, {
     type: 'BUY_INGREDIENT',
-    payload: { ingredientId: 'egg', qty, unitCost: 400 },
+    payload: { ingredientId },
   })
 }
 
-describe('BUY_INGREDIENT capacity', () => {
-  it('allows the 40th ingredient without the storage upgrade', () => {
-    const initial = prepState({ egg: 20, bacon: 19 })
-    const purchased = buyEgg(initial)
+describe('BUY_INGREDIENT', () => {
+  it('buys only the clicked ingredient at its unit price', () => {
+    const initial = prepState()
+    const purchased = buyIngredient(initial, 'egg')
 
-    expect(purchased.ingredients).toEqual({ egg: 21, bacon: 19 })
+    expect(purchased.ingredients).toEqual({ egg: 1 })
     expect(purchased.cash).toBe(initial.cash - 400)
+    expect(purchased.dailyIngredientPurchases).toEqual({ egg: 1 })
     expect(purchased.dailyCosts.ingredients).toBe(400)
   })
 
-  it('blocks all of a request that would exceed the base capacity', () => {
-    const full = prepState({ egg: 20, bacon: 20 })
-    const oneOver = prepState({ egg: 20, bacon: 19 })
+  it('tracks egg and bacon purchases independently', () => {
+    const initial = prepState()
+    const egg = buyIngredient(initial, 'egg')
+    const bacon = buyIngredient(egg, 'bacon')
 
-    expect(buyEgg(full)).toBe(full)
-    expect(buyEgg(oneOver, 2)).toBe(oneOver)
+    expect(bacon.ingredients).toEqual({ egg: 1, bacon: 1 })
+    expect(bacon.dailyIngredientPurchases).toEqual({ egg: 1, bacon: 1 })
+    expect(bacon.cash).toBe(initial.cash - 1_200)
   })
 
-  it('allows 80 ingredients with the storage upgrade and blocks the 81st', () => {
-    const at79 = prepState(
-      { egg: 40, bacon: 39 },
-      ['ingredient_storage'],
-    )
-    const at80 = buyEgg(at79)
+  it('buys one ingredient for a single-ingredient menu', () => {
+    const initial = prepState({}, [], ['grilled_sausage'])
+    const purchased = buyIngredient(initial, 'sausage')
 
-    expect(at80.ingredients).toEqual({ egg: 41, bacon: 39 })
-    expect(buyEgg(at80)).toBe(at80)
+    expect(purchased.ingredients).toEqual({ sausage: 1 })
+    expect(purchased.cash).toBe(initial.cash - 700)
   })
 
-  it('uses the total across different ingredient types', () => {
-    const full = prepState({ egg: 10, bacon: 12, sausage: 18 })
-    expect(buyEgg(full)).toBe(full)
+  it('does not count existing inventory toward the daily purchase limit', () => {
+    const initial = prepState({ egg: 5 })
+    const purchased = buyIngredient(initial)
+
+    expect(purchased.ingredients.egg).toBe(6)
+    expect(purchased.dailyIngredientPurchases.egg).toBe(1)
   })
 
-  it('does not mutate cash, ingredients, or costs when capacity blocks a purchase', () => {
-    const initial = prepState({ egg: 40 })
+  it('allows 20 purchases and rejects the 21st without changing state', () => {
+    const initial = prepState()
+    let purchased = initial
+    for (let count = 0; count < 20; count += 1) {
+      purchased = buyIngredient(purchased)
+    }
+
+    expect(purchased.ingredients.egg).toBe(20)
+    expect(purchased.dailyIngredientPurchases.egg).toBe(20)
+    expect(purchased.cash).toBe(initial.cash - 8_000)
+    expect(buyIngredient(purchased)).toBe(purchased)
+  })
+
+  it('allows another ingredient after one ingredient reaches its limit', () => {
+    const initial = prepState({}, [], ['egg_bacon'], 1_000_000, { egg: 20 })
+    const purchased = buyIngredient(initial, 'bacon')
+
+    expect(purchased.dailyIngredientPurchases).toEqual({ egg: 20, bacon: 1 })
+    expect(purchased.ingredients).toEqual({ bacon: 1 })
+  })
+
+  it('does not change cash, inventory, counters, or costs when cash is short', () => {
+    const initial = prepState({}, [], ['egg_bacon'], 399)
     const snapshot = structuredClone(initial)
 
-    expect(buyEgg(initial)).toBe(initial)
+    expect(buyIngredient(initial)).toBe(initial)
     expect(initial).toEqual(snapshot)
   })
 
-  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
-    'rejects invalid quantity %s',
-    (qty) => {
-      const initial = prepState({})
-      expect(buyEgg(initial, qty)).toBe(initial)
-    },
-  )
+  it('allows a purchase that lands exactly on the base capacity', () => {
+    const initial = prepState({ sausage: 39 })
+    const purchased = buyIngredient(initial)
 
-  it('keeps menu and cash validation intact', () => {
-    const noMenu = { ...prepState({}), activeMenus: [] }
-    const noCash = { ...prepState({}), cash: 399 }
-
-    expect(buyEgg(noMenu)).toBe(noMenu)
-    expect(buyEgg(noCash)).toBe(noCash)
+    expect(purchased.ingredients).toEqual({ sausage: 39, egg: 1 })
+    expect(getIngredientCapacity(purchased.upgrades)).toBe(40)
   })
+
+  it('rejects a purchase when base storage is full', () => {
+    const initial = prepState({ sausage: 40 })
+    const snapshot = structuredClone(initial)
+
+    expect(buyIngredient(initial)).toBe(initial)
+    expect(initial).toEqual(snapshot)
+  })
+
+  it('buys only the clicked ingredient when several menus are active', () => {
+    const initial = prepState({}, [], ['egg_bacon', 'grilled_corn'])
+    const purchased = buyIngredient(initial, 'corn')
+
+    expect(purchased.ingredients).toEqual({ corn: 1 })
+    expect(purchased.cash).toBe(initial.cash - 400)
+  })
+
+  it('rejects ingredients not required by an active menu', () => {
+    const initial = prepState()
+
+    expect(buyIngredient(initial, 'corn')).toBe(initial)
+  })
+
+  it('supports exact capacity and rejection at the upgraded storage boundary', () => {
+    const at79 = prepState({ sausage: 79 }, ['ingredient_storage'])
+    const at80 = buyIngredient(at79)
+
+    expect(getIngredientCapacity(at80.upgrades)).toBe(80)
+    expect(at80.ingredients).toEqual({ sausage: 79, egg: 1 })
+
+    expect(buyIngredient(at80)).toBe(at80)
+  })
+
+  it('rejects malformed persisted daily counters', () => {
+    const malformed = prepState({}, [], ['egg_bacon'], 1_000_000, { egg: -1 })
+
+    expect(buyIngredient(malformed)).toBe(malformed)
+  })
+
+  it('keeps inventory and resets daily counters on the next day', () => {
+    const initial = {
+      ...nightState(),
+      ingredients: { egg: 5, bacon: 3 },
+      dailyIngredientPurchases: { egg: 5, bacon: 3 },
+    }
+    const nextDay = gameReducer(initial, { type: 'NEXT_DAY' })
+
+    expect(nextDay.ingredients).toEqual({ egg: 5, bacon: 3 })
+    expect(nextDay.dailyIngredientPurchases).toEqual({})
+  })
+
+  it('keeps a daily counter when its menu is deselected and selected again', () => {
+    const initial = prepState({ egg: 5 }, [], ['egg_bacon'], 1_000_000, { egg: 5 })
+    const deselected = gameReducer(initial, {
+      type: 'TOGGLE_MENU',
+      payload: 'egg_bacon',
+    })
+    const reselected = gameReducer(deselected, {
+      type: 'TOGGLE_MENU',
+      payload: 'egg_bacon',
+    })
+
+    expect(deselected.dailyIngredientPurchases).toEqual({ egg: 5 })
+    expect(reselected.dailyIngredientPurchases).toEqual({ egg: 5 })
+  })
+
+  it('does not delete over-capacity inventory from an existing save', () => {
+    const initial = prepState({ egg: 41 })
+    expect(buyIngredient(initial)).toBe(initial)
+    expect(initial.ingredients).toEqual({ egg: 41 })
+  })
+})
+
+describe('ingredient storage upgrade persistence', () => {
 
   it('charges exactly 60,000 and prevents duplicate storage upgrades', () => {
     const initial = nightState(100_000)
@@ -211,12 +305,6 @@ describe('BUY_INGREDIENT capacity', () => {
     ).toBe(purchased)
   })
 
-  it('does not delete over-capacity inventory from an existing save', () => {
-    const initial = prepState({ egg: 41 })
-    expect(buyEgg(initial)).toBe(initial)
-    expect(initial.ingredients).toEqual({ egg: 41 })
-  })
-
   it('derives capacity from persisted upgrades across load and day changes', () => {
     const saved = {
       ...nightState(),
@@ -231,7 +319,8 @@ describe('BUY_INGREDIENT capacity', () => {
 
     expect(getIngredientCapacity(loaded.upgrades)).toBe(80)
     expect(loaded.ingredients).toEqual({ egg: 80 })
-    expect(nextDay.ingredients).toEqual({})
+    expect(nextDay.ingredients).toEqual({ egg: 80 })
+    expect(nextDay.dailyIngredientPurchases).toEqual({})
     expect(nextDay.upgrades).toEqual(['ingredient_storage'])
     expect(getIngredientCapacity(nextDay.upgrades)).toBe(80)
   })
@@ -243,6 +332,7 @@ describe('BUY_INGREDIENT capacity', () => {
     )
 
     expect(started.upgrades).toEqual([])
+    expect(started.dailyIngredientPurchases).toEqual({})
     expect(getIngredientCapacity(started.upgrades)).toBe(40)
   })
 })
