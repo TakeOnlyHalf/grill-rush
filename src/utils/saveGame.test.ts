@@ -75,4 +75,31 @@ describe('ingredient purchase save and load', () => {
     expect(loaded?.ingredients).toEqual({ egg: 3 })
     expect(loaded?.dailyIngredientPurchases).toEqual({})
   })
+
+  it('does not restore the previous day inventory after day 2 is saved', () => {
+    const night = {
+      ...createInitialState(),
+      day: 1,
+      phase: 'night' as const,
+      activeMenus: ['egg_bacon'],
+      ingredients: { egg: 6, bacon: 4 },
+      dailyIngredientPurchases: { egg: 10, bacon: 10 },
+      dailyCosts: {
+        ingredients: 12_000,
+        rent: 10_000,
+        waste: 0,
+        truck: 5_000,
+      },
+    }
+    const nextDay = gameReducer(night, { type: 'NEXT_DAY' })
+
+    saveGame(nextDay)
+    const loaded = loadGame()
+
+    expect(loaded?.day).toBe(2)
+    expect(loaded?.phase).toBe('prep')
+    expect(loaded?.ingredients).toEqual({})
+    expect(loaded?.dailyIngredientPurchases).toEqual({})
+    expect(loaded?.dailyCosts.ingredients).toBe(0)
+  })
 })

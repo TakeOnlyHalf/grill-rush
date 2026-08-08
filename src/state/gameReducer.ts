@@ -12,7 +12,6 @@ import { createInitialState } from './initialState'
 import {
   calcDailyProfit,
   getRequiredIngredientIds,
-  hasRequiredIngredients,
   resolveEnding,
 } from './formulas'
 import { applyProgressUnlocks } from './unlocks'
@@ -176,7 +175,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case ActionTypes.START_OPEN: {
       if (state.phase !== 'prep') return state
       if (state.activeMenus.length === 0) return state
-      if (!hasRequiredIngredients(state.activeMenus, state.ingredients)) return state
 
       const loc = locations.find((l) => l.id === state.location)
       return {
@@ -385,6 +383,7 @@ function advanceToNextDay(state: GameState): GameState {
     phase: 'prep',
     weather: rollWeather(),
     time: 0,
+    ingredients: {},
     dailyIngredientPurchases: {},
     customers: [],
     orders: [],
