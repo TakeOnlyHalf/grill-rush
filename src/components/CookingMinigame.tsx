@@ -23,7 +23,7 @@ import {
   updatePerfectTimingAlarms,
   type PerfectTimingAlarmState,
 } from '../grill/perfectTimingAlarm'
-import { playPerfectTimingAlarm } from '../audio/sfx'
+import { playPerfectTimingAlarm, playSfx } from '../audio/sfx'
 import { grillIngredients } from '../grill/grillIngredients'
 import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
@@ -188,6 +188,7 @@ export default function CookingMinigame() {
     if (!idleSlot) return // 빈 슬롯 없음
 
     dispatch({ type: ActionTypes.USE_INGREDIENT, payload: { ingredientId } })
+    playSfx('grill_sound')
     const adjustedIngredient = {
       ...grillIngredient,
       cookDurationMs: getAdjustedCookDurationMs(
@@ -208,6 +209,7 @@ export default function CookingMinigame() {
     const result = collectGrillSlot(slotsRef.current, slot, Date.now())
     if (!result.collected) return
     clearSlotAlert(slot.id)
+    if (result.collected.result !== 'burnt') playSfx('cooking_done')
     dispatch({
       type: ActionTypes.COLLECT_COOKED_INGREDIENT,
       payload: {
@@ -227,6 +229,7 @@ export default function CookingMinigame() {
 
   const handleServeFromPlate = () => {
     if (!selectedStillExists || !readyOrder) return
+    playSfx('serve_dish')
     dispatch({
       type: ActionTypes.SERVE_ORDER,
       payload: { orderId: readyOrder.id, customerId: readyOrder.customerId },
@@ -321,7 +324,10 @@ export default function CookingMinigame() {
                     <button
                       type="button"
                       className={`plated-item plated-item--${worstResult}${selected ? ' is-selected' : ''}`}
-                      onClick={() => setSelectedPreparedIds(selected ? [] : ids)}
+                      onClick={() => {
+                        playSfx('menu_select')
+                        setSelectedPreparedIds(selected ? [] : ids)
+                      }}
                       aria-pressed={selected}
                     >
                       <span
@@ -346,7 +352,10 @@ export default function CookingMinigame() {
                   <button
                     type="button"
                     className={`plated-item plated-item--${item.result}${selected ? ' is-selected' : ''}`}
-                    onClick={() => setSelectedPreparedIds(selected ? [] : [item.id])}
+                    onClick={() => {
+                      playSfx('menu_select')
+                      setSelectedPreparedIds(selected ? [] : [item.id])
+                    }}
                     aria-pressed={selected}
                   >
                     <span

@@ -16,6 +16,7 @@ import {
 } from '../utils/assets'
 import BgmMuteToggle from './BgmMuteToggle'
 import OptionsModal from './OptionsModal'
+import { playSfx } from '../audio/sfx'
 
 export type PrepLobbyDestination = 'menu' | 'location' | 'market' | 'upgrade'
 
@@ -104,7 +105,10 @@ export default function PrepLobby({
         className={`prep-lobby-building prep-lobby-building--mart${
           ingredientsReady ? '' : ' is-pending'
         }`}
-        onClick={() => onOpen('market')}
+        onClick={() => {
+          playSfx('menu_select')
+          onOpen('market')
+        }}
         aria-label="재료 마트 열기"
       >
         <img src={PREP_LOBBY_MART} alt="" draggable={false} />
@@ -117,7 +121,10 @@ export default function PrepLobby({
       <button
         type="button"
         className="prep-lobby-building prep-lobby-building--upgrade"
-        onClick={() => onOpen('upgrade')}
+        onClick={() => {
+          playSfx('menu_select')
+          onOpen('upgrade')
+        }}
         aria-label="트럭 관리실 열기"
       >
         <img src={PREP_LOBBY_UPGRADE} alt="" draggable={false} />
@@ -132,7 +139,10 @@ export default function PrepLobby({
         className={`prep-lobby-building prep-lobby-building--menu${
           menuReady ? '' : ' is-pending'
         }`}
-        onClick={() => onOpen('menu')}
+        onClick={() => {
+          playSfx('menu_select')
+          onOpen('menu')
+        }}
         aria-label="메뉴 연구소 열기"
       >
         <img src={PREP_LOBBY_MENU} alt="" draggable={false} />
@@ -147,7 +157,10 @@ export default function PrepLobby({
         className={`prep-lobby-building prep-lobby-building--location${
           locationConfirmed ? '' : ' is-pending'
         }`}
-        onClick={() => onOpen('location')}
+        onClick={() => {
+          playSfx('menu_select')
+          onOpen('location')
+        }}
         aria-label="장소 예약소 열기"
       >
         <img src={PREP_LOBBY_LOCATION} alt="" draggable={false} />
@@ -194,14 +207,17 @@ export default function PrepLobby({
         </ul>
 
         <div className="prep-lobby-checklist__cost">
-          <span>예상 고정비</span>
+          <span>예상 자릿세</span>
           <strong>₩{(loc?.rentCost ?? 0).toLocaleString('ko-KR')}</strong>
         </div>
         <button
           type="button"
           className={`prep-lobby-checklist__start${canStart ? ' is-ready' : ' is-locked'}`}
           disabled={!canStart}
-          onClick={onStart}
+          onClick={() => {
+            playSfx('business_open')
+            onStart()
+          }}
         >
           {canStart ? '영업 시작 →' : '영업 불가'}
         </button>

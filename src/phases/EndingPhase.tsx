@@ -1,6 +1,7 @@
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
 import type { EndingId } from '../types/game'
+import { playSfx } from '../audio/sfx'
 
 const ENDINGS: Record<
   EndingId,
@@ -57,7 +58,10 @@ export default function EndingPhase() {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => dispatch({ type: ActionTypes.RESTART })}
+          onClick={() => {
+            playSfx('button_primary')
+            dispatch({ type: ActionTypes.RESTART })
+          }}
         >
           타이틀로
         </button>

@@ -18,6 +18,7 @@ import { getWeatherLabel } from '../utils/weather'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
 import { READY_PHASE_BG, preloadCriticalAssets } from '../utils/assets'
 import { requestBgm, forceUnlockBgm, resetBgmDayProgress } from '../audio/bgm'
+import { playSfx } from '../audio/sfx'
 
 type PrepStep = 'lobby' | 'location' | 'menu' | 'market' | 'upgrade'
 
@@ -124,12 +125,9 @@ export default function PrepPhase() {
     setLocationPicked(true)
   }
 
-  const rentCost = loc?.rentCost ?? 0
-  const rentAlreadyPaid = state.dailyCosts.rent ?? 0
-  const canAffordRent = state.cash + rentAlreadyPaid >= rentCost
-
   const handleConfirmLocation = () => {
-    if (!locationPicked || !canAffordRent) return
+    if (!locationPicked) return
+    playSfx('button_primary')
     dispatch({ type: ActionTypes.CONFIRM_LOCATION })
     setLocationConfirmed(true)
     if (isFreePrep) {
@@ -236,7 +234,7 @@ export default function PrepPhase() {
               <div className="prep-hint-stats">
                 <span>{loc.description}</span>
                 <span>예상 손님 {estimated}명</span>
-                <span>자릿세 {loc.rentCost.toLocaleString('ko-KR')}원</span>
+                <span>자릿세 {loc.rentCost.toLocaleString('ko-KR')}원 (정산 시 차감)</span>
               </div>
             )}
             <span className="prep-hint-board__paw" aria-hidden="true">
@@ -267,6 +265,7 @@ export default function PrepPhase() {
                 type="button"
                 className="prep-btn prep-btn--menu"
                 onClick={() => {
+                  playSfx('button_secondary')
                   forceUnlockBgm('lobby')
                   setStep('lobby')
                 }}
@@ -277,7 +276,7 @@ export default function PrepPhase() {
             <button
               type="button"
               className="prep-btn prep-btn--start prep-btn--cta"
-              disabled={!locationPicked || !canAffordRent}
+              disabled={!locationPicked}
               onClick={handleConfirmLocation}
             >
               {isFreePrep ? '선택 완료 →' : '다음: 메뉴 선택 →'}
@@ -321,6 +320,7 @@ export default function PrepPhase() {
                     type="button"
                     className="prep-btn prep-btn--menu"
                     onClick={() => {
+                      playSfx('button_secondary')
                       forceUnlockBgm(isFreePrep ? 'lobby' : 'store')
                       setStep(isFreePrep ? 'lobby' : 'location')
                     }}
@@ -332,6 +332,7 @@ export default function PrepPhase() {
                     className="prep-btn prep-btn--start"
                     disabled={!menuReady}
                     onClick={() => {
+                      playSfx('button_primary')
                       forceUnlockBgm(isFreePrep ? 'lobby' : 'store')
                       setStep(isFreePrep ? 'lobby' : 'market')
                     }}
@@ -345,6 +346,7 @@ export default function PrepPhase() {
                     type="button"
                     className="prep-btn prep-btn--menu"
                     onClick={() => {
+                      playSfx('button_secondary')
                       forceUnlockBgm(isFreePrep ? 'lobby' : 'store')
                       setStep(isFreePrep ? 'lobby' : 'menu')
                     }}
@@ -362,10 +364,12 @@ export default function PrepPhase() {
                     }
                     onClick={() => {
                       if (isFreePrep) {
+                        playSfx('button_primary')
                         forceUnlockBgm('lobby')
                         setStep('lobby')
                         return
                       }
+                      playSfx('business_open')
                       forceUnlockBgm('cooking')
                       dispatch({ type: ActionTypes.START_OPEN })
                     }}

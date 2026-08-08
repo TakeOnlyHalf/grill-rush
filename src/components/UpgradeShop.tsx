@@ -5,6 +5,7 @@ import {
 } from '../grill/grillUpgrades'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
+import { playSfx } from '../audio/sfx'
 
 const grillExpansionUpgradeIdSet = new Set<string>(GRILL_EXPANSION_UPGRADE_IDS)
 
@@ -36,6 +37,7 @@ export default function UpgradeShop() {
                 disabled={!canBuy && !owned}
                 onClick={() => {
                   if (owned) return
+                  playSfx('menu_select')
                   dispatch({
                     type: ActionTypes.BUY_UPGRADE,
                     payload: { upgradeId: up.id },

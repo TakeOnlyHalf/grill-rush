@@ -3,6 +3,7 @@ import locations from '../data/locations.json'
 import { useGame } from '../state/GameContext'
 import { estimateCustomers } from '../state/formulas'
 import type { LocationAnchors } from '../pixi/scenes/PrepLocationScene'
+import { playSfx } from '../audio/sfx'
 
 /** 참고 UI와 동일한 표시 순서 */
 const DISPLAY_ORDER = ['park', 'office', 'festival', 'campus', 'night_market'] as const
@@ -64,7 +65,11 @@ export default function LocationSelectStrip({
                 '--float-delay': `${0.35 + index * 0.12}s`,
               } as CSSProperties
             }
-            onClick={() => unlocked && ready && onSelect(loc.id)}
+            onClick={() => {
+              if (!unlocked || !ready) return
+              playSfx('menu_select')
+              onSelect(loc.id)
+            }}
           >
             <span className="loc-card-crest" aria-hidden>
               {selected ? '👑' : unlocked ? loc.icon : '🔒'}

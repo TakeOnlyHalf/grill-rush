@@ -5,6 +5,7 @@ import {
   createIngredientMarketScene,
   type IngredientMarketHandle,
 } from '../pixi/scenes/IngredientMarketScene'
+import { playSfx } from '../audio/sfx'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
 import { getRequiredIngredientIds } from '../state/formulas'
@@ -67,6 +68,7 @@ export default function IngredientShop() {
       app,
       stateRef.current,
       (ingredientId: string) => {
+        playSfx('menu_select')
         dispatchRef.current({
           type: ActionTypes.BUY_INGREDIENT,
           payload: { ingredientId },
