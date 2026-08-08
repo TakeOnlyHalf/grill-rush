@@ -23,19 +23,22 @@ export interface Customer {
   type: string
   typeName: string
   icon: string
-  orderMenuId: MenuId
-  orderName: string
+  /** 손님이 처음 주문한 메뉴. 부분 서빙 후에도 원 주문을 유지한다. */
+  orderedMenuIds: MenuId[]
+  orderedMenuNames: string[]
   patience: number
   maxPatience: number
   tipChance: number
 }
 
-/** 주문 처리용 — 이후 미니게임 연동 시 확장 */
+/** 메뉴 한 개의 처리 상태. 같은 customerId의 주문들을 묶어 손님 한 명의 주문으로 취급한다. */
 export interface Order {
   id: string
   customerId: string
   menuId: MenuId
   status: 'queued' | 'cooking' | 'done' | 'failed'
+  servedAmount?: number
+  satisfaction?: number
 }
 
 export type CookResult = 'raw' | 'good' | 'perfect' | 'danger' | 'burnt'
