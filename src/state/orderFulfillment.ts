@@ -20,7 +20,7 @@ export interface CollectedIngredientInput {
   cookResult: CookResult
 }
 
-const qualityByResult: Record<PreparedCookResult, PreparedQuality> = {
+export const qualityByResult: Record<PreparedCookResult, PreparedQuality> = {
   danger: 1,
   good: 2,
   perfect: 3,
@@ -51,6 +51,78 @@ export function collectPreparedIngredient(
 
 function isServableResult(result: CookResult): result is PreparedCookResult {
   return result === 'good' || result === 'perfect' || result === 'danger'
+}
+
+interface ComboMenu {
+  id: string
+  /** 이 메뉴의 그릴 재료(조립 재료 제외) id 목록 — 전부 갖춰지면 한 접시로 합친다. */
+  ingredients: IngredientId[]
+}
+
+/**
+ * 그릴 재료 2종 이상으로 구성된 메뉴 — 완성 트레이에서 필요한 그릴 재료가 모두 준비되면 한 접시로 합쳐 보여준다.
+ * 재료 수가 많은(더 구체적인) 메뉴를 먼저 매칭하도록 내림차순으로 정렬해둔다 — 예를 들어 베이컨을 공유하는
+ * 에그&베이컨(2종)과 그릴 버거(3종)가 동시에 완성 가능할 때, 버거 쪽을 먼저 시도한다.
+ */
+const comboMenus: ComboMenu[] = menus
+  .map((menu) => ({
+    id: menu.id,
+    ingredients: menu.ingredients.filter((ingredientId) => !assemblyIngredientIds.has(ingredientId)),
+  }))
+  .filter((menu) => menu.ingredients.length >= 2 && new Set(menu.ingredients).size === menu.ingredients.length)
+  .sort((a, b) => b.ingredients.length - a.ingredients.length)
+
+export type PlatedDisplayItem =
+  | { kind: 'single'; item: PreparedIngredient }
+  | { kind: 'combo'; menuId: string; items: PreparedIngredient[] }
+
+/** comboMenu가 요구하는 그릴 재료를 트레이에서 하나씩 찾는다. 하나라도 없으면 undefined. */
+function matchComboItems(
+  comboMenu: ComboMenu,
+  preparedIngredients: PreparedIngredient[],
+  consumedIds: Set<string>,
+): PreparedIngredient[] | undefined {
+  const matched: PreparedIngredient[] = []
+  for (const ingredientId of comboMenu.ingredients) {
+    const found = preparedIngredients.find(
+      (candidate) =>
+        candidate.ingredientId === ingredientId &&
+        !consumedIds.has(candidate.id) &&
+        !matched.includes(candidate),
+    )
+    if (!found) return undefined
+    matched.push(found)
+  }
+  return matched
+}
+
+/**
+ * 완성 트레이 표시용 그룹핑 — comboMenus에 해당하는 그릴 재료가 모두 준비되면 하나의 완성 접시로 합치고,
+ * 나머지는 그대로 개별 항목으로 둔다. preparedIngredients 자체는 건드리지 않는, 표시 전용 변환이다.
+ *
+ * comboMenus를 재료 수 내림차순으로 먼저 전부 훑어 합칠 수 있는 만큼 합친 뒤, 남은 재료만 개별 항목으로
+ * 채운다 — 트레이에 담긴 순서와 무관하게 항상 더 구체적인(재료가 많은) 메뉴가 재료를 먼저 가져간다.
+ */
+export function groupPlatedIngredients(preparedIngredients: PreparedIngredient[]): PlatedDisplayItem[] {
+  const consumedIds = new Set<string>()
+  const displayItems: PlatedDisplayItem[] = []
+
+  for (const menu of comboMenus) {
+    let items = matchComboItems(menu, preparedIngredients, consumedIds)
+    while (items) {
+      items.forEach((item) => consumedIds.add(item.id))
+      displayItems.push({ kind: 'combo', menuId: menu.id, items })
+      items = matchComboItems(menu, preparedIngredients, consumedIds)
+    }
+  }
+
+  for (const item of preparedIngredients) {
+    if (!consumedIds.has(item.id)) {
+      displayItems.push({ kind: 'single', item })
+    }
+  }
+
+  return displayItems
 }
 
 export interface OrderIngredientProgress {

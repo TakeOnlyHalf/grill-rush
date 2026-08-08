@@ -32,3 +32,4 @@ export const MAX_ACTIVE_MENUS = 4
 export const OPEN_DURATION_SEC = 75
 export const STARTING_CASH = 200_000
 export const DAILY_TRUCK_COST = 5_000
+export const DAILY_INGREDIENT_PURCHASE_LIMIT = 20

@@ -3,6 +3,7 @@ import ingredientData from '../data/ingredients.json'
 import upgradesData from '../data/upgrades.json'
 import {
   ActionTypes,
+  DAILY_INGREDIENT_PURCHASE_LIMIT,
   DAILY_TRUCK_COST,
   MAX_ACTIVE_MENUS,
   OPEN_DURATION_SEC,
@@ -18,6 +19,7 @@ import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
 import type { GameAction, GameState } from '../types/game'
 import { collectPreparedIngredient, serveOrder } from './orderFulfillment'
+import { canPurchaseIngredient } from '../utils/ingredientStorage'
 
 const MAX_QUEUE = 9
 
@@ -93,21 +95,40 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case ActionTypes.BUY_INGREDIENT: {
       if (state.phase !== 'prep') return state
-      const { ingredientId, qty, unitCost } = action.payload
-      const allowed = getRequiredIngredientIds(state.activeMenus)
-      if (!allowed.includes(ingredientId)) return state
-      const total = unitCost * qty
-      if (state.cash < total) return state
+      const { ingredientId } = action.payload
+      const ingredient = ingredientData.find((candidate) => candidate.id === ingredientId)
+      if (!ingredient || !Number.isSafeInteger(ingredient.unitCost) || ingredient.unitCost < 0) {
+        return state
+      }
+      if (!getRequiredIngredientIds(state.activeMenus).includes(ingredientId)) return state
+
+      const purchasedToday = state.dailyIngredientPurchases[ingredientId] ?? 0
+      if (!Number.isSafeInteger(purchasedToday) || purchasedToday < 0) return state
+      if (purchasedToday >= DAILY_INGREDIENT_PURCHASE_LIMIT) return state
+      if (state.cash < ingredient.unitCost) return state
+      if (!canPurchaseIngredient(state.ingredients, state.upgrades, 1)) return state
+
+      const nextOwnedQuantity = (state.ingredients[ingredientId] ?? 0) + 1
+      if (!Number.isSafeInteger(nextOwnedQuantity)) return state
+      const nextPurchasedToday = purchasedToday + 1
+      if (!Number.isSafeInteger(nextPurchasedToday)) return state
+      const nextIngredientCost = state.dailyCosts.ingredients + ingredient.unitCost
+      if (!Number.isSafeInteger(nextIngredientCost)) return state
+
       return {
         ...state,
-        cash: state.cash - total,
+        cash: state.cash - ingredient.unitCost,
         ingredients: {
           ...state.ingredients,
-          [ingredientId]: (state.ingredients[ingredientId] ?? 0) + qty,
+          [ingredientId]: nextOwnedQuantity,
+        },
+        dailyIngredientPurchases: {
+          ...state.dailyIngredientPurchases,
+          [ingredientId]: nextPurchasedToday,
         },
         dailyCosts: {
           ...state.dailyCosts,
-          ingredients: state.dailyCosts.ingredients + total,
+          ingredients: nextIngredientCost,
         },
       }
     }
@@ -214,7 +235,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const crossedInterval =
         Math.floor(state.time / interval) !== Math.floor(nextTime / interval)
       if (crossedInterval && customers.length < MAX_QUEUE) {
-        const spawned = spawnCustomer(spawnCtx)
+        const lastType = customers[customers.length - 1]?.type
+        const spawned = spawnCustomer(spawnCtx, lastType)
         if (spawned) customers.push(spawned)
       }
       const customerIds = new Set(customers.map((customer) => customer.id))
@@ -328,7 +350,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         phase: 'prep',
         weather: rollWeather(),
         time: 0,
-        ingredients: {},
+        dailyIngredientPurchases: {},
         customers: [],
         orders: [],
         preparedIngredients: [],
