@@ -2516,6 +2516,16 @@ body:has(.phase-open) {
   line-height: 1;
 }
 
+.plated-item--empty .plated-item-icon {
+  border-radius: 999px;
+  border: 2px solid #e8843a;
+  background: #fff;
+  box-sizing: border-box;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
 .ingredient-chip-icon.has-food-image,
 .plated-item-icon.has-food-image,
 .order-queue-menu-icon.has-food-image {
@@ -2576,8 +2586,23 @@ body:has(.phase-open) {
 }
 
 .plated-item-label {
-  font-size: 0.62rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: var(--muted);
+}
+
+.plated-item--perfect .plated-item-label {
+  color: #2f9d6a;
+}
+
+.plated-item--good .plated-item-label {
+  color: #c48a1a;
+}
+
+.plated-item--danger .plated-item-label {
+  color: #d65a2e;
 }
 
 .plated-item--perfect {
@@ -2709,22 +2734,22 @@ body:has(.phase-open) {
   width: max-content;
   gap: var(--order-card-inner-gap);
   justify-content: flex-start;
-  align-items: center;
+  align-items: flex-start;
 }
 
-/* 초상화와 각 메뉴는 같은 고정 슬롯을 사용한다. 메뉴 슬롯이 늘어난 만큼 카드 자연 너비도 증가한다. */
+/* 초상화와 각 메뉴는 같은 고정 너비를 쓴다. 메뉴 슬롯은 재료 행만큼 높이가 늘어난다. */
 .order-queue-portrait,
 .order-menu-slot {
   flex: 0 0 var(--order-card-area-size);
   box-sizing: border-box;
   width: var(--order-card-area-size);
-  height: var(--order-card-area-size);
-  max-height: 100%;
 }
 
 .order-queue-portrait {
   display: grid;
   place-items: center;
+  height: var(--order-card-area-size);
+  max-height: 100%;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background-color: var(--cream);
@@ -2735,9 +2760,13 @@ body:has(.phase-open) {
 
 .order-menu-slot {
   position: relative;
-  display: grid;
-  place-items: center;
-  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.18rem;
+  min-height: var(--order-card-area-size);
+  padding: 0.28rem 0.22rem 0.24rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--cream);
@@ -2783,13 +2812,77 @@ body:has(.phase-open) {
 }
 
 .order-queue-menu-icon {
+  flex: 0 0 auto;
   width: 100%;
-  max-width: 3.4rem;
+  max-width: 2.85rem;
   aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   line-height: 1;
+}
+
+.order-menu-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.12rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-menu-ingredient {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  opacity: 0.42;
+  filter: grayscale(0.35);
+}
+
+.order-menu-ingredient.is-ready {
+  opacity: 1;
+  filter: none;
+}
+
+.order-menu-ingredient-icon {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 70%, var(--cream));
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.order-menu-ingredient-icon.has-food-image {
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  background-clip: content-box;
+  padding: 0.04rem;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.order-menu-ingredient-count {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.18rem;
+  min-width: 0.7rem;
+  padding: 0 0.08rem;
+  border-radius: 999px;
+  background: rgba(40, 28, 18, 0.78);
+  color: #fff;
+  font-size: 0.48rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
 }
 
 .order-queue-card.is-serveable {
