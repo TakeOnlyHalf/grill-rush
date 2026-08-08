@@ -133,14 +133,42 @@ function prepState(
   }
 }
 
-function buyIngredient(state: GameState, ingredientId = 'egg') {
+function buyIngredient(state: GameState, ingredientId = 'egg', quantity = 1) {
   return gameReducer(state, {
     type: 'BUY_INGREDIENT',
-    payload: { ingredientId },
+    payload: { ingredientId, quantity },
   })
 }
 
 describe('BUY_INGREDIENT', () => {
+  it('buys ten at once when quantity is requested', () => {
+    const initial = prepState()
+    const purchased = buyIngredient(initial, 'egg', 10)
+
+    expect(purchased.ingredients).toEqual({ egg: 10 })
+    expect(purchased.dailyIngredientPurchases).toEqual({ egg: 10 })
+    expect(purchased.cash).toBe(initial.cash - 4_000)
+    expect(purchased.dailyCosts.ingredients).toBe(4_000)
+  })
+
+  it('buys only the remaining daily limit when requesting ten', () => {
+    const initial = prepState({}, [], ['egg_bacon'], 1_000_000, { egg: 17 })
+    const purchased = buyIngredient(initial, 'egg', 10)
+
+    expect(purchased.ingredients.egg).toBe(3)
+    expect(purchased.dailyIngredientPurchases.egg).toBe(20)
+    expect(purchased.cash).toBe(initial.cash - 1_200)
+  })
+
+  it('buys only as many as cash allows when requesting ten', () => {
+    const initial = prepState({}, [], ['egg_bacon'], 1_500)
+    const purchased = buyIngredient(initial, 'egg', 10)
+
+    expect(purchased.ingredients.egg).toBe(3)
+    expect(purchased.dailyIngredientPurchases.egg).toBe(3)
+    expect(purchased.cash).toBe(300)
+  })
+
   it('buys only the clicked ingredient at its unit price', () => {
     const initial = prepState()
     const purchased = buyIngredient(initial, 'egg')

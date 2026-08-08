@@ -95,6 +95,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case ActionTypes.BUY_INGREDIENT: {
       if (state.phase !== 'prep') return state
       const { ingredientId } = action.payload
+      const requestedQuantity = action.payload.quantity ?? 1
+      if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0) return state
+
       const ingredient = ingredientData.find((candidate) => candidate.id === ingredientId)
       if (!ingredient || !Number.isSafeInteger(ingredient.unitCost) || ingredient.unitCost < 0) {
         return state
@@ -104,19 +107,28 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const purchasedToday = state.dailyIngredientPurchases[ingredientId] ?? 0
       if (!Number.isSafeInteger(purchasedToday) || purchasedToday < 0) return state
       const purchaseLimit = getIngredientPurchaseLimit(state.upgrades)
-      if (purchasedToday >= purchaseLimit) return state
-      if (state.cash < ingredient.unitCost) return state
+      const remainingLimit = purchaseLimit - purchasedToday
+      if (remainingLimit <= 0) return state
 
-      const nextOwnedQuantity = (state.ingredients[ingredientId] ?? 0) + 1
+      const affordable = Math.floor(state.cash / ingredient.unitCost)
+      if (!Number.isSafeInteger(affordable) || affordable <= 0) return state
+
+      const quantity = Math.min(requestedQuantity, remainingLimit, affordable)
+      if (!Number.isSafeInteger(quantity) || quantity <= 0) return state
+
+      const totalCost = ingredient.unitCost * quantity
+      if (!Number.isSafeInteger(totalCost) || totalCost <= 0 || state.cash < totalCost) return state
+
+      const nextOwnedQuantity = (state.ingredients[ingredientId] ?? 0) + quantity
       if (!Number.isSafeInteger(nextOwnedQuantity)) return state
-      const nextPurchasedToday = purchasedToday + 1
+      const nextPurchasedToday = purchasedToday + quantity
       if (!Number.isSafeInteger(nextPurchasedToday)) return state
-      const nextIngredientCost = state.dailyCosts.ingredients + ingredient.unitCost
+      const nextIngredientCost = state.dailyCosts.ingredients + totalCost
       if (!Number.isSafeInteger(nextIngredientCost)) return state
 
       return {
         ...state,
-        cash: state.cash - ingredient.unitCost,
+        cash: state.cash - totalCost,
         ingredients: {
           ...state.ingredients,
           [ingredientId]: nextOwnedQuantity,

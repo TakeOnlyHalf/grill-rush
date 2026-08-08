@@ -122,7 +122,7 @@ export type GameAction =
   | { type: 'SET_MENU_PRICE'; payload: { menuId: MenuId; price: number } }
   | {
       type: 'BUY_INGREDIENT'
-      payload: { ingredientId: IngredientId }
+      payload: { ingredientId: IngredientId; quantity?: number }
     }
   | { type: 'USE_INGREDIENT'; payload: { ingredientId: IngredientId } }
   | {

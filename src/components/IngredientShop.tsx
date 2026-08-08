@@ -59,11 +59,11 @@ export default function IngredientShop() {
     const scene = createIngredientMarketScene(
       app,
       stateRef.current,
-      (ingredientId: string) => {
+      (ingredientId: string, quantity: number) => {
         playSfx('menu_select')
         dispatchRef.current({
           type: ActionTypes.BUY_INGREDIENT,
-          payload: { ingredientId },
+          payload: { ingredientId, quantity },
         })
       },
     )
