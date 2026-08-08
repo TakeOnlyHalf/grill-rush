@@ -31,6 +31,7 @@ import { getOrderFulfillment, groupPlatedIngredients, qualityByResult } from '..
 import ingredientData from '../data/ingredients.json'
 import menuData from '../data/menus.json'
 import { INGREDIENT_FOOD_STYLE, MENU_FOOD_STYLE } from '../utils/foodIcons'
+import { getIngredientCapacity } from '../utils/ingredientStorage'
 import PlatedActionButton from './PlatedActionButton'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
@@ -66,6 +67,7 @@ export default function CookingMinigame() {
   const slotsRef = useRef(slots)
   const [now, setNow] = useState(() => Date.now())
   const [selectedPreparedIds, setSelectedPreparedIds] = useState<string[]>([])
+  const [selectedStockId, setSelectedStockId] = useState<string | null>(null)
   const [alertingSlotIds, setAlertingSlotIds] = useState<string[]>([])
   const [alarmAnnouncement, setAlarmAnnouncement] = useState({ id: 0, message: '' })
   const [autoCollectFeedback, setAutoCollectFeedback] = useState<{
@@ -178,10 +180,12 @@ export default function CookingMinigame() {
   }
 
   const ownedIngredients = ingredientData.filter((ingredient) => (state.ingredients[ingredient.id] ?? 0) > 0)
+  const stockGaugeMax = Math.max(1, getIngredientCapacity(state.upgrades))
 
   const handleIngredientClick = (ingredientId: string) => {
     const owned = state.ingredients[ingredientId] ?? 0
     if (owned <= 0) return
+    setSelectedStockId(ingredientId)
     const grillIngredient = grillIngredientById.get(ingredientId)
     if (!grillIngredient) return // 조립 재료(치즈·소스·번 등)는 그릴에 올릴 필요가 없다
     const idleSlot = slotsRef.current.find((slot) => slot.status === 'idle')
@@ -248,23 +252,31 @@ export default function CookingMinigame() {
   return (
     <div className="panel cooking-area">
       <div className="cooking-columns">
-        <section className="cooking-col cooking-col--stock" aria-label="재료">
-          <h4 className="cooking-col-title">재료</h4>
+        <section className="cooking-col cooking-col--stock" aria-label="재료 준비대">
+          <h4 className="cooking-col-title">재료 준비대</h4>
           {ownedIngredients.length === 0 ? (
             <p className="muted cooking-col-empty">구매한 재료가 없습니다.</p>
           ) : (
             <ul className="ingredient-grid">
               {ownedIngredients.map((ingredient) => {
+                const count = state.ingredients[ingredient.id] ?? 0
                 const grillable = grillIngredientById.has(ingredient.id)
                 const grillFull = grillable && !slots.some((slot) => slot.status === 'idle')
+                const selected = selectedStockId === ingredient.id
+                const gaugeRatio = Math.max(0, Math.min(1, count / stockGaugeMax))
                 return (
                   <li key={ingredient.id}>
                     <button
                       type="button"
-                      className="ingredient-chip"
-                      disabled={!grillable || grillFull}
+                      className={`ingredient-chip${selected ? ' is-selected' : ''}`}
+                      disabled={grillable && grillFull}
                       onClick={() => handleIngredientClick(ingredient.id)}
-                      title={grillable ? `${ingredient.name} · 그릴에 올리기` : `${ingredient.name} · 조립 재료(서빙 시 자동 사용)`}
+                      aria-pressed={selected}
+                      title={
+                        grillable
+                          ? `${ingredient.name} · 그릴에 올리기`
+                          : `${ingredient.name} · 조립 재료(서빙 시 자동 사용)`
+                      }
                     >
                       <span
                         className={`ingredient-chip-icon${INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
@@ -273,8 +285,19 @@ export default function CookingMinigame() {
                       >
                         {INGREDIENT_FOOD_STYLE[ingredient.id] ? null : ingredient.icon}
                       </span>
-                      <span className="ingredient-chip-count">{state.ingredients[ingredient.id] ?? 0}</span>
-                      <span className="visually-hidden">{ingredient.name}</span>
+                      <span className="ingredient-chip-meta">
+                        <span className="ingredient-chip-name">{ingredient.name}</span>
+                        <span className="ingredient-chip-count">x{count}</span>
+                        <span
+                          className="ingredient-chip-gauge"
+                          aria-hidden
+                        >
+                          <span
+                            className="ingredient-chip-gauge-fill"
+                            style={{ width: `${gaugeRatio * 100}%` }}
+                          />
+                        </span>
+                      </span>
                     </button>
                   </li>
                 )

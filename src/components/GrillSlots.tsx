@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import ingredientData from '../data/ingredients.json'
-import { getCookProgress, getCookResult, type GrillSlot } from '../grill/grillSlots'
+import { getCookProgress, getCookResult, PERFECT_WINDOW_END, PERFECT_WINDOW_START, type GrillSlot } from '../grill/grillSlots'
 import {
   getGrillExpansionUpgradeForSlot,
   MAX_GRILL_SLOT_COUNT,
@@ -31,6 +31,9 @@ const resultLabel = {
   danger: '아슬아슬 · 회수 가능',
   burnt: '탔음 · 클릭해서 치우기',
 } as const
+
+/** 프로그레스 바 구간 경계 — 좋음 / 완벽 / 위험 시작점 */
+const COOK_ZONE_MARKS = [0.4, PERFECT_WINDOW_START, PERFECT_WINDOW_END] as const
 
 export interface GrillSlotsProps {
   slots: GrillSlot[]
@@ -85,10 +88,7 @@ export default function GrillSlots({
             key={slot.id}
             type="button"
             className={`grill-slot-card grill-slot-card--cooking grill-slot-card--${tone}${isPerfectTimingAlert ? ' is-perfect-timing-alert' : ''}`}
-            style={{
-              ...GRILL_TILE_ON_STYLE,
-              '--grill-progress': Math.min(1, progress),
-            } as CSSProperties}
+            style={GRILL_TILE_ON_STYLE}
             onClick={() => onCollect(slot)}
             title={resultLabel[result]}
           >
@@ -98,13 +98,28 @@ export default function GrillSlots({
                 <span className="grill-slot-alarm-label" aria-hidden>완벽! 지금 회수</span>
               </>
             ) : null}
-            <span className="grill-slot-timer">
+            <span className="grill-slot-cook">
               <span
-                className={`grill-slot-timer-icon${ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
+                className={`grill-slot-food${ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? ' has-food-image' : ''}`}
                 aria-hidden
                 style={ingredient ? INGREDIENT_FOOD_STYLE[ingredient.id] : undefined}
               >
                 {ingredient && INGREDIENT_FOOD_STYLE[ingredient.id] ? null : (ingredient?.icon ?? '🍳')}
+              </span>
+              <span className="grill-slot-bar" aria-hidden>
+                <span className="grill-slot-bar-track">
+                  <span
+                    className="grill-slot-bar-fill"
+                    style={{ width: `${Math.min(100, progress * 100)}%` }}
+                  />
+                </span>
+                {COOK_ZONE_MARKS.map((mark) => (
+                  <span
+                    key={mark}
+                    className="grill-slot-bar-mark"
+                    style={{ left: `${mark * 100}%` }}
+                  />
+                ))}
               </span>
             </span>
             <span className="visually-hidden">
