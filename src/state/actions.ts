@@ -33,3 +33,6 @@ export const OPEN_DURATION_SEC = 75
 export const STARTING_CASH = 200_000
 export const DAILY_TRUCK_COST = 5_000
 export const DAILY_INGREDIENT_PURCHASE_LIMIT = 20
+export const MIN_CUSTOMER_ORDER_ITEMS = 1
+export const MAX_CUSTOMER_ORDER_ITEMS = 2
+export const MULTI_ORDER_CHANCE = 0.5

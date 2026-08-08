@@ -230,6 +230,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         locationId: state.location,
         weather: state.weather,
         activeMenus: state.activeMenus,
+        unlockedMenus: state.unlockedMenus,
         fame: state.fame,
         day: state.day,
         time: state.time,
@@ -246,11 +247,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const orders = state.orders.filter((order) => customerIds.has(order.customerId))
       for (const customer of customers) {
         if (orders.some((order) => order.customerId === customer.id)) continue
-        orders.push({
-          id: `order-${customer.id}`,
-          customerId: customer.id,
-          menuId: customer.orderMenuId,
-          status: 'queued',
+        customer.orderedMenuIds.forEach((menuId, index) => {
+          orders.push({
+            id: `order-${customer.id}-${index}`,
+            customerId: customer.id,
+            menuId,
+            status: 'queued',
+          })
         })
       }
 

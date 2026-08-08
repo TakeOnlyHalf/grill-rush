@@ -163,7 +163,7 @@ export function getOrderFulfillment(state: GameState, orderId: string): OrderFul
   return { canServe: rows.every((row) => row.prepared >= row.required), ingredients: rows }
 }
 
-/** 클릭된 주문 하나만 재검증하고 원자적으로 서빙한다. */
+/** 클릭된 메뉴 하나만 재검증하고 원자적으로 서빙한다. 마지막 메뉴에서 손님 주문을 완료한다. */
 export function serveOrder(state: GameState, orderId: string, customerId: string): GameState {
   const order = state.orders.find(
     (candidate) => candidate.id === orderId && candidate.customerId === customerId,
@@ -200,15 +200,41 @@ export function serveOrder(state: GameState, orderId: string, customerId: string
     patienceRatio,
     qualities: consumed.map((item) => item.quality),
   })
-  const stars = satisfactionToStars(satisfaction)
-  const tip = Math.random() < customer.tipChance ? Math.round(amount * 0.1) : 0
+  const orders = state.orders.map((candidate) => candidate.id === orderId
+    ? { ...candidate, status: 'done' as const, servedAmount: amount, satisfaction }
+    : candidate)
+  const customerOrders = orders.filter((candidate) => candidate.customerId === customerId)
+  const hasRemainingOrder = customerOrders.some((candidate) => candidate.status !== 'done')
+
+  if (hasRemainingOrder) {
+    return {
+      ...state,
+      ingredients,
+      preparedIngredients,
+      orders,
+      dailySales: state.dailySales + amount,
+    }
+  }
+
+  const totalAmount = customerOrders.reduce(
+    (sum, candidate) => sum + (candidate.servedAmount ?? 0),
+    0,
+  )
+  const satisfactions = customerOrders
+    .map((candidate) => candidate.satisfaction)
+    .filter((value): value is number => typeof value === 'number')
+  const combinedSatisfaction = satisfactions.length > 0
+    ? satisfactions.reduce((sum, value) => sum + value, 0) / satisfactions.length
+    : satisfaction
+  const stars = satisfactionToStars(combinedSatisfaction)
+  const tip = Math.random() < customer.tipChance ? Math.round(totalAmount * 0.1) : 0
 
   return {
     ...state,
     ingredients,
     preparedIngredients,
     customers: state.customers.filter((candidate) => candidate.id !== customerId),
-    orders: state.orders.filter((candidate) => candidate.id !== orderId),
+    orders: orders.filter((candidate) => candidate.customerId !== customerId),
     dailySales: state.dailySales + amount,
     dailyTips: state.dailyTips + tip,
     dailyServed: state.dailyServed + 1,
@@ -216,8 +242,8 @@ export function serveOrder(state: GameState, orderId: string, customerId: string
     lastServeFeedback: {
       id: (state.lastServeFeedback?.id ?? 0) + 1,
       menuId: menu.id,
-      menuName: menu.name,
-      amount,
+      menuName: customer.orderedMenuNames.join(' + '),
+      amount: totalAmount,
       stars,
       tip,
     },
