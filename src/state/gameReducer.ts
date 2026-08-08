@@ -3,7 +3,6 @@ import ingredientData from '../data/ingredients.json'
 import upgradesData from '../data/upgrades.json'
 import {
   ActionTypes,
-  DAILY_INGREDIENT_PURCHASE_LIMIT,
   DAILY_TRUCK_COST,
   MAX_ACTIVE_MENUS,
   OPEN_DURATION_SEC,
@@ -19,7 +18,7 @@ import { rollWeather } from '../utils/weather'
 import { spawnCustomer, getSpawnIntervalSec, type SpawnContext } from '../utils/customerSpawner'
 import type { GameAction, GameState } from '../types/game'
 import { collectPreparedIngredient, serveOrder } from './orderFulfillment'
-import { canPurchaseIngredient } from '../utils/ingredientStorage'
+import { getIngredientPurchaseLimit } from '../utils/ingredientStorage'
 
 const MAX_QUEUE = 9
 
@@ -104,9 +103,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const purchasedToday = state.dailyIngredientPurchases[ingredientId] ?? 0
       if (!Number.isSafeInteger(purchasedToday) || purchasedToday < 0) return state
-      if (purchasedToday >= DAILY_INGREDIENT_PURCHASE_LIMIT) return state
+      const purchaseLimit = getIngredientPurchaseLimit(state.upgrades)
+      if (purchasedToday >= purchaseLimit) return state
       if (state.cash < ingredient.unitCost) return state
-      if (!canPurchaseIngredient(state.ingredients, state.upgrades, 1)) return state
 
       const nextOwnedQuantity = (state.ingredients[ingredientId] ?? 0) + 1
       if (!Number.isSafeInteger(nextOwnedQuantity)) return state

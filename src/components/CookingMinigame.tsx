@@ -39,7 +39,7 @@ import {
 import ingredientData from '../data/ingredients.json'
 import menuData from '../data/menus.json'
 import { INGREDIENT_FOOD_STYLE, MENU_FOOD_STYLE } from '../utils/foodIcons'
-import { getIngredientCapacity } from '../utils/ingredientStorage'
+import { getIngredientPurchaseLimit } from '../utils/ingredientStorage'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
 const menuById = new Map(menuData.map((menu) => [menu.id, menu]))
@@ -195,7 +195,7 @@ export default function CookingMinigame() {
   }
 
   const ownedIngredients = ingredientData.filter((ingredient) => (state.ingredients[ingredient.id] ?? 0) > 0)
-  const stockGaugeMax = Math.max(1, getIngredientCapacity(state.upgrades))
+  const stockGaugeMax = Math.max(1, getIngredientPurchaseLimit(state.upgrades))
 
   const handleIngredientClick = (ingredientId: string) => {
     const owned = state.ingredients[ingredientId] ?? 0

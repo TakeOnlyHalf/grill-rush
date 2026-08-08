@@ -16,7 +16,7 @@ import {
   getGrillSlotCount,
   GRILL_EXPANSION_UPGRADE_IDS,
 } from '../grill/grillUpgrades'
-import { getIngredientCapacity } from '../utils/ingredientStorage'
+import { getIngredientPurchaseLimit } from '../utils/ingredientStorage'
 import { getUnlockedPlatedCapacity } from '../state/orderFulfillment'
 
 type UpgradeCategory =
@@ -63,14 +63,14 @@ function baseTruckStats(owned: string[]) {
   )
   const visitBonus = owned.includes('signboard') ? 10 : 0
   const autoCollectIntervalMs = getAutoAssistIntervalMs(owned)
-  const ingredientCapacity = getIngredientCapacity(owned)
+  const ingredientPurchaseLimit = getIngredientPurchaseLimit(owned)
   const platedCapacity = getUnlockedPlatedCapacity(owned)
   return {
     slots,
     cookTimeReduction,
     visitBonus,
     autoCollectIntervalMs,
-    ingredientCapacity,
+    ingredientPurchaseLimit,
     platedCapacity,
   }
 }
@@ -177,9 +177,9 @@ export default function NightPhase({
       : `${preview.autoCollectIntervalMs / 1_000}초`
     effectLines.push(`조리 보조 ${currentLabel} → ${previewLabel} 재사용 대기`)
   }
-  if (preview.ingredientCapacity !== current.ingredientCapacity) {
+  if (preview.ingredientPurchaseLimit !== current.ingredientPurchaseLimit) {
     effectLines.push(
-      `재료 보관 한도 ${current.ingredientCapacity}개 → ${preview.ingredientCapacity}개`,
+      `재료별 구매 한도 ${current.ingredientPurchaseLimit}개 → ${preview.ingredientPurchaseLimit}개`,
     )
   }
   if (preview.platedCapacity !== current.platedCapacity) {
@@ -269,8 +269,8 @@ export default function NightPhase({
               <strong>{current.visitBonus}%</strong>
             </li>
             <li>
-              <span>재료 보관 한도</span>
-              <strong>{current.ingredientCapacity}개</strong>
+              <span>재료별 구매 한도</span>
+              <strong>{current.ingredientPurchaseLimit}개</strong>
             </li>
             <li>
               <span>완성 칸</span>

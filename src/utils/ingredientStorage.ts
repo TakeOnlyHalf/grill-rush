@@ -1,63 +1,38 @@
 import upgradesData from '../data/upgrades.json'
+import { DAILY_INGREDIENT_PURCHASE_LIMIT } from '../state/actions'
 
-export const BASE_INGREDIENT_CAPACITY = 40
+/** 업그레이드 전 재료별 하루 구매 한도 */
+export const BASE_INGREDIENT_PURCHASE_LIMIT = DAILY_INGREDIENT_PURCHASE_LIMIT
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function getCapacityBonus(upgrade: unknown): number {
+function getPurchaseLimitFromUpgrade(upgrade: unknown): number {
   if (!isRecord(upgrade) || !isRecord(upgrade.effect)) return 0
-  const bonus = upgrade.effect.ingredientCapBonus
-  return Number.isSafeInteger(bonus) && Number(bonus) > 0 ? Number(bonus) : 0
+  const limit = upgrade.effect.ingredientPurchaseLimit
+  return Number.isSafeInteger(limit) && Number(limit) > 0 ? Number(limit) : 0
 }
 
-const capacityBonusByUpgradeId = new Map<string, number>()
+const purchaseLimitByUpgradeId = new Map<string, number>()
 
 for (const upgrade of upgradesData as readonly unknown[]) {
   if (!isRecord(upgrade) || typeof upgrade.id !== 'string') continue
-  const bonus = getCapacityBonus(upgrade)
-  if (bonus > 0) capacityBonusByUpgradeId.set(upgrade.id, bonus)
+  const limit = getPurchaseLimitFromUpgrade(upgrade)
+  if (limit > 0) purchaseLimitByUpgradeId.set(upgrade.id, limit)
 }
 
-export function getIngredientCount(
-  ingredients: Readonly<Record<string, number>>,
-): number {
-  let count = 0
-  for (const quantity of Object.values(ingredients)) {
-    if (!Number.isSafeInteger(quantity) || quantity <= 0) continue
-    if (!Number.isSafeInteger(count + quantity)) return Number.MAX_SAFE_INTEGER
-    count += quantity
-  }
-  return count
-}
-
-export function getIngredientCapacity(
+/**
+ * 재료별 하루 구매 한도.
+ * 기본 20, 보관함 업그레이드 보유 시 해당 효과값(40)으로 올라간다.
+ */
+export function getIngredientPurchaseLimit(
   ownedUpgradeIds: readonly string[],
 ): number {
-  let capacity = BASE_INGREDIENT_CAPACITY
+  let limit = BASE_INGREDIENT_PURCHASE_LIMIT
   for (const upgradeId of new Set(ownedUpgradeIds)) {
-    const bonus = capacityBonusByUpgradeId.get(upgradeId) ?? 0
-    if (Number.isSafeInteger(capacity + bonus)) capacity += bonus
+    const upgraded = purchaseLimitByUpgradeId.get(upgradeId) ?? 0
+    if (upgraded > limit) limit = upgraded
   }
-  return capacity
-}
-
-export function canPurchaseIngredient(
-  ingredients: Readonly<Record<string, number>>,
-  ownedUpgradeIds: readonly string[],
-  quantity: number,
-): boolean {
-  if (!Number.isSafeInteger(quantity) || quantity <= 0) return false
-  if (
-    Object.values(ingredients).some(
-      (owned) => !Number.isSafeInteger(owned) || owned < 0,
-    )
-  ) {
-    return false
-  }
-
-  const count = getIngredientCount(ingredients)
-  const capacity = getIngredientCapacity(ownedUpgradeIds)
-  return count <= capacity - quantity
+  return limit
 }

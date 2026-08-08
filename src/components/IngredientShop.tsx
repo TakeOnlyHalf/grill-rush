@@ -9,10 +9,7 @@ import { playSfx } from '../audio/sfx'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
 import { getRequiredIngredientIds } from '../state/formulas'
-import {
-  getIngredientCapacity,
-  getIngredientCount,
-} from '../utils/ingredientStorage'
+import { getIngredientPurchaseLimit } from '../utils/ingredientStorage'
 
 /** 선택한 메뉴에 필요한 재료만 개별 구매하는 PixiJS 일반 마트 UI */
 export default function IngredientShop() {
@@ -21,8 +18,7 @@ export default function IngredientShop() {
     () => getRequiredIngredientIds(state.activeMenus),
     [state.activeMenus],
   )
-  const capacity = getIngredientCapacity(state.upgrades)
-  const currentIngredientCount = getIngredientCount(state.ingredients)
+  const purchaseLimit = getIngredientPurchaseLimit(state.upgrades)
 
   const sceneRef = useRef<IngredientMarketHandle | null>(null)
   const stateRef = useRef({
@@ -30,16 +26,14 @@ export default function IngredientShop() {
     owned: state.ingredients,
     dailyPurchases: state.dailyIngredientPurchases,
     allowedIds,
-    capacity,
-    currentIngredientCount,
+    purchaseLimit,
   })
   stateRef.current = {
     cash: state.cash,
     owned: state.ingredients,
     dailyPurchases: state.dailyIngredientPurchases,
     allowedIds,
-    capacity,
-    currentIngredientCount,
+    purchaseLimit,
   }
 
   const dispatchRef = useRef(dispatch)
@@ -51,16 +45,14 @@ export default function IngredientShop() {
       owned: state.ingredients,
       dailyPurchases: state.dailyIngredientPurchases,
       allowedIds,
-      capacity,
-      currentIngredientCount,
+      purchaseLimit,
     })
   }, [
     state.cash,
     state.ingredients,
     state.dailyIngredientPurchases,
     allowedIds,
-    capacity,
-    currentIngredientCount,
+    purchaseLimit,
   ])
 
   const setup = useCallback((app: Application) => {

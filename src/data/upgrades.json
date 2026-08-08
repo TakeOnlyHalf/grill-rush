@@ -104,10 +104,10 @@
     "name": "재료 보관함",
     "category": "convenience",
     "icon": "📦",
-    "description": "재료 보관 한도 40 → 80",
-    "detail": "보관 가능한 총 재료 수를 80개로 확장",
+    "description": "재료별 구매 한도 20 → 40",
+    "detail": "각 재료를 하루 최대 40개까지 구매 가능",
     "cost": 60000,
-    "effect": { "ingredientCapBonus": 40 }
+    "effect": { "ingredientPurchaseLimit": 40 }
   },
   {
     "id": "plated_expand",

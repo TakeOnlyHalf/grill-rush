@@ -9,7 +9,6 @@ import {
   type Ticker,
 } from 'pixi.js'
 import ingredientsData from '../../data/ingredients.json'
-import { DAILY_INGREDIENT_PURCHASE_LIMIT } from '../../state/actions'
 import { MART_BACKGROUND_ART } from '../../utils/assets'
 import { layoutPrepUiWorld } from '../layoutPrepUi'
 
@@ -48,8 +47,7 @@ export interface IngredientMarketState {
   owned: Record<string, number>
   dailyPurchases: Record<string, number>
   allowedIds: string[]
-  capacity: number
-  currentIngredientCount: number
+  purchaseLimit: number
 }
 
 export interface IngredientMarketHandle {
@@ -101,8 +99,7 @@ export function createIngredientMarketScene(
     owned: { ...initial.owned },
     dailyPurchases: { ...initial.dailyPurchases },
     allowedIds: [...initial.allowedIds],
-    capacity: initial.capacity,
-    currentIngredientCount: initial.currentIngredientCount,
+    purchaseLimit: initial.purchaseLimit,
   }
 
   const root = new Container()
@@ -166,35 +163,6 @@ export function createIngredientMarketScene(
     placeBgSprite()
   }
 
-  const CAPACITY_BADGE_X = 24
-  const CAPACITY_BADGE_W = 220
-  const capacityBg = new Graphics()
-  drawRoundRect(capacityBg, 0, 0, CAPACITY_BADGE_W, 36, 10, M.cashBg, 0.88)
-  capacityBg.x = CAPACITY_BADGE_X
-  capacityBg.y = 132
-  world.addChild(capacityBg)
-
-  const capacityText = new Text({
-    text: `보유 재료 ${state.currentIngredientCount} / ${state.capacity}`,
-    resolution: textRes,
-    style: {
-      fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
-      fontSize: 16,
-      fontWeight: 'bold',
-      fill: M.chalk,
-    },
-  })
-  capacityText.anchor.set(0.5)
-  capacityText.x = CAPACITY_BADGE_X + CAPACITY_BADGE_W / 2
-  capacityText.y = 150
-  world.addChild(capacityText)
-
-  function redrawCapacity() {
-    capacityText.text = `보유 재료 ${state.currentIngredientCount} / ${state.capacity}`
-    capacityText.style.fill =
-      state.currentIngredientCount >= state.capacity ? 0xffc078 : M.chalk
-  }
-
   const GRID_COLS = 5
   const CARD_W = 152
   const CARD_H = 118
@@ -236,16 +204,16 @@ export function createIngredientMarketScene(
     const { item } = slot
     const allowed = isAllowed(item.id)
     const purchasedToday = getPurchasedToday(item.id)
-    const limitReached = purchasedToday >= DAILY_INGREDIENT_PURCHASE_LIMIT
-    const hasCapacity = state.currentIngredientCount < state.capacity
+    const purchaseLimit = state.purchaseLimit
+    const limitReached = purchasedToday >= purchaseLimit
     const hasCash = state.cash >= item.unitCost
-    const canBuy = allowed && !limitReached && hasCapacity && hasCash
+    const canBuy = allowed && !limitReached && hasCash
 
     slot.ownedText.text = allowed
       ? `보유 ×${state.owned[item.id] ?? 0}`
       : '메뉴 미선택'
     slot.dailyText.text = allowed
-      ? `오늘 구매 ${Math.min(purchasedToday, DAILY_INGREDIENT_PURCHASE_LIMIT)} / ${DAILY_INGREDIENT_PURCHASE_LIMIT}`
+      ? `오늘 구매 ${Math.min(purchasedToday, purchaseLimit)} / ${purchaseLimit}`
       : ''
     slot.dailyText.style.fill = purchasedToday > 0 ? M.accent2 : M.text
     slot.lockOverlay.visible = !allowed
@@ -349,7 +317,7 @@ export function createIngredientMarketScene(
     slotRoot.addChild(ownedText)
 
     const dailyText = new Text({
-      text: `오늘 구매 0 / ${DAILY_INGREDIENT_PURCHASE_LIMIT}`,
+      text: `오늘 구매 0 / ${state.purchaseLimit}`,
       resolution: textRes,
       style: {
         fontFamily: 'Segoe UI, Malgun Gothic, sans-serif',
@@ -418,8 +386,7 @@ export function createIngredientMarketScene(
     slotRoot.on('pointerover', () => {
       const canHover =
         isAllowed(item.id) &&
-        getPurchasedToday(item.id) < DAILY_INGREDIENT_PURCHASE_LIMIT &&
-        state.currentIngredientCount < state.capacity &&
+        getPurchasedToday(item.id) < state.purchaseLimit &&
         state.cash >= item.unitCost
       if (!canHover) return
       slot.hover = true
@@ -437,11 +404,7 @@ export function createIngredientMarketScene(
     })
     slotRoot.on('pointerdown', () => {
       if (!isAllowed(item.id)) return
-      if (getPurchasedToday(item.id) >= DAILY_INGREDIENT_PURCHASE_LIMIT) return
-      if (state.currentIngredientCount >= state.capacity) {
-        showPurchaseFeedback(slot, '보관 공간이 부족합니다', M.accent)
-        return
-      }
+      if (getPurchasedToday(item.id) >= state.purchaseLimit) return
       if (state.cash < item.unitCost) {
         showPurchaseFeedback(slot, '돈이 부족합니다', M.accent)
         return
@@ -450,9 +413,7 @@ export function createIngredientMarketScene(
       state.cash -= item.unitCost
       state.owned[item.id] = (state.owned[item.id] ?? 0) + 1
       state.dailyPurchases[item.id] = getPurchasedToday(item.id) + 1
-      state.currentIngredientCount += 1
       cashText.text = formatWon(state.cash)
-      redrawCapacity()
       slots.forEach(redrawCard)
 
       showPurchaseFeedback(slot, '구매 완료', M.buy)
@@ -522,11 +483,7 @@ export function createIngredientMarketScene(
         state.dailyPurchases = { ...next.dailyPurchases }
       }
       if (next.allowedIds !== undefined) state.allowedIds = [...next.allowedIds]
-      if (next.capacity !== undefined) state.capacity = next.capacity
-      if (next.currentIngredientCount !== undefined) {
-        state.currentIngredientCount = next.currentIngredientCount
-      }
-      redrawCapacity()
+      if (next.purchaseLimit !== undefined) state.purchaseLimit = next.purchaseLimit
       slots.forEach(redrawCard)
     },
     destroy() {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { getGrillSlotCount } from '../grill/grillUpgrades'
 import { createInitialState } from './initialState'
 import { gameReducer, type GameState } from './gameReducer'
-import { getIngredientCapacity } from '../utils/ingredientStorage'
+import { getIngredientPurchaseLimit } from '../utils/ingredientStorage'
 
 function nightState(cash = 1_000_000) {
   return {
@@ -206,16 +206,16 @@ describe('BUY_INGREDIENT', () => {
     expect(initial).toEqual(snapshot)
   })
 
-  it('allows a purchase that lands exactly on the base capacity', () => {
-    const initial = prepState({ sausage: 39 })
+  it('allows buying past the old total capacity when per-ingredient room remains', () => {
+    const initial = prepState({ sausage: 40 })
     const purchased = buyIngredient(initial)
 
-    expect(purchased.ingredients).toEqual({ sausage: 39, egg: 1 })
-    expect(getIngredientCapacity(purchased.upgrades)).toBe(40)
+    expect(purchased.ingredients).toEqual({ sausage: 40, egg: 1 })
+    expect(getIngredientPurchaseLimit(purchased.upgrades)).toBe(20)
   })
 
-  it('rejects a purchase when base storage is full', () => {
-    const initial = prepState({ sausage: 40 })
+  it('rejects a purchase when the per-ingredient daily limit is full', () => {
+    const initial = prepState({}, [], ['egg_bacon'], 1_000_000, { egg: 20 })
     const snapshot = structuredClone(initial)
 
     expect(buyIngredient(initial)).toBe(initial)
@@ -236,14 +236,17 @@ describe('BUY_INGREDIENT', () => {
     expect(buyIngredient(initial, 'corn')).toBe(initial)
   })
 
-  it('supports exact capacity and rejection at the upgraded storage boundary', () => {
-    const at79 = prepState({ sausage: 79 }, ['ingredient_storage'])
-    const at80 = buyIngredient(at79)
+  it('allows 40 purchases of one ingredient after the storage upgrade', () => {
+    const initial = prepState({}, ['ingredient_storage'], ['egg_bacon'], 1_000_000)
+    let purchased = initial
+    for (let count = 0; count < 40; count += 1) {
+      purchased = buyIngredient(purchased)
+    }
 
-    expect(getIngredientCapacity(at80.upgrades)).toBe(80)
-    expect(at80.ingredients).toEqual({ sausage: 79, egg: 1 })
-
-    expect(buyIngredient(at80)).toBe(at80)
+    expect(getIngredientPurchaseLimit(purchased.upgrades)).toBe(40)
+    expect(purchased.ingredients.egg).toBe(40)
+    expect(purchased.dailyIngredientPurchases.egg).toBe(40)
+    expect(buyIngredient(purchased)).toBe(purchased)
   })
 
   it('rejects malformed persisted daily counters', () => {
@@ -279,8 +282,8 @@ describe('BUY_INGREDIENT', () => {
     expect(reselected.dailyIngredientPurchases).toEqual({ egg: 5 })
   })
 
-  it('does not delete over-capacity inventory from an existing save', () => {
-    const initial = prepState({ egg: 41 })
+  it('does not delete over-limit inventory from an existing save', () => {
+    const initial = prepState({ egg: 41 }, [], ['egg_bacon'], 1_000_000, { egg: 20 })
     expect(buyIngredient(initial)).toBe(initial)
     expect(initial.ingredients).toEqual({ egg: 41 })
   })
@@ -305,10 +308,10 @@ describe('ingredient storage upgrade persistence', () => {
     ).toBe(purchased)
   })
 
-  it('derives capacity from persisted upgrades across load and day changes', () => {
+  it('derives purchase limit from persisted upgrades across load and day changes', () => {
     const saved = {
       ...nightState(),
-      ingredients: { egg: 80 },
+      ingredients: { egg: 40 },
       upgrades: ['ingredient_storage'],
     }
     const loaded = gameReducer(createInitialState(), {
@@ -317,15 +320,15 @@ describe('ingredient storage upgrade persistence', () => {
     })
     const nextDay = gameReducer(loaded, { type: 'NEXT_DAY' })
 
-    expect(getIngredientCapacity(loaded.upgrades)).toBe(80)
-    expect(loaded.ingredients).toEqual({ egg: 80 })
+    expect(getIngredientPurchaseLimit(loaded.upgrades)).toBe(40)
+    expect(loaded.ingredients).toEqual({ egg: 40 })
     expect(nextDay.ingredients).toEqual({})
     expect(nextDay.dailyIngredientPurchases).toEqual({})
     expect(nextDay.upgrades).toEqual(['ingredient_storage'])
-    expect(getIngredientCapacity(nextDay.upgrades)).toBe(80)
+    expect(getIngredientPurchaseLimit(nextDay.upgrades)).toBe(40)
   })
 
-  it('starts a new game with the base capacity', () => {
+  it('starts a new game with the base purchase limit', () => {
     const started = gameReducer(
       { ...createInitialState(), upgrades: ['ingredient_storage'] },
       { type: 'START_GAME' },
@@ -333,7 +336,7 @@ describe('ingredient storage upgrade persistence', () => {
 
     expect(started.upgrades).toEqual([])
     expect(started.dailyIngredientPurchases).toEqual({})
-    expect(getIngredientCapacity(started.upgrades)).toBe(40)
+    expect(getIngredientPurchaseLimit(started.upgrades)).toBe(20)
   })
 })
 
