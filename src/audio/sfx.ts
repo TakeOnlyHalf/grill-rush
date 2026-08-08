@@ -32,6 +32,22 @@ const FILE: Record<SfxId, string> = {
 
 const howls = new Map<SfxId, Howl>()
 
+function clampVolume(v: number): number {
+  if (!Number.isFinite(v)) return 0
+  return Math.min(1, Math.max(0, v))
+}
+
+/** BGM과 동일한 마스터 볼륨(0~1). 개별 SFX 기본 볼륨에 곱한다. */
+let masterVolume = clampVolume(loadSettings().bgmVolume)
+
+function baseVolume(id: SfxId): number {
+  return VOLUME[id] ?? VOLUME.default
+}
+
+function effectiveVolume(id: SfxId): number {
+  return baseVolume(id) * masterVolume
+}
+
 export function shouldPlaySfx(
   enabled: boolean,
   visibilityState: DocumentVisibilityState | undefined,
@@ -52,7 +68,7 @@ function getHowl(id: SfxId): Howl {
   howl = new Howl({
     src: [publicUrl(`audio/sfx/${FILE[id]}`)],
     preload: true,
-    volume: VOLUME[id] ?? VOLUME.default,
+    volume: effectiveVolume(id),
     html5: false,
   })
   howls.set(id, howl)
@@ -65,12 +81,27 @@ function canPlayNow(): boolean {
   return shouldPlaySfx(loadSettings().sfx, visibilityState)
 }
 
+/** 마스터 볼륨(BGM 슬라이더와 공유)을 효과음에 반영한다. */
+export function setSfxMasterVolume(v: number): void {
+  masterVolume = clampVolume(v)
+  for (const [id, howl] of howls) {
+    howl.volume(effectiveVolume(id))
+  }
+}
+
+export function getSfxMasterVolume(): number {
+  return masterVolume
+}
+
 /** 짧은 효과음 재생 (겹침 허용). 실패해도 게임 진행을 막지 않는다. */
 export function playSfx(id: SfxId): boolean {
   if (!canPlayNow()) return false
+  if (masterVolume <= 0.001) return false
   resumeContext()
   try {
-    getHowl(id).play()
+    const howl = getHowl(id)
+    howl.volume(effectiveVolume(id))
+    howl.play()
     return true
   } catch {
     return false

@@ -114,7 +114,7 @@ export default function BgmMuteToggle({ variant = 'floating' }: BgmMuteTogglePro
           max={100}
           step={1}
           value={Math.round(vol * 100)}
-          aria-label="BGM 볼륨"
+          aria-label="BGM·효과음 볼륨"
           tabIndex={open ? 0 : -1}
           onChange={(e) => onVolumeInput(Number(e.target.value) / 100)}
           onPointerDown={(e) => {

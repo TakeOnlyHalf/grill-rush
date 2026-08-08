@@ -118,15 +118,5 @@
     "detail": "완성 트레이 10 → 15칸",
     "cost": 70000,
     "effect": { "platedSlots": 5 }
-  },
-  {
-    "id": "scroll_test_b",
-    "name": "테스트 업그레이드 B",
-    "category": "promo",
-    "icon": "🧪",
-    "description": "스크롤 확인용 임시 항목",
-    "detail": "스크롤 확인용 (나중에 삭제)",
-    "cost": 10000,
-    "effect": {}
   }
 ]

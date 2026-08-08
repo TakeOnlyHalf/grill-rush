@@ -1,7 +1,7 @@
 export interface GameSettings {
   bgm: boolean
   sfx: boolean
-  /** BGM 볼륨 0~1 */
+  /** BGM·효과음 공통 볼륨 0~1 */
   bgmVolume: number
 }
 

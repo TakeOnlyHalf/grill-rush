@@ -7,7 +7,7 @@
   { "id": "chicken", "name": "치킨", "category": "육류", "unitCost": 1500, "icon": "🍗", "grillSec": 6 },
   { "id": "shrimp", "name": "새우", "category": "해산물", "unitCost": 1800, "icon": "🦐", "grillSec": 3 },
   { "id": "steak", "name": "스테이크", "category": "육류", "unitCost": 2800, "icon": "🥩", "grillSec": 8 },
-  { "id": "bun", "name": "번", "category": "곡류", "unitCost": 300, "icon": "🍞", "grillSec": 1 },
+  { "id": "bun", "name": "번", "category": "곡류", "unitCost": 300, "icon": "🍞", "grillSec": 2 },
   { "id": "veggie", "name": "그릴 채소", "category": "채소", "unitCost": 350, "icon": "🥗", "grillSec": 3 },
   { "id": "cheese", "name": "치즈", "category": "유제품", "unitCost": 500, "icon": "🧀", "grillSec": 0 },
   { "id": "sauce", "name": "BBQ 소스", "category": "소스", "unitCost": 200, "icon": "🥫", "grillSec": 0 }

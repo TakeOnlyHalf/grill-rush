@@ -1,6 +1,7 @@
 import { Howl, Howler } from 'howler'
 import { publicUrl } from '../utils/assets'
 import { loadSettings } from '../utils/settings'
+import { setSfxMasterVolume } from './sfx'
 
 export type BgmId = 'title' | 'lobby' | 'store' | 'cooking' | 'none'
 
@@ -322,10 +323,11 @@ function applyVolumeToHowl(howl: Howl) {
   howl.volume(volume)
 }
 
-/** BGM 볼륨 0~1. 재생 중이면 즉시 반영. */
+/** BGM 볼륨 0~1. 재생 중이면 즉시 반영. 효과음 마스터 볼륨도 같이 맞춘다. */
 export function setBgmVolume(v: number): void {
   volume = clampVolume(v)
   notifyVolume()
+  setSfxMasterVolume(volume)
   // 활성 트랙만 fade 취소 후 볼륨 적용 (슬라이더 ↔ fade 충돌 방지)
   if (activeKey) {
     const howl = howls.get(activeKey)
