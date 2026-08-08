@@ -26,6 +26,17 @@ export const qualityByResult: Record<PreparedCookResult, PreparedQuality> = {
   perfect: 3,
 }
 
+/** 완성 트레이 최대 표시 칸 수 */
+export const MAX_PLATED_ITEMS = 10
+
+export function getPlatedDisplayCount(preparedIngredients: PreparedIngredient[]): number {
+  return groupPlatedIngredients(preparedIngredients).length
+}
+
+export function isPlatedTrayFull(preparedIngredients: PreparedIngredient[]): boolean {
+  return getPlatedDisplayCount(preparedIngredients) >= MAX_PLATED_ITEMS
+}
+
 /**
  * 유효한 조리 결과만 준비대에 넣는다. 서빙은 별도의 SERVE_ORDER 액션으로만 수행한다.
  */
@@ -34,6 +45,7 @@ export function collectPreparedIngredient(
   collected: CollectedIngredientInput,
 ): GameState {
   if (!isServableResult(collected.cookResult)) return state
+  if (isPlatedTrayFull(state.preparedIngredients)) return state
 
   const prepared: PreparedIngredient = {
     id: `prepared-${state.nextPreparedIngredientId}`,

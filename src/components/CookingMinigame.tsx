@@ -3,6 +3,8 @@ import { useGame } from '../state/GameContext'
 import {
   collectGrillSlot,
   createIdleGrillSlots,
+  getCookProgress,
+  getCookResult,
   placeIngredient,
   resolveGrillSlot,
   type GrillSlot,
@@ -27,7 +29,7 @@ import { playPerfectTimingAlarm, playSfx } from '../audio/sfx'
 import { grillIngredients } from '../grill/grillIngredients'
 import GrillSlots from './GrillSlots'
 import { ActionTypes } from '../state/actions'
-import { getOrderFulfillment, groupPlatedIngredients, qualityByResult } from '../state/orderFulfillment'
+import { getOrderFulfillment, groupPlatedIngredients, isPlatedTrayFull, MAX_PLATED_ITEMS, qualityByResult } from '../state/orderFulfillment'
 import ingredientData from '../data/ingredients.json'
 import menuData from '../data/menus.json'
 import { INGREDIENT_FOOD_STYLE, MENU_FOOD_STYLE } from '../utils/foodIcons'
@@ -65,6 +67,8 @@ export default function CookingMinigame() {
     createIdleGrillSlots(getGrillSlotCount(state.upgrades)),
   )
   const slotsRef = useRef(slots)
+  const preparedIngredientsRef = useRef(state.preparedIngredients)
+  preparedIngredientsRef.current = state.preparedIngredients
   const [now, setNow] = useState(() => Date.now())
   const [selectedPreparedIds, setSelectedPreparedIds] = useState<string[]>([])
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null)
@@ -89,10 +93,11 @@ export default function CookingMinigame() {
     const id = setInterval(() => {
       const t = Date.now()
       const resolvedSlots = slotsRef.current.map((slot) => resolveGrillSlot(slot, t))
+      const trayFull = isPlatedTrayFull(preparedIngredientsRef.current)
       const autoAssistTick = runAutoAssistTick(
         resolvedSlots,
         t,
-        autoCollectIntervalMs,
+        trayFull ? null : autoCollectIntervalMs,
         autoAssistTimerRef.current,
         typeof document === 'undefined' || document.visibilityState === 'visible',
       )
@@ -210,7 +215,19 @@ export default function CookingMinigame() {
   }
 
   const handleCollect = (slot: GrillSlot) => {
-    const result = collectGrillSlot(slotsRef.current, slot, Date.now())
+    const nowMs = Date.now()
+    const progress = getCookProgress(slot, nowMs)
+    const cookResult = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
+    // 완성 트레이가 가득 차면 서빙 가능 결과는 회수하지 않는다. 탄 재료는 치울 수 있다.
+    if (
+      cookResult !== 'burnt' &&
+      cookResult !== 'raw' &&
+      isPlatedTrayFull(state.preparedIngredients)
+    ) {
+      return
+    }
+
+    const result = collectGrillSlot(slotsRef.current, slot, nowMs)
     if (!result.collected) return
     clearSlotAlert(slot.id)
     if (result.collected.result !== 'burnt') playSfx('cooking_done')
@@ -394,9 +411,16 @@ export default function CookingMinigame() {
                 </li>
               )
             })}
-            <li className="plated-item plated-item--empty" aria-hidden>
-              <span className="plated-item-icon">🍽️</span>
-            </li>
+            {Array.from(
+              { length: Math.max(0, MAX_PLATED_ITEMS - platedDisplayItems.length) },
+              (_, index) => (
+                <li key={`plated-empty-${index}`} aria-hidden>
+                  <div className="plated-item plated-item--empty">
+                    <span className="plated-item-icon">🍽️</span>
+                  </div>
+                </li>
+              ),
+            )}
           </ul>
           <div className="plated-actions">
             <PlatedActionButton
