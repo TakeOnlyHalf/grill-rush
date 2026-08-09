@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚚 GRILL RUSH
+![Images](https://github.com/TakeOnlyHalf/grill-rush/blob/main/public/images/logo.webp)
 
 ### *그릴 위의 2초가 모든 걸 결정한다.*
 
