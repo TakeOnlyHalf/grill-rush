@@ -4,7 +4,7 @@ export type Phase = 'title' | 'story' | 'prep' | 'open' | 'settle' | 'night' | '
 
 export type WeatherId = 'sunny' | 'cloudy' | 'rain' | 'snow' | 'clear'
 
-export type EndingId = 'legend' | 'popular' | 'local' | 'survive' | 'closed'
+export type EndingId = 'bad' | 'normal' | 'great'
 
 export type MenuId = string
 export type LocationId = string

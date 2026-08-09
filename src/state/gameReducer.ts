@@ -324,6 +324,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ],
       })
 
+      // 결산 후 자금이 마이너스면 즉시 배드 엔딩
+      if (settled.cash < 0) {
+        return {
+          ...settled,
+          phase: 'ending',
+          endingId: 'bad',
+        }
+      }
+
       // Day 1만 야간(트럭 관리실). Day 2+는 정산 후 바로 다음날.
       if (state.day === 1) {
         return { ...settled, phase: 'night' }
@@ -361,7 +370,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         phase: 'ending',
-        endingId: action.payload ?? resolveEnding({ cash: state.cash, fame: state.fame }),
+        endingId: action.payload ?? resolveEnding({ cash: state.cash }),
       }
     }
 
@@ -384,7 +393,7 @@ function advanceToNextDay(state: GameState): GameState {
     return {
       ...state,
       phase: 'ending',
-      endingId: resolveEnding({ cash: state.cash, fame: state.fame }),
+      endingId: resolveEnding({ cash: state.cash }),
     }
   }
 

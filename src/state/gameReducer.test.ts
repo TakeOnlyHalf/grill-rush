@@ -447,10 +447,33 @@ describe('daily ingredient lifecycle', () => {
     const opened = gameReducer(prepState(), { type: 'START_OPEN' })
     const settled = gameReducer(opened, { type: 'END_OPEN' })
     const night = gameReducer(settled, { type: 'CONFIRM_SETTLE' })
-    const finalNight = { ...night, day: night.maxDays }
+    const finalNight = { ...night, day: night.maxDays, cash: 500_000 }
+    const ended = gameReducer(finalNight, { type: 'NEXT_DAY' })
 
     expect(night.phase).toBe('night')
     expect(night.history[0].costs.ingredients).toBe(0)
-    expect(gameReducer(finalNight, { type: 'NEXT_DAY' }).phase).toBe('ending')
+    expect(ended.phase).toBe('ending')
+    expect(ended.endingId).toBe('normal')
+  })
+
+  it('goes to the bad ending immediately when settlement cash goes negative', () => {
+    const settleState = {
+      ...createInitialState(),
+      phase: 'settle' as const,
+      day: 3,
+      cash: 1_000,
+      dailySales: 0,
+      dailyTips: 0,
+      dailyCosts: {
+        ingredients: 0,
+        rent: 5_000,
+        waste: 0,
+        truck: 5_000,
+      },
+    }
+    const ended = gameReducer(settleState, { type: 'CONFIRM_SETTLE' })
+    expect(ended.phase).toBe('ending')
+    expect(ended.endingId).toBe('bad')
+    expect(ended.cash).toBeLessThan(0)
   })
 })
