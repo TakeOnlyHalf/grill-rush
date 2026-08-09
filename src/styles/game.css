@@ -2020,11 +2020,12 @@ body:has(.phase-open) {
 
 .grill-slot-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(2, 1fr);
   gap: 0.5rem;
   flex: 1 1 auto;
   min-height: 0;
+  overflow: visible;
 }
 
 .grill-slot-card {
@@ -2043,6 +2044,8 @@ body:has(.phase-open) {
   font: inherit;
   color: #fff8ec;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  /* <button> 기본 클리핑이 우측 슬롯 점선을 잘라먹지 않게 */
+  overflow: visible;
 }
 
 .grill-slot-card--idle {
@@ -2061,6 +2064,7 @@ body:has(.phase-open) {
 
 .grill-slot-card--cooking {
   cursor: pointer;
+  overflow: visible;
 }
 
 .grill-slot-card--cooking:hover {
@@ -2073,6 +2077,7 @@ body:has(.phase-open) {
   align-items: center;
   gap: 0.4rem;
   width: min(96%, 8.8rem);
+  overflow: visible;
 }
 
 .grill-slot-food {
@@ -2100,6 +2105,7 @@ body:has(.phase-open) {
   display: block;
   width: 100%;
   height: 0.72rem;
+  overflow: visible;
 }
 
 .grill-slot-bar-track {
@@ -2124,14 +2130,21 @@ body:has(.phase-open) {
 
 .grill-slot-bar-mark {
   position: absolute;
-  top: -4px;
-  bottom: -4px;
-  z-index: 1;
-  width: 0;
-  border-left: 1.5px dashed rgba(255, 255, 255, 0.95);
-  transform: translateX(-50%);
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 2px;
+  margin: 0;
+  border: 0;
+  border-radius: 1px;
+  /* width 2px 기준 중앙 정렬 — translate/filter 없이 우측 슬롯 클리핑 방지 */
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.98) 0 2px,
+    transparent 2px 4px
+  );
+  box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.55);
   pointer-events: none;
-  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.8));
 }
 
 /* 회색(덜익음) → 노랑(좋음) → 초록(완벽) → 빨강(위험) → 검정(탐) */
@@ -2292,6 +2305,9 @@ body:has(.phase-open) {
 .cooking-col--grill {
   flex: 0 0 48%;
   padding: 0.35rem 0.4rem 0;
+  position: relative;
+  z-index: 1;
+  overflow: visible;
 }
 
 .cooking-col--stock .cooking-col-title {

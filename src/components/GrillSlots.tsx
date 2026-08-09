@@ -123,7 +123,7 @@ export default function GrillSlots({
                   <span
                     key={mark}
                     className="grill-slot-bar-mark"
-                    style={{ left: `${mark * 100}%` }}
+                    style={{ left: `calc(${mark * 100}% - 1px)` }}
                   />
                 ))}
               </span>
