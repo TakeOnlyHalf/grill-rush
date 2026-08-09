@@ -1957,31 +1957,6 @@ body:has(.phase-open) {
   overflow: hidden;
 }
 
-.debug-pause-btn {
-  position: absolute;
-  right: 0.75rem;
-  bottom: 0.75rem;
-  z-index: 80;
-  padding: 0.4rem 0.7rem;
-  border: 1px dashed #ffcf6e;
-  border-radius: var(--radius-sm);
-  background: rgba(20, 14, 8, 0.78);
-  color: #ffe1a8;
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.debug-pause-btn:hover {
-  background: rgba(20, 14, 8, 0.92);
-}
-
-.debug-pause-btn.is-paused {
-  border-color: var(--danger);
-  color: #ffd6cf;
-}
-
 /*
  * open-phase-layout-ui.webp(1672x941) 전체를 한 프레임으로 사용한다.
  * 위쪽 얇은 선반 바(0~6.8%) · 투명 구간(6.8%~46.33%, .street-view) ·
