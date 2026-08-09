@@ -1,12 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ingredientData from '../data/ingredients.json'
 import menus from '../data/menus.json'
+import { playSfx } from '../audio/sfx'
 import { ActionTypes } from '../state/actions'
 import { useGame } from '../state/GameContext'
 import {
   getOrderFulfillment,
   type OrderIngredientProgress,
 } from '../state/orderFulfillment'
+import {
+  createServeAssistReadyState,
+  runServeAssistTick,
+  type ServeAssistTimerState,
+} from '../grill/serveAssist'
+import {
+  getServeAssistIntervalMs,
+  getServeAssistLevel,
+} from '../grill/grillUpgrades'
 import {
   AVATAR_BACKGROUND_SIZE,
   getAvatarBackgroundPosition,
@@ -16,6 +26,8 @@ import {
 import { INGREDIENT_FOOD_STYLE, MENU_FOOD_STYLE } from '../utils/foodIcons'
 
 const ingredientById = new Map(ingredientData.map((ingredient) => [ingredient.id, ingredient]))
+const menuById = new Map(menus.map((menu) => [menu.id, menu]))
+const SERVE_ASSIST_FEEDBACK_MS = 1_300
 
 function menuIngredientRows(
   menu: (typeof menus)[number] | undefined,
@@ -47,6 +59,18 @@ function menuIngredientRows(
 export default function CustomerQueue() {
   const { state, dispatch } = useGame()
   const [avatarSheetUrl, setAvatarSheetUrl] = useState<string | null>(null)
+  const serveAssistLevel = getServeAssistLevel(state.upgrades)
+  const serveAssistIntervalMs = getServeAssistIntervalMs(state.upgrades)
+  const stateRef = useRef(state)
+  stateRef.current = state
+  const serveAssistTimerRef = useRef<ServeAssistTimerState>(
+    createServeAssistReadyState(serveAssistIntervalMs, Date.now()),
+  )
+  const [serveAssistFeedback, setServeAssistFeedback] = useState<{
+    id: number
+    message: string
+  } | null>(null)
+  const serveAssistFeedbackTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -58,9 +82,67 @@ export default function CustomerQueue() {
     }
   }, [])
 
+  useEffect(() => {
+    serveAssistTimerRef.current = createServeAssistReadyState(
+      serveAssistIntervalMs,
+      Date.now(),
+    )
+    if (serveAssistIntervalMs === null) return undefined
+
+    const id = window.setInterval(() => {
+      const now = Date.now()
+      const tick = runServeAssistTick(
+        stateRef.current,
+        now,
+        serveAssistIntervalMs,
+        serveAssistTimerRef.current,
+        typeof document === 'undefined' || document.visibilityState === 'visible',
+      )
+      serveAssistTimerRef.current = tick.timer
+      if (!tick.target) return
+
+      dispatch({
+        type: ActionTypes.SERVE_ORDER,
+        payload: {
+          orderId: tick.target.orderId,
+          customerId: tick.target.customerId,
+        },
+      })
+      playSfx('serve_dish')
+
+      const menuName = menuById.get(tick.target.menuId)?.name ?? tick.target.menuId
+      setServeAssistFeedback((current) => ({
+        id: (current?.id ?? 0) + 1,
+        message: `🤖 서빙 보조: ${menuName} 주문을 자동 제공했습니다.`,
+      }))
+      if (serveAssistFeedbackTimerRef.current !== null) {
+        window.clearTimeout(serveAssistFeedbackTimerRef.current)
+      }
+      serveAssistFeedbackTimerRef.current = window.setTimeout(() => {
+        setServeAssistFeedback(null)
+        serveAssistFeedbackTimerRef.current = null
+      }, SERVE_ASSIST_FEEDBACK_MS)
+    }, 200)
+
+    return () => {
+      window.clearInterval(id)
+      if (serveAssistFeedbackTimerRef.current !== null) {
+        window.clearTimeout(serveAssistFeedbackTimerRef.current)
+        serveAssistFeedbackTimerRef.current = null
+      }
+    }
+  }, [dispatch, serveAssistIntervalMs])
+
   return (
     <div className="queue-strip-panel">
-      <h3 className="queue-strip-title">대기 주문 {state.customers.length}</h3>
+      <h3 className="queue-strip-title">
+        대기 주문 {state.customers.length}
+        {serveAssistIntervalMs !== null ? (
+          <span className="queue-serve-assist-status">
+            {' '}· 서빙 보조 Lv.{serveAssistLevel} · {serveAssistIntervalMs / 1_000}초
+          </span>
+        ) : null}
+      </h3>
       {state.customers.length === 0 ? (
         <p className="muted">손님이 아직 없습니다.</p>
       ) : (
@@ -195,6 +277,17 @@ export default function CustomerQueue() {
       {state.lastCustomerLeaveFeedback ? (
         <div key={state.lastCustomerLeaveFeedback.id} className="leave-feedback" role="status">
           {state.lastCustomerLeaveFeedback.customerName} 손님이 기다리다 떠났습니다.
+        </div>
+      ) : null}
+      {serveAssistFeedback ? (
+        <div
+          key={serveAssistFeedback.id}
+          className="auto-collect-feedback"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {serveAssistFeedback.message}
         </div>
       ) : null}
     </div>

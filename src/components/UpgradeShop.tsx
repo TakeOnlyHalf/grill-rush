@@ -1,22 +1,28 @@
 import upgrades from '../data/upgrades.json'
 import {
   getDisplayedGrillExpansionUpgrade,
+  getDisplayedHeatControlUpgrade,
   GRILL_EXPANSION_UPGRADE_IDS,
+  HEAT_CONTROL_UPGRADE_IDS,
 } from '../grill/grillUpgrades'
 import { useGame } from '../state/GameContext'
 import { ActionTypes } from '../state/actions'
 import { playSfx } from '../audio/sfx'
 
 const grillExpansionUpgradeIdSet = new Set<string>(GRILL_EXPANSION_UPGRADE_IDS)
+const heatControlUpgradeIdSet = new Set<string>(HEAT_CONTROL_UPGRADE_IDS)
 
 /** Storybook / 간단 목록용. 실제 야간 UI는 NightPhase. */
 export default function UpgradeShop() {
   const { state, dispatch } = useGame()
   const displayedGrillExpansion = getDisplayedGrillExpansionUpgrade(state.upgrades)
+  const displayedHeatControl = getDisplayedHeatControlUpgrade(state.upgrades)
   const displayedUpgrades = upgrades.filter(
     (upgrade) =>
-      !grillExpansionUpgradeIdSet.has(upgrade.id) ||
-      upgrade.id === displayedGrillExpansion?.id,
+      (!grillExpansionUpgradeIdSet.has(upgrade.id) ||
+        upgrade.id === displayedGrillExpansion?.id) &&
+      (!heatControlUpgradeIdSet.has(upgrade.id) ||
+        upgrade.id === displayedHeatControl?.id),
   )
 
   return (

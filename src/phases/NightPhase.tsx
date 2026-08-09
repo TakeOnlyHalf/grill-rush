@@ -13,9 +13,13 @@ import {
   getCookTimeFactor,
   getDisplayedAutoAssistUpgrade,
   getDisplayedGrillExpansionUpgrade,
+  getDisplayedHeatControlUpgrade,
   getGrillSlotCount,
+  getPerfectWindowStart,
   GRILL_EXPANSION_UPGRADE_IDS,
+  HEAT_CONTROL_UPGRADE_IDS,
 } from '../grill/grillUpgrades'
+import { PERFECT_WINDOW_END } from '../grill/grillSlots'
 import { getIngredientPurchaseLimit } from '../utils/ingredientStorage'
 import { getUnlockedPlatedCapacity } from '../state/orderFulfillment'
 
@@ -38,9 +42,15 @@ type UpgradeDef = (typeof upgradesData)[number] & {
 const upgrades = upgradesData as UpgradeDef[]
 const grillExpansionUpgradeIdSet = new Set<string>(GRILL_EXPANSION_UPGRADE_IDS)
 const autoAssistUpgradeIdSet = new Set<string>(AUTO_ASSIST_UPGRADE_IDS)
+const heatControlUpgradeIdSet = new Set<string>(HEAT_CONTROL_UPGRADE_IDS)
 const maxGrillExpansionId =
   GRILL_EXPANSION_UPGRADE_IDS[GRILL_EXPANSION_UPGRADE_IDS.length - 1]
 const maxAutoAssistId = AUTO_ASSIST_UPGRADE_IDS[AUTO_ASSIST_UPGRADE_IDS.length - 1]
+const maxHeatControlId = HEAT_CONTROL_UPGRADE_IDS[HEAT_CONTROL_UPGRADE_IDS.length - 1]
+
+function formatPerfectWindow(start: number): string {
+  return `${Math.round(start * 100)}~${Math.round(PERFECT_WINDOW_END * 100)}%`
+}
 
 const CATEGORIES: { id: UpgradeCategory; label: string; icon: string }[] = [
   { id: 'all', label: '전체', icon: '▦' },
@@ -62,16 +72,18 @@ function baseTruckStats(owned: string[]) {
     Math.round((1 - getCookTimeFactor(owned)) * 100),
   )
   const visitBonus = owned.includes('signboard') ? 10 : 0
-  const autoCollectIntervalMs = getAutoAssistIntervalMs(owned)
+  const autoServeIntervalMs = getAutoAssistIntervalMs(owned)
   const ingredientPurchaseLimit = getIngredientPurchaseLimit(owned)
   const platedCapacity = getUnlockedPlatedCapacity(owned)
+  const perfectWindowStart = getPerfectWindowStart(owned)
   return {
     slots,
     cookTimeReduction,
     visitBonus,
-    autoCollectIntervalMs,
+    autoServeIntervalMs,
     ingredientPurchaseLimit,
     platedCapacity,
+    perfectWindowStart,
   }
 }
 
@@ -110,13 +122,16 @@ export default function NightPhase({
   const filtered = useMemo(() => {
     const displayedGrillExpansion = getDisplayedGrillExpansionUpgrade(owned)
     const displayedAutoAssist = getDisplayedAutoAssistUpgrade(owned)
+    const displayedHeatControl = getDisplayedHeatControlUpgrade(owned)
     return upgrades.filter(
       (upgrade) =>
         (category === 'all' || upgrade.category === category) &&
         (!grillExpansionUpgradeIdSet.has(upgrade.id) ||
           upgrade.id === displayedGrillExpansion?.id) &&
         (!autoAssistUpgradeIdSet.has(upgrade.id) ||
-          upgrade.id === displayedAutoAssist?.id),
+          upgrade.id === displayedAutoAssist?.id) &&
+        (!heatControlUpgradeIdSet.has(upgrade.id) ||
+          upgrade.id === displayedHeatControl?.id),
     )
   }, [category, owned])
 
@@ -168,14 +183,14 @@ export default function NightPhase({
   if (preview.slots !== current.slots) {
     effectLines.push(`조리 슬롯 ${current.slots} → ${preview.slots}`)
   }
-  if (preview.autoCollectIntervalMs !== current.autoCollectIntervalMs) {
-    const currentLabel = current.autoCollectIntervalMs === null
+  if (preview.autoServeIntervalMs !== current.autoServeIntervalMs) {
+    const currentLabel = current.autoServeIntervalMs === null
       ? '미보유'
-      : `${current.autoCollectIntervalMs / 1_000}초`
-    const previewLabel = preview.autoCollectIntervalMs === null
+      : `${current.autoServeIntervalMs / 1_000}초`
+    const previewLabel = preview.autoServeIntervalMs === null
       ? '미보유'
-      : `${preview.autoCollectIntervalMs / 1_000}초`
-    effectLines.push(`조리 보조 ${currentLabel} → ${previewLabel} 재사용 대기`)
+      : `${preview.autoServeIntervalMs / 1_000}초`
+    effectLines.push(`서빙 보조 ${currentLabel} → ${previewLabel} 재사용 대기`)
   }
   if (preview.ingredientPurchaseLimit !== current.ingredientPurchaseLimit) {
     effectLines.push(
@@ -185,6 +200,11 @@ export default function NightPhase({
   if (preview.platedCapacity !== current.platedCapacity) {
     effectLines.push(
       `완성 칸 ${current.platedCapacity} → ${preview.platedCapacity}`,
+    )
+  }
+  if (preview.perfectWindowStart !== current.perfectWindowStart) {
+    effectLines.push(
+      `완벽 구간 ${formatPerfectWindow(current.perfectWindowStart)} → ${formatPerfectWindow(preview.perfectWindowStart)}`,
     )
   }
 
@@ -276,6 +296,10 @@ export default function NightPhase({
               <span>완성 칸</span>
               <strong>{current.platedCapacity}</strong>
             </li>
+            <li>
+              <span>완벽 구간</span>
+              <strong>{formatPerfectWindow(current.perfectWindowStart)}</strong>
+            </li>
           </ul>
         </aside>
 
@@ -286,6 +310,7 @@ export default function NightPhase({
             const selected = planned.includes(up.id)
             const isMaxExpansion = isOwned && up.id === maxGrillExpansionId
             const isMaxAutoAssist = isOwned && up.id === maxAutoAssistId
+            const isMaxHeatControl = isOwned && up.id === maxHeatControlId
             return (
               <button
                 key={up.id}
@@ -312,7 +337,7 @@ export default function NightPhase({
                     <span className="night-card__cost">
                       {isMaxExpansion
                         ? '최대 확장'
-                        : isMaxAutoAssist
+                        : isMaxAutoAssist || isMaxHeatControl
                           ? '최대 레벨'
                           : isOwned
                             ? '보유 중'
