@@ -2,6 +2,7 @@ import {
   didEnterPerfectWindow,
   getCookProgress,
   PERFECT_WINDOW_END,
+  PERFECT_WINDOW_START,
   type GrillSlot,
 } from './grillSlots'
 
@@ -31,6 +32,7 @@ export function updatePerfectTimingAlarms(
   previousState: PerfectTimingAlarmState,
   enabled: boolean,
   active = true,
+  perfectWindowStart: number = PERFECT_WINDOW_START,
 ): PerfectTimingAlarmUpdate {
   if (!enabled) return { state: {}, enteredSlotIds: [] }
 
@@ -57,7 +59,11 @@ export function updatePerfectTimingAlarms(
 
     const entered =
       !previous?.alerted &&
-      didEnterPerfectWindow(previous?.progress ?? 0, currentProgress)
+      didEnterPerfectWindow(
+        previous?.progress ?? 0,
+        currentProgress,
+        perfectWindowStart,
+      )
 
     if (entered) enteredSlotIds.push(slot.id)
     state[key] = {

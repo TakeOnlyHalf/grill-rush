@@ -27,10 +27,20 @@ describe('didEnterPerfectWindow', () => {
   it('does not change the existing cook result boundaries', () => {
     expect(getCookResult(0.39)).toBe('raw')
     expect(getCookResult(0.4)).toBe('good')
+    expect(getCookResult(0.69)).toBe('good')
     expect(getCookResult(0.7)).toBe('perfect')
     expect(getCookResult(0.9)).toBe('danger')
     expect(getCookResult(1)).toBe('danger')
     expect(getCookResult(1.01)).toBe('burnt')
+  })
+
+  it('widens the perfect window when a custom start is provided', () => {
+    expect(getCookResult(0.55, 0.6)).toBe('good')
+    expect(getCookResult(0.6, 0.6)).toBe('perfect')
+    expect(getCookResult(0.45, 0.5)).toBe('good')
+    expect(getCookResult(0.5, 0.5)).toBe('perfect')
+    expect(didEnterPerfectWindow(0.59, 0.61, 0.6)).toBe(true)
+    expect(didEnterPerfectWindow(0.59, 0.61, 0.7)).toBe(false)
   })
 })
 

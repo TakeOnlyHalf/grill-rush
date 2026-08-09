@@ -83,6 +83,27 @@ describe('BUY_UPGRADE', () => {
     expect(getGrillSlotCount(levelThree.upgrades)).toBe(6)
   })
 
+  it('requires and charges each heat control level in order', () => {
+    const initial = nightState()
+    expect(gameReducer(initial, {
+      type: 'BUY_UPGRADE',
+      payload: { upgradeId: 'heat_control_2' },
+    })).toBe(initial)
+
+    const levelOne = gameReducer(initial, {
+      type: 'BUY_UPGRADE',
+      payload: { upgradeId: 'heat_control' },
+    })
+    const levelTwo = gameReducer(levelOne, {
+      type: 'BUY_UPGRADE',
+      payload: { upgradeId: 'heat_control_2' },
+    })
+
+    expect(initial.cash - levelOne.cash).toBe(80_000)
+    expect(levelOne.cash - levelTwo.cash).toBe(100_000)
+    expect(levelTwo.upgrades).toEqual(['heat_control', 'heat_control_2'])
+  })
+
   it('requires and charges each auto assist level in order', () => {
     const initial = { ...nightState(), upgrades: ['grill_expand'] }
     expect(gameReducer(initial, {

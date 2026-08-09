@@ -33,13 +33,16 @@ const resultLabel = {
 } as const
 
 /** 프로그레스 바 구간 경계 — 좋음 / 완벽 / 위험 시작점 */
-const COOK_ZONE_MARKS = [0.4, PERFECT_WINDOW_START, PERFECT_WINDOW_END] as const
+function cookZoneMarks(perfectWindowStart: number) {
+  return [0.4, perfectWindowStart, PERFECT_WINDOW_END] as const
+}
 
 export interface GrillSlotsProps {
   slots: GrillSlot[]
   now: number
   onCollect: (slot: GrillSlot) => void
   alertingSlotIds?: readonly string[]
+  perfectWindowStart?: number
 }
 
 /** 그릴 슬롯 2행3열 — 확보한 슬롯은 실제 조리 기능을 제공하고 나머지는 단계별 잠금 안내를 표시한다. */
@@ -48,8 +51,10 @@ export default function GrillSlots({
   now,
   onCollect,
   alertingSlotIds = [],
+  perfectWindowStart = PERFECT_WINDOW_START,
 }: GrillSlotsProps) {
   const alertingSlots = new Set(alertingSlotIds)
+  const zoneMarks = cookZoneMarks(perfectWindowStart)
   return (
     <div className="grill-slot-grid">
       {slots.map((slot) => {
@@ -70,7 +75,8 @@ export default function GrillSlots({
 
         const ingredient = slot.ingredientId ? ingredientById.get(slot.ingredientId) : undefined
         const progress = getCookProgress(slot, now)
-        const result = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
+        const result =
+          slot.status === 'burnt' ? 'burnt' : getCookResult(progress, perfectWindowStart)
         const isPerfectTimingAlert = alertingSlots.has(slot.id)
         const tone =
           result === 'burnt'
@@ -113,11 +119,11 @@ export default function GrillSlots({
                     style={{ width: `${Math.min(100, progress * 100)}%` }}
                   />
                 </span>
-                {COOK_ZONE_MARKS.map((mark) => (
+                {zoneMarks.map((mark) => (
                   <span
                     key={mark}
                     className="grill-slot-bar-mark"
-                    style={{ left: `${mark * 100}%` }}
+                    style={{ left: `calc(${mark * 100}% - 1px)` }}
                   />
                 ))}
               </span>

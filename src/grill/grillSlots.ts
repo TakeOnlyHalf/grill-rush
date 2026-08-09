@@ -48,26 +48,49 @@ export function getCookProgress(slot: GrillSlot, now: number): number {
   return Math.max(0, (now - slot.startedAt) / slot.cookDurationMs)
 }
 
-export function getCookResult(progress: number): CookResult {
+export function getCookResult(
+  progress: number,
+  perfectWindowStart: number = PERFECT_WINDOW_START,
+): CookResult {
+  const perfectStart =
+    Number.isFinite(perfectWindowStart) &&
+    perfectWindowStart > 0.4 &&
+    perfectWindowStart < PERFECT_WINDOW_END
+      ? perfectWindowStart
+      : PERFECT_WINDOW_START
   if (progress > 1) return 'burnt'
   if (progress >= PERFECT_WINDOW_END) return 'danger'
-  if (progress >= PERFECT_WINDOW_START) return 'perfect'
+  if (progress >= perfectStart) return 'perfect'
   if (progress >= 0.4) return 'good'
   return 'raw'
 }
 
 /** 한 갱신 사이에 완벽 구간에 처음 진입했으며 아직 구간을 지나치지 않았는지 확인한다. */
-export function didEnterPerfectWindow(previousProgress: number, currentProgress: number): boolean {
+export function didEnterPerfectWindow(
+  previousProgress: number,
+  currentProgress: number,
+  perfectWindowStart: number = PERFECT_WINDOW_START,
+): boolean {
+  const perfectStart =
+    Number.isFinite(perfectWindowStart) &&
+    perfectWindowStart > 0.4 &&
+    perfectWindowStart < PERFECT_WINDOW_END
+      ? perfectWindowStart
+      : PERFECT_WINDOW_START
   return (
-    previousProgress < PERFECT_WINDOW_START &&
-    currentProgress >= PERFECT_WINDOW_START &&
+    previousProgress < perfectStart &&
+    currentProgress >= perfectStart &&
     currentProgress < PERFECT_WINDOW_END
   )
 }
 
-export function resolveGrillSlot(slot: GrillSlot, now: number): GrillSlot {
+export function resolveGrillSlot(
+  slot: GrillSlot,
+  now: number,
+  perfectWindowStart: number = PERFECT_WINDOW_START,
+): GrillSlot {
   if (slot.status !== 'cooking') return slot
-  return getCookResult(getCookProgress(slot, now)) === 'burnt'
+  return getCookResult(getCookProgress(slot, now), perfectWindowStart) === 'burnt'
     ? { ...slot, status: 'burnt' }
     : slot
 }
@@ -100,6 +123,7 @@ export function clearGrillSlot(slot: GrillSlot): GrillSlot {
 export function getAutoCollectCandidate(
   slots: readonly GrillSlot[],
   now: number,
+  perfectWindowStart: number = PERFECT_WINDOW_START,
 ): GrillSlot | null {
   return slots
     .filter((slot) =>
@@ -109,7 +133,7 @@ export function getAutoCollectCandidate(
       Number.isFinite(slot.startedAt) &&
       Number.isFinite(slot.cookDurationMs) &&
       slot.cookDurationMs > 0 &&
-      getCookResult(getCookProgress(slot, now)) === 'perfect'
+      getCookResult(getCookProgress(slot, now), perfectWindowStart) === 'perfect'
     )
     .sort((left, right) => {
       const leftRemainingMs =
@@ -134,6 +158,7 @@ export function collectGrillSlot(
   target: GrillSlotIdentity,
   now: number,
   requiredResult?: CookResult,
+  perfectWindowStart: number = PERFECT_WINDOW_START,
 ): CollectGrillSlotResult {
   const slot = slots.find((candidate) => candidate.id === target.id)
   if (
@@ -149,7 +174,8 @@ export function collectGrillSlot(
   }
 
   const progress = getCookProgress(slot, now)
-  const result = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
+  const result =
+    slot.status === 'burnt' ? 'burnt' : getCookResult(progress, perfectWindowStart)
   if (requiredResult !== undefined && result !== requiredResult) {
     return { slots: [...slots], collected: null }
   }

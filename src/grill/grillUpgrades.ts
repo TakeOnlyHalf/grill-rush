@@ -1,5 +1,5 @@
 import upgradesData from '../data/upgrades.json'
-import { GRILL_SLOT_COUNT } from './grillSlots'
+import { GRILL_SLOT_COUNT, PERFECT_WINDOW_START as PERFECT_WINDOW_START_DEFAULT } from './grillSlots'
 
 export const MAX_GRILL_SLOT_COUNT = 6
 
@@ -9,11 +9,14 @@ export const GRILL_EXPANSION_UPGRADE_IDS = [
   'grill_expand_3',
 ] as const
 
-export const AUTO_ASSIST_UPGRADE_IDS = [
+export const SERVE_ASSIST_UPGRADE_IDS = [
   'auto_assist',
   'auto_assist_2',
   'auto_assist_3',
 ] as const
+
+/** @deprecated Use SERVE_ASSIST_UPGRADE_IDS */
+export const AUTO_ASSIST_UPGRADE_IDS = SERVE_ASSIST_UPGRADE_IDS
 
 export function getDisplayedGrillExpansionUpgrade(ownedUpgradeIds: readonly string[]) {
   const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
@@ -24,35 +27,52 @@ export function getDisplayedGrillExpansionUpgrade(ownedUpgradeIds: readonly stri
   return upgradesData.find((upgrade) => upgrade.id === displayedUpgradeId)
 }
 
-export function getAutoAssistLevel(ownedUpgradeIds: readonly string[]): number {
+export function getServeAssistLevel(ownedUpgradeIds: readonly string[]): number {
   const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
-  return AUTO_ASSIST_UPGRADE_IDS.reduce(
-    (level, id, index) => ownedUpgradeIdSet.has(id) ? index + 1 : level,
+  return SERVE_ASSIST_UPGRADE_IDS.reduce(
+    (level, id, index) => (ownedUpgradeIdSet.has(id) ? index + 1 : level),
     0,
   )
 }
 
-export function getAutoAssistIntervalMs(
+/** @deprecated Use getServeAssistLevel */
+export function getAutoAssistLevel(ownedUpgradeIds: readonly string[]): number {
+  return getServeAssistLevel(ownedUpgradeIds)
+}
+
+export function getServeAssistIntervalMs(
   ownedUpgradeIds: readonly string[],
 ): number | null {
-  const level = getAutoAssistLevel(ownedUpgradeIds)
+  const level = getServeAssistLevel(ownedUpgradeIds)
   if (level === 0) return null
 
-  const upgradeId = AUTO_ASSIST_UPGRADE_IDS[level - 1]
+  const upgradeId = SERVE_ASSIST_UPGRADE_IDS[level - 1]
   const upgrade = upgradesData.find((item) => item.id === upgradeId)
-  if (!upgrade || !('autoCollectIntervalMs' in upgrade.effect)) return null
+  if (!upgrade || !('autoServeIntervalMs' in upgrade.effect)) return null
 
-  const intervalMs = upgrade.effect.autoCollectIntervalMs
+  const intervalMs = upgrade.effect.autoServeIntervalMs
   return typeof intervalMs === 'number' && Number.isSafeInteger(intervalMs) && intervalMs > 0
     ? intervalMs
     : null
 }
 
-export function getDisplayedAutoAssistUpgrade(ownedUpgradeIds: readonly string[]) {
-  const level = getAutoAssistLevel(ownedUpgradeIds)
+/** @deprecated Use getServeAssistIntervalMs */
+export function getAutoAssistIntervalMs(
+  ownedUpgradeIds: readonly string[],
+): number | null {
+  return getServeAssistIntervalMs(ownedUpgradeIds)
+}
+
+export function getDisplayedServeAssistUpgrade(ownedUpgradeIds: readonly string[]) {
+  const level = getServeAssistLevel(ownedUpgradeIds)
   const displayedUpgradeId =
-    AUTO_ASSIST_UPGRADE_IDS[Math.min(level, AUTO_ASSIST_UPGRADE_IDS.length - 1)]
+    SERVE_ASSIST_UPGRADE_IDS[Math.min(level, SERVE_ASSIST_UPGRADE_IDS.length - 1)]
   return upgradesData.find((upgrade) => upgrade.id === displayedUpgradeId)
+}
+
+/** @deprecated Use getDisplayedServeAssistUpgrade */
+export function getDisplayedAutoAssistUpgrade(ownedUpgradeIds: readonly string[]) {
+  return getDisplayedServeAssistUpgrade(ownedUpgradeIds)
 }
 
 export function getGrillExpansionUpgradeForSlot(slotNumber: number) {
@@ -84,6 +104,41 @@ export function hasPerfectTimingAlarm(ownedUpgradeIds: readonly string[]): boole
       'perfectTimingAlarm' in upgrade.effect &&
       upgrade.effect.perfectTimingAlarm === true,
   )
+}
+
+export const HEAT_CONTROL_UPGRADE_IDS = [
+  'heat_control',
+  'heat_control_2',
+] as const
+
+export function getHeatControlLevel(ownedUpgradeIds: readonly string[]): number {
+  const ownedUpgradeIdSet = new Set(ownedUpgradeIds)
+  return HEAT_CONTROL_UPGRADE_IDS.reduce(
+    (level, id, index) => (ownedUpgradeIdSet.has(id) ? index + 1 : level),
+    0,
+  )
+}
+
+/** 완벽 구간 시작점. 기본 0.7, 불조절 Lv.1=0.6, Lv.2=0.5 */
+export function getPerfectWindowStart(ownedUpgradeIds: readonly string[]): number {
+  const level = getHeatControlLevel(ownedUpgradeIds)
+  if (level <= 0) return PERFECT_WINDOW_START_DEFAULT
+  const upgradeId = HEAT_CONTROL_UPGRADE_IDS[level - 1]
+  const upgrade = upgradesData.find((item) => item.id === upgradeId)
+  if (!upgrade || !('perfectWindowStart' in upgrade.effect)) {
+    return PERFECT_WINDOW_START_DEFAULT
+  }
+  const start = upgrade.effect.perfectWindowStart
+  return typeof start === 'number' && Number.isFinite(start) && start > 0.4 && start < 0.9
+    ? start
+    : PERFECT_WINDOW_START_DEFAULT
+}
+
+export function getDisplayedHeatControlUpgrade(ownedUpgradeIds: readonly string[]) {
+  const level = getHeatControlLevel(ownedUpgradeIds)
+  const displayedUpgradeId =
+    HEAT_CONTROL_UPGRADE_IDS[Math.min(level, HEAT_CONTROL_UPGRADE_IDS.length - 1)]
+  return upgradesData.find((upgrade) => upgrade.id === displayedUpgradeId)
 }
 
 export function getCookTimeFactor(ownedUpgradeIds: readonly string[]): number {

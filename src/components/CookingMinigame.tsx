@@ -10,15 +10,9 @@ import {
   type GrillSlot,
 } from '../grill/grillSlots'
 import {
-  createAutoAssistReadyState,
-  runAutoAssistTick,
-  type AutoAssistTimerState,
-} from '../grill/autoAssist'
-import {
   getAdjustedCookDurationMs,
-  getAutoAssistIntervalMs,
-  getAutoAssistLevel,
   getGrillSlotCount,
+  getPerfectWindowStart,
   hasPerfectTimingAlarm,
 } from '../grill/grillUpgrades'
 import {
@@ -47,15 +41,6 @@ const grillIngredientById = new Map(grillIngredients.map((ingredient) => [ingred
 
 const resultLabels = { good: '좋음', perfect: '완벽', danger: '아슬아슬' } as const
 const PERFECT_TIMING_ALERT_DURATION_MS = 1_000
-const AUTO_COLLECT_FEEDBACK_DURATION_MS = 1_300
-
-function withObjectParticle(value: string): string {
-  const lastCodePoint = value.codePointAt(value.length - 1)
-  if (lastCodePoint === undefined || lastCodePoint < 0xac00 || lastCodePoint > 0xd7a3) {
-    return `${value}을`
-  }
-  return `${value}${(lastCodePoint - 0xac00) % 28 === 0 ? '를' : '을'}`
-}
 
 /**
  * 조리 미니게임 컨테이너 — 재료 / 그릴 / 완성 3분할(1:1.5:1) 레이아웃.
@@ -66,87 +51,31 @@ function withObjectParticle(value: string): string {
 export default function CookingMinigame() {
   const { state, dispatch } = useGame()
   const perfectTimingAlarmEnabled = hasPerfectTimingAlarm(state.upgrades)
-  const autoAssistLevel = getAutoAssistLevel(state.upgrades)
-  const autoCollectIntervalMs = getAutoAssistIntervalMs(state.upgrades)
+  const perfectWindowStart = getPerfectWindowStart(state.upgrades)
   const [slots, setSlots] = useState<GrillSlot[]>(() =>
     createIdleGrillSlots(getGrillSlotCount(state.upgrades)),
   )
   const slotsRef = useRef(slots)
-  const preparedIngredientsRef = useRef(state.preparedIngredients)
-  const upgradesRef = useRef(state.upgrades)
-  preparedIngredientsRef.current = state.preparedIngredients
-  upgradesRef.current = state.upgrades
   const [now, setNow] = useState(() => Date.now())
   const [selectedPreparedIds, setSelectedPreparedIds] = useState<string[]>([])
   const [selectedStockId, setSelectedStockId] = useState<string | null>(null)
   const [alertingSlotIds, setAlertingSlotIds] = useState<string[]>([])
   const [alarmAnnouncement, setAlarmAnnouncement] = useState({ id: 0, message: '' })
-  const [autoCollectFeedback, setAutoCollectFeedback] = useState<{
-    id: number
-    message: string
-  } | null>(null)
   const alarmStateRef = useRef<PerfectTimingAlarmState>({})
   const alertTimersRef = useRef(new Map<string, number>())
-  const autoCollectFeedbackTimerRef = useRef<number | null>(null)
-  const autoAssistTimerRef = useRef<AutoAssistTimerState>(
-    createAutoAssistReadyState(autoCollectIntervalMs, Date.now()),
-  )
 
   useEffect(() => {
-    autoAssistTimerRef.current = createAutoAssistReadyState(
-      autoCollectIntervalMs,
-      Date.now(),
-    )
     const id = setInterval(() => {
       const t = Date.now()
-      const resolvedSlots = slotsRef.current.map((slot) => resolveGrillSlot(slot, t))
-      const trayFull = isPlatedTrayFull(
-        preparedIngredientsRef.current,
-        upgradesRef.current,
+      const resolvedSlots = slotsRef.current.map((slot) =>
+        resolveGrillSlot(slot, t, perfectWindowStart),
       )
-      const autoAssistTick = runAutoAssistTick(
-        resolvedSlots,
-        t,
-        trayFull ? null : autoCollectIntervalMs,
-        autoAssistTimerRef.current,
-        typeof document === 'undefined' || document.visibilityState === 'visible',
-      )
-      autoAssistTimerRef.current = autoAssistTick.timer
-      slotsRef.current = autoAssistTick.slots
+      slotsRef.current = resolvedSlots
       setNow(t)
-      setSlots(autoAssistTick.slots)
-
-      if (!autoAssistTick.collected) return
-      const alertTimer = alertTimersRef.current.get(autoAssistTick.collected.slotId)
-      if (alertTimer !== undefined) window.clearTimeout(alertTimer)
-      alertTimersRef.current.delete(autoAssistTick.collected.slotId)
-      setAlertingSlotIds((current) =>
-        current.filter((id) => id !== autoAssistTick.collected?.slotId)
-      )
-      dispatch({
-        type: ActionTypes.COLLECT_COOKED_INGREDIENT,
-        payload: {
-          ingredientId: autoAssistTick.collected.ingredientId,
-          cookResult: autoAssistTick.collected.result,
-        },
-      })
-
-      const ingredientName = ingredientById.get(autoAssistTick.collected.ingredientId)?.name
-        ?? autoAssistTick.collected.ingredientId
-      setAutoCollectFeedback((current) => ({
-        id: (current?.id ?? 0) + 1,
-        message: `🤖 조리 보조: ${withObjectParticle(ingredientName)} 자동 회수했습니다.`,
-      }))
-      if (autoCollectFeedbackTimerRef.current !== null) {
-        window.clearTimeout(autoCollectFeedbackTimerRef.current)
-      }
-      autoCollectFeedbackTimerRef.current = window.setTimeout(() => {
-        setAutoCollectFeedback(null)
-        autoCollectFeedbackTimerRef.current = null
-      }, AUTO_COLLECT_FEEDBACK_DURATION_MS)
+      setSlots(resolvedSlots)
     }, 200)
     return () => clearInterval(id)
-  }, [autoCollectIntervalMs, dispatch])
+  }, [perfectWindowStart])
 
   useEffect(() => {
     const update = updatePerfectTimingAlarms(
@@ -155,6 +84,7 @@ export default function CookingMinigame() {
       alarmStateRef.current,
       perfectTimingAlarmEnabled,
       typeof document === 'undefined' || document.visibilityState === 'visible',
+      perfectWindowStart,
     )
     alarmStateRef.current = update.state
     if (update.enteredSlotIds.length === 0) return
@@ -175,16 +105,12 @@ export default function CookingMinigame() {
       .join(' ')
     setAlarmAnnouncement((current) => ({ id: current.id + 1, message }))
     playPerfectTimingAlarm()
-  }, [slots, now, perfectTimingAlarmEnabled])
+  }, [slots, now, perfectTimingAlarmEnabled, perfectWindowStart])
 
   useEffect(() => () => {
     for (const timer of alertTimersRef.current.values()) window.clearTimeout(timer)
     alertTimersRef.current.clear()
     alarmStateRef.current = {}
-    if (autoCollectFeedbackTimerRef.current !== null) {
-      window.clearTimeout(autoCollectFeedbackTimerRef.current)
-      autoCollectFeedbackTimerRef.current = null
-    }
   }, [])
 
   const clearSlotAlert = (slotId: string) => {
@@ -227,7 +153,8 @@ export default function CookingMinigame() {
   const handleCollect = (slot: GrillSlot) => {
     const nowMs = Date.now()
     const progress = getCookProgress(slot, nowMs)
-    const cookResult = slot.status === 'burnt' ? 'burnt' : getCookResult(progress)
+    const cookResult =
+      slot.status === 'burnt' ? 'burnt' : getCookResult(progress, perfectWindowStart)
     // 완성 트레이가 가득 차면 서빙 가능 결과는 회수하지 않는다. 탄 재료는 치울 수 있다.
     if (
       cookResult !== 'burnt' &&
@@ -237,7 +164,13 @@ export default function CookingMinigame() {
       return
     }
 
-    const result = collectGrillSlot(slotsRef.current, slot, nowMs)
+    const result = collectGrillSlot(
+      slotsRef.current,
+      slot,
+      nowMs,
+      undefined,
+      perfectWindowStart,
+    )
     if (!result.collected) return
     clearSlotAlert(slot.id)
     if (result.collected.result !== 'burnt') playSfx('cooking_done')
@@ -338,16 +271,12 @@ export default function CookingMinigame() {
               </span>
             </span>
           </h4>
-          {autoCollectIntervalMs !== null ? (
-            <p className="grill-auto-assist-status">
-              조리 보조 Lv.{autoAssistLevel} · 회수 후 {autoCollectIntervalMs / 1_000}초 재사용 대기
-            </p>
-          ) : null}
           <GrillSlots
             slots={slots}
             now={now}
             onCollect={handleCollect}
             alertingSlotIds={alertingSlotIds}
+            perfectWindowStart={perfectWindowStart}
           />
         </section>
 
@@ -461,17 +390,6 @@ export default function CookingMinigame() {
           <strong>주문 완료</strong>
           <span>{state.lastServeFeedback.menuName}</span>
           <b>+₩{state.lastServeFeedback.amount.toLocaleString('ko-KR')}</b>
-        </div>
-      ) : null}
-      {autoCollectFeedback ? (
-        <div
-          key={autoCollectFeedback.id}
-          className="auto-collect-feedback"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {autoCollectFeedback.message}
         </div>
       ) : null}
       <div

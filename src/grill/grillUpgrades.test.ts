@@ -3,7 +3,10 @@ import {
   getAdjustedCookDurationMs,
   getCookTimeFactor,
   getDisplayedGrillExpansionUpgrade,
+  getDisplayedHeatControlUpgrade,
   getGrillSlotCount,
+  getHeatControlLevel,
+  getPerfectWindowStart,
   hasPerfectTimingAlarm,
 } from './grillUpgrades'
 import { grillIngredients } from './grillIngredients'
@@ -53,6 +56,25 @@ describe('data-driven grill upgrade effects', () => {
   it('detects the perfect timing alarm by its configured effect', () => {
     expect(hasPerfectTimingAlarm([])).toBe(false)
     expect(hasPerfectTimingAlarm(['timer_alarm'])).toBe(true)
+  })
+})
+
+describe('heat control upgrade levels', () => {
+  it.each([
+    [[], 0, 0.7],
+    [['heat_control'], 1, 0.6],
+    [['heat_control', 'heat_control_2'], 2, 0.5],
+  ] as const)('resolves %j to level %i and window start %f', (owned, level, start) => {
+    expect(getHeatControlLevel(owned)).toBe(level)
+    expect(getPerfectWindowStart(owned)).toBe(start)
+  })
+
+  it.each([
+    [[], 'heat_control'],
+    [['heat_control'], 'heat_control_2'],
+    [['heat_control', 'heat_control_2'], 'heat_control_2'],
+  ] as const)('shows exactly the progressive card for %j', (owned, displayedId) => {
+    expect(getDisplayedHeatControlUpgrade(owned)?.id).toBe(displayedId)
   })
 })
 
