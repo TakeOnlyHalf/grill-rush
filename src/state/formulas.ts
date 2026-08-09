@@ -124,13 +124,11 @@ export function calcDailyProfit({
   return sales + tips - totalCost
 }
 
-/** 엔딩 분기 (7일 압축 기준 — TODO: 밸런스 재조정) */
-export function resolveEnding({ cash, fame }: { cash: number; fame: number }): EndingId {
-  if (fame >= 80 && cash >= 500_000) return 'legend'
-  if (fame >= 60 && cash >= 300_000) return 'popular'
-  if (fame >= 40 && cash >= 100_000) return 'local'
-  if (cash > 0) return 'survive'
-  return 'closed'
+/** 엔딩 분기 — 최종 자산 기준 */
+export function resolveEnding({ cash }: { cash: number; fame?: number }): EndingId {
+  if (cash < 0 || cash <= 200_000) return 'bad'
+  if (cash < 1_000_000) return 'normal'
+  return 'great'
 }
 
 export function getMenuById(id: MenuId) {

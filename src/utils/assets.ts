@@ -44,6 +44,11 @@ export const TRUCK_UPGRADE_DAY_BG = publicUrl(
 /** 게임 로고 (로비 HUD 등) */
 export const GAME_LOGO = publicUrl('images/logo.webp')
 
+/** 엔딩 일러스트 */
+export const BAD_ENDING_ART = publicUrl('images/end_phase/bad-ending.webp')
+export const NORMAL_ENDING_ART = publicUrl('images/end_phase/normal-ending.webp')
+export const GREAT_ENDING_ART = publicUrl('images/end_phase/great-ending.webp')
+
 /** Day 2+ 자유 준비 로비 */
 export const PREP_LOBBY_BG = publicUrl('images/ready_phase/loby_background.webp')
 export const PREP_LOBBY_MENU = publicUrl(
@@ -101,6 +106,9 @@ export const CRITICAL_IMAGE_URLS = [
   TRUCK_UPGRADE_NIGHT_BG,
   TRUCK_UPGRADE_DAY_BG,
   GAME_LOGO,
+  BAD_ENDING_ART,
+  NORMAL_ENDING_ART,
+  GREAT_ENDING_ART,
   PREP_LOBBY_BG,
   PREP_LOBBY_MENU,
   PREP_LOBBY_LOCATION,

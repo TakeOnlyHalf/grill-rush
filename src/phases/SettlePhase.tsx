@@ -79,6 +79,16 @@ export default function SettlePhase() {
     key: `${stars}-${i}`,
   }))
 
+  const openDayDelta =
+    state.dailySales +
+    state.dailyTips -
+    (costs.rent ?? 0) -
+    (costs.waste ?? 0) -
+    (costs.truck ?? 0)
+  const projectedCash = state.cash + openDayDelta
+  const isBankrupt = projectedCash < 0
+  const isFinalDay = state.day >= state.maxDays
+
   return (
     <section className="phase phase-settle" aria-label="오늘의 결산">
       <img
@@ -183,19 +193,19 @@ export default function SettlePhase() {
           className="settle-cta"
           onClick={() => {
             playSfx('button_primary')
-            if (state.day === 1) {
-              forceUnlockBgm('store')
-            } else if (state.day >= state.maxDays) {
+            if (isBankrupt || isFinalDay) {
               forceUnlockBgm('title')
+            } else if (state.day === 1) {
+              forceUnlockBgm('store')
             } else {
               forceUnlockBgm('lobby')
             }
             dispatch({ type: ActionTypes.CONFIRM_SETTLE })
           }}
         >
-          {state.day === 1
+          {state.day === 1 && !isBankrupt
             ? '성장 화면으로 →'
-            : state.day >= state.maxDays
+            : isBankrupt || isFinalDay
               ? '엔딩 보기 →'
               : '다음 날로 →'}
         </button>
